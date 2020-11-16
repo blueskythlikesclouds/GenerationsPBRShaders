@@ -1,0 +1,97 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Pch.cpp" />
+    <ClCompile Include="DllMain.cpp" />
+    <ClCompile Include="Mod.cpp" />
+    <ClCompile Include="StageId.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="SGGIHandler.cpp">
+      <Filter>Patches\SGGI</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderHandler.cpp">
+      <Filter>Patches\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="SRGBHandler.cpp">
+      <Filter>Patches\Shader\Filter</Filter>
+    </ClCompile>
+    <ClCompile Include="LUTHandler.cpp">
+      <Filter>Patches\Shader\Filter</Filter>
+    </ClCompile>
+    <ClCompile Include="ShadowHandler.cpp">
+      <Filter>Patches\Shader\Shadow</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexBufferHandler.cpp">
+      <Filter>Patches\Other</Filter>
+    </ClCompile>
+    <ClCompile Include="YggdrasillPatcher.cpp">
+      <Filter>Patches\Other</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="StageId.h">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Pch.h" />
+    <ClInclude Include="SGGIHandler.h">
+      <Filter>Patches\SGGI</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderHandler.h">
+      <Filter>Patches\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="SRGBHandler.h">
+      <Filter>Patches\Shader\Filter</Filter>
+    </ClInclude>
+    <ClInclude Include="LUTHandler.h">
+      <Filter>Patches\Shader\Filter</Filter>
+    </ClInclude>
+    <ClInclude Include="ShadowHandler.h">
+      <Filter>Patches\Shader\Shadow</Filter>
+    </ClInclude>
+    <ClInclude Include="YggdrasillPatcher.h">
+      <Filter>Patches\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexBufferHandler.h">
+      <Filter>Patches\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="SHLightField.h">
+      <Filter>Database\SHLF</Filter>
+    </ClInclude>
+    <ClInclude Include="IBLProbe.h">
+      <Filter>Database\Probe</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Patches">
+      <UniqueIdentifier>{dfab192b-8221-468d-9bcd-6a94ba8da68d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Patches\SGGI">
+      <UniqueIdentifier>{89a630be-0b20-4d2a-b147-8a79b5b72d3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Patches\Shader">
+      <UniqueIdentifier>{8c1c872a-2df1-4ee3-aee6-29b13d4a80b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Patches\Shader\Filter">
+      <UniqueIdentifier>{000c33d8-8616-468b-9f63-2f436ca5aea4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Patches\Other">
+      <UniqueIdentifier>{84bab869-e859-4dab-8911-449c7de54591}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Patches\Shader\Shadow">
+      <UniqueIdentifier>{ce3ffb34-ec19-4318-a869-8cf089a6e67d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Database">
+      <UniqueIdentifier>{0d62c530-9751-47b1-adc1-78e3885c1a9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Base">
+      <UniqueIdentifier>{b09963c5-26ee-4b4b-8f20-d6a3dad1d655}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Database\SHLF">
+      <UniqueIdentifier>{0ef0f14f-ce17-4e48-bed2-90b9e001c1fb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Database\Probe">
+      <UniqueIdentifier>{45bd06a1-333f-485d-9683-e005a6f5932b}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
