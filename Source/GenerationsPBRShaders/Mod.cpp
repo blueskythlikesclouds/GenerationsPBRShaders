@@ -4,6 +4,7 @@
 #include "ShadowHandler.h"
 #include "SRGBHandler.h"
 #include "StageId.h"
+#include "VertexBufferHandler.h"
 #include "YggdrasillPatcher.h"
 
 extern "C" void __declspec(dllexport) OnFrame()
@@ -24,4 +25,5 @@ extern "C" void __declspec(dllexport) Init()
     ShadowHandler::applyPatches();
     SRGBHandler::applyPatches();
     YggdrasillPatcher::applyPatches();
+    VertexBufferHandler::applyPatches();
 }

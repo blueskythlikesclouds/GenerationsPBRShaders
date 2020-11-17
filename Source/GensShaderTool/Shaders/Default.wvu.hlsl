@@ -27,6 +27,15 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
     bool hasBone = false;
 #endif
 
+#if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
+    float3 binormal;
+
+    [branch] if (input.Tangent.w == 0)
+        binormal = input.Binormal.xyz;
+    else
+        binormal = cross(input.Normal.xyz, input.Tangent.xyz) * sign(input.Tangent.w);
+#endif
+
     if (hasBone)
     {
         float3x4 blendMatrix = g_MtxPalette[input.BlendIndices[0]] * input.BlendWeight[0];
@@ -39,7 +48,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
 #if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
         output.Tangent.xyz = mul(blendMatrix, float4(input.Tangent.xyz, 0));
-        output.Binormal.xyz = mul(blendMatrix, float4(input.Binormal.xyz, 0));
+        output.Binormal.xyz = mul(blendMatrix, float4(binormal, 0));
 #endif
 
 #if defined(IsEye2) && IsEye2
@@ -53,7 +62,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
 #if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
         output.Tangent.xyz = input.Tangent.xyz;
-        output.Binormal.xyz = input.Binormal.xyz;
+        output.Binormal.xyz = binormal;
 #endif
 
 #if defined(IsEye2) && IsEye2
