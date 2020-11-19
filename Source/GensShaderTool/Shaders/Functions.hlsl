@@ -15,12 +15,6 @@ float3 FresnelSchlick(float3 F0, float cosTheta)
 	return F0 + (1.0 - F0) * exp2(p);
 }
 
-float3 FresnelSchlickRoughness(float3 F0, float cosTheta, float roughness)
-{
-	float p = (-5.55473 * cosTheta - 6.98316) * cosTheta;
-	return F0 + (max(1.0 - roughness, F0) - F0) * exp2(p);
-}
-
 float NdfGGX(float cosLh, float roughness)
 {
 	float alpha = roughness * roughness;
@@ -55,17 +49,18 @@ float3 ComputeDirectLightingRaw(Material material, float3 lightDirection, float3
 {
 	float3 halfwayDirection = normalize(material.ViewDirection + lightDirection);
 
+    float cosViewDirection = max(0.0001, material.CosViewDirection);
 	float cosLightDirection = saturate(dot(lightDirection, material.Normal));
 	float cosHalfwayDirection = saturate(dot(halfwayDirection, material.Normal));
 
 	float3 F = FresnelSchlick(material.F0, saturate(dot(halfwayDirection, material.ViewDirection)));
 	float D = NdfGGX(cosHalfwayDirection, material.Roughness);
-	float G = GaSchlickGGX(cosLightDirection, material.CosViewDirection, material.Roughness);
+	float G = GaSchlickGGX(cosLightDirection, cosViewDirection, material.Roughness);
 
 	float3 kd = lerp(1 - F, 0, material.Metalness);
 
 	float3 diffuseBRDF = kd * material.Albedo;
-	float3 specularBRDF = (F * D * G) / max(0.00001, 4 * cosLightDirection * material.CosViewDirection);
+	float3 specularBRDF = (F * D * G) / max(0.0001, 4 * cosLightDirection * cosViewDirection);
 
 	return (diffuseBRDF + specularBRDF) * lightColor;
 }
@@ -75,34 +70,25 @@ float3 ComputeDirectLighting(Material material, float3 lightDirection, float3 li
     return ComputeDirectLightingRaw(material, lightDirection, lightColor) * saturate(dot(lightDirection, material.Normal));
 }
 
+float3 ComputeIndirectLighting(Material material, float2 specularBRDF)
+{
+    float3 kd = lerp(1 - material.F0, 0, material.Metalness);
+
+    float3 diffuseIBL = (kd * material.Albedo) * material.IndirectDiffuse;
+
+    float3 specularIBL = max(0, (material.F0 * specularBRDF.x + specularBRDF.y) * material.IndirectSpecular);
+
+    return (diffuseIBL + specularIBL) * material.AmbientOcclusion;
+}
+
 float3 ComputeIndirectLighting(Material material)
 {
-	float3 F = FresnelSchlickRoughness(material.F0, material.CosViewDirection, material.Roughness);
-
-	float3 kd = (1 - F) * material.GIContribution;
-
-	float3 diffuseIBL = (kd * material.Albedo) * material.IndirectDiffuse;
-
-	float2 specularBRDF = ApproxEnvBRDF(material.CosViewDirection, material.Roughness);
-
-	float3 specularIBL = max(0, (material.F0 * specularBRDF.x + specularBRDF.y) * material.IndirectSpecular);
-
-	return (diffuseIBL + specularIBL) * material.AmbientOcclusion;
+    return ComputeIndirectLighting(material, ApproxEnvBRDF(material.CosViewDirection, material.Roughness));
 }
 
 float3 ComputeIndirectLighting(Material material, sampler2D envBRDF)
 {
-	float3 F = FresnelSchlickRoughness(material.F0, material.CosViewDirection, material.Roughness);
-
-	float3 kd = (1 - F) * material.GIContribution;
-
-	float3 diffuseIBL = (kd * material.Albedo) * material.IndirectDiffuse;
-
-	float2 specularBRDF = tex2Dlod(envBRDF, float4(material.CosViewDirection, material.Roughness, 0, 0)).xy;
-
-	float3 specularIBL = max(0, (material.F0 * specularBRDF.x + specularBRDF.y) * material.IndirectSpecular);
-
-	return (diffuseIBL + specularIBL) * material.AmbientOcclusion;
+    return ComputeIndirectLighting(material, tex2Dlod(envBRDF, float4(material.CosViewDirection, material.Roughness, 0, 0)).xy);
 }
 
 float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSize)

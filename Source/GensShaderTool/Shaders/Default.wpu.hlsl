@@ -68,10 +68,14 @@ void main(in DECLARATION_TYPE input,
     material.Albedo = diffuse.rgb;
     material.Alpha = diffuse.a;
 
-    material.Metalness = specular.x;
+    material.FresnelFactor = specular.x;
     material.Roughness = max(0.01, 1 - specular.y);
     material.AmbientOcclusion = specular.z;
-    material.GIContribution = specular.w;
+    material.Metalness = specular.w;
+
+#if !defined(HasMetalness) || !HasMetalness
+    material.Metalness = material.FresnelFactor > 0.225;
+#endif
 
     material.ViewDirection = normalize(g_EyePosition.xyz - input.Position.xyz);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
@@ -79,7 +83,7 @@ void main(in DECLARATION_TYPE input,
     material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
 
-    material.F0 = lerp(0.04, material.Albedo, material.Metalness);
+    material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
     float sggiRoughness = saturate((material.Roughness - 0.3) * 2.85714);
 
@@ -142,10 +146,6 @@ void main(in DECLARATION_TYPE input,
 
     PostProcessMaterial(input, material);
 
-#if !defined(HasGIContribution) || !HasGIContribution
-    material.GIContribution = material.Metalness < 0.9;
-#endif
-
     float cosTheta = dot(-mrgGlobalLight_Direction.xyz, material.Normal);
 
     if (!g_IsUseDeferred)
@@ -186,7 +186,7 @@ void main(in DECLARATION_TYPE input,
 
         outColor0 = float4(color, material.Alpha);
         outColor1 = float4(material.Albedo, factor);
-        outColor2 = float4(material.Metalness, material.Roughness, material.AmbientOcclusion, material.GIContribution);
+        outColor2 = float4(material.FresnelFactor, material.Roughness, material.AmbientOcclusion, material.Metalness);
         outColor3 = float4(material.Normal * 0.5 + 0.5, 1.0);
     }
 }

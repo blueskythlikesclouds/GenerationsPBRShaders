@@ -26,7 +26,8 @@ float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 float4 GetSpecular(DECLARATION_TYPE input)
 {
 #if defined(HasSpecular) && HasSpecular
-    return tex2D(specularSampler, UV(1));
+    float4 specular = tex2D(specularSampler, UV(1));
+    return float4(specular.x * 0.25, specular.yzw);
 #else
     return float4(PBRFactor.xy, 1, 1);
 #endif

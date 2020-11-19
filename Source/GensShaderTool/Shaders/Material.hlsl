@@ -6,10 +6,10 @@ struct Material
     float3 Albedo;
     float Alpha;
 
-    float Metalness;
+    float FresnelFactor;
     float Roughness;
     float AmbientOcclusion;
-    float GIContribution;
+    float Metalness;
 
     float3 Normal;
 
@@ -33,7 +33,7 @@ Material NewMaterial()
     material.Albedo = 0;
     material.Alpha = 0;
 
-    material.Metalness = 0;
+    material.FresnelFactor = 0;
     material.Roughness = 0;
     material.AmbientOcclusion = 0;
 

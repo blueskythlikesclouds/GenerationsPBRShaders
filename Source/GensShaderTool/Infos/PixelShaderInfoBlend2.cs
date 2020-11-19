@@ -61,7 +61,7 @@ namespace GensShaderTool.Infos
     {
         public override string Name { get; } = "MBlend";
 
-        public override IReadOnlyList<string> Definitions { get; } = new[] { "HasGIContribution" };
+        public override IReadOnlyList<string> Definitions { get; } = new[] { "HasMetalness" };
 
         public override bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {

@@ -22,10 +22,10 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.Albedo = gBuffer1.rgb;
     material.Alpha = gBuffer0.a;
-    material.Metalness = gBuffer2.x;
-    material.Roughness = gBuffer2.y;
+    material.FresnelFactor = gBuffer2.x;
+    material.Roughness = max(0.01, gBuffer2.y);
     material.AmbientOcclusion = gBuffer2.z;
-    material.GIContribution = gBuffer2.w;
+    material.Metalness = gBuffer2.w;
 
     material.Normal = normalize(gBuffer3.xyz * 2 - 1);
 
@@ -40,7 +40,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
 
-    material.F0 = lerp(0.04, material.Albedo, material.Metalness);
+    material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
     float currentLength = -1;
     uint currentIndex = 0;

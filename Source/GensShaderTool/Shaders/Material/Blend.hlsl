@@ -39,12 +39,13 @@ float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 float4 GetSpecular(DECLARATION_TYPE input)
 {
 #if defined(HasSpecular) && HasSpecular
+    float4 specular = tex2D(specularSampler, UV(1));
 
 #if defined(HasSpecularBlend) && HasSpecularBlend
-    return lerp(tex2D(specularSampler, UV(1)), tex2D(specularBlendSampler, UV(5)), GetBlend(input));
-#else
-    return tex2D(specularSampler, UV(1));
+    specular = lerp(specular, tex2D(specularBlendSampler, UV(5)), GetBlend(input));
 #endif
+
+    return float4(specular.x * 0.25, specular.yzw);
 
 #else
     return float4(PBRFactor.xy, 1, 1);

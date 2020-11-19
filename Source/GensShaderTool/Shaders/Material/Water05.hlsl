@@ -23,7 +23,8 @@ float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 
 float4 GetSpecular(DECLARATION_TYPE input)
 {
-    return tex2D(specularSampler, UV(1));
+    float4 specular = tex2D(specularSampler, UV(1));
+    return float4(specular.x * 0.25, specular.yzw);
 }
 
 float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)

@@ -25,7 +25,8 @@ float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 
 float4 GetSpecular(DECLARATION_TYPE input)
 {
-    return tex2D(specularSampler, UV(1));
+    float4 specular = tex2D(specularSampler, UV(1));
+    return float4(specular.x * 0.25, specular.yzw);
 }
 
 float3 GetCdr(float cosTheta, float curvature)
@@ -46,10 +47,10 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
     float3 reflection = tex2D(reflectionSampler, UV(0) + reflectionOffset).rgb;
     float3 reflectionAlpha = tex2D(reflectionSampler, UV(3) + reflectionAlphaOffset).a;
 
-    material.Albedo = lerp((material.Albedo + reflection * material.GIContribution) * diffuseAlpha, 1, reflectionAlpha);
+    material.Albedo = lerp((material.Albedo + reflection * material.Metalness) * diffuseAlpha, 1, reflectionAlpha);
     material.Alpha = 1;
     material.AmbientOcclusion = lerp(material.AmbientOcclusion, 1, reflectionAlpha);
-    material.GIContribution = 1;
+    material.Metalness = 0;
 }
 
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, inout float4 finalColor)
