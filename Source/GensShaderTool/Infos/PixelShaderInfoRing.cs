@@ -24,7 +24,7 @@ namespace GensShaderTool.Infos
             "Blend"
         };
 
-        public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
+        public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly" };
 
         public virtual bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {

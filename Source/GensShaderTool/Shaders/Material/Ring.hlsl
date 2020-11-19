@@ -17,7 +17,7 @@ float4 Blend : register(c151);
 
 float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 {
-    return pow(abs(tex2D(diffuseSampler, UV(0))), GAMMA);
+    return pow(abs(tex2D(diffuseSampler, UV(0))), GAMMA) * float4(input.Color.xyz, 1.0);
 }
 
 float4 GetSpecular(DECLARATION_TYPE input)
@@ -32,9 +32,9 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
     float3 viewNormal = normalize(mul(float4(material.Normal, 0), g_MtxView).xyz);
-    float3 emission = pow(tex2D(emissionSampler, viewNormal * float2(0.5, -0.5) + 0.5), GAMMA).rgb;
+    float3 emission = pow(tex2D(emissionSampler, viewNormal * float2(0.5, -0.5) + 0.5), GAMMA).rgb * input.Color.xyz;
 
-    finalColor.rgb += emission * Blend.x * mrgLuminanceRange.x;
+    finalColor.rgb += emission * (1 - Blend.x) * mrgLuminanceRange.x;
 }
 
 #endif
