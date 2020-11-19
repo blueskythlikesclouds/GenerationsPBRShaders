@@ -27,7 +27,7 @@ namespace GensShaderTool.Infos
             "ChrEye3"
         };
 
-        public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly" };
+        public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly", "HasMetalness" }; // HasMetalness to prevent rejection of specular W
 
         public virtual bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {
