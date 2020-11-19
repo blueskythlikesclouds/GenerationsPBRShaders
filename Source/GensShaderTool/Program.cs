@@ -46,7 +46,7 @@ namespace GensShaderTool
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory, new IShaderInfo[]
                 {
                     new PixelShaderInfoCommon2(), new PixelShaderInfoBlend2(), new PixelShaderInfoChrEyeCDRF(), new PixelShaderInfoChrSkinCDRF(),
-                    new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(), new PixelShaderInfoWater05()
+                    new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(), new PixelShaderInfoWater05(), new PixelShaderInfoRing()
                 }, pixelShaderGlobalParameterSet);
 
             //==================//

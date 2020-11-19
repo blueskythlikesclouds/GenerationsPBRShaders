@@ -16,6 +16,8 @@
 #include "Material/Water01.hlsl"
 #elif defined(IsWater05) && IsWater05
 #include "Material/Water05.hlsl"
+#elif defined(IsRing) && IsRing
+#include "Material/Ring.hlsl"
 #endif
 
 float4 g_GIParam : register(c189);
@@ -166,7 +168,7 @@ void main(in DECLARATION_TYPE input,
 
         outColor0 = float4(directLighting + indirectLighting, material.Alpha);
 
-        PostProcessFinalColor(input, material, outColor0);
+        PostProcessFinalColor(input, material, false, outColor0);
     }
     else
     {
@@ -188,5 +190,7 @@ void main(in DECLARATION_TYPE input,
         outColor1 = float4(material.Albedo, factor);
         outColor2 = float4(material.FresnelFactor, material.Roughness, material.AmbientOcclusion, material.Metalness);
         outColor3 = float4(material.Normal * 0.5 + 0.5, 1.0);
+
+        PostProcessFinalColor(input, material, true, outColor0);
     }
 }

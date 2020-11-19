@@ -50,8 +50,11 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 {
 }
 
-void PostProcessFinalColor(DECLARATION_TYPE input, Material material, inout float4 finalColor)
+void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
+    if (isDeferred)
+        return;
+
     float2 texCoord = input.SvPosition.xy + mul(float4(material.Normal, 0), g_MtxView).xy * RefractionCubemap.y * g_ViewportSize.zw;
 
     float depth = tex2Dproj(g_DepthSampler, float4(texCoord, 0, input.SvPosition.w)).x;

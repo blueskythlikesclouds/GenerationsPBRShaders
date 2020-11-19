@@ -122,11 +122,12 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.IndirectDiffuse = ComputeSHFinal(material.IndirectDiffuse) * 2;
 
-    float3 direct = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb * g_GI0Scale.z);
+    float3 direct = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
     direct *= lerp(saturate(dot(-mrgGlobalLight_Direction.xyz, material.Normal)), gBuffer0.rgb, gBuffer1.w);
     direct *= material.Shadow;
 
     float3 indirect = ComputeIndirectLighting(material);
+    indirect += lerp(gBuffer0.rgb, 0, gBuffer1.w);
 
     return float4(direct + indirect, material.Alpha);
 }

@@ -48,7 +48,7 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 {
 }
 
-void PostProcessFinalColor(DECLARATION_TYPE input, Material material, inout float4 finalColor)
+void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
 }
 
