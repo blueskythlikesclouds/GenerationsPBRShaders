@@ -2,8 +2,6 @@
 
 #include "Material/Default.hlsl"
 
-bool g_IsUseDeferred : register(b6);
-
 struct Input
 {
     float4 Position : POSITION;

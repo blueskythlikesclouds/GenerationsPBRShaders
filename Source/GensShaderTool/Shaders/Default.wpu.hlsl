@@ -4,6 +4,8 @@
 #include "Functions.hlsl"
 #include "Material.hlsl"
 
+#include "Material/Default.hlsl"
+
 #if (defined(IsCommon2) && IsCommon2) || (defined(IsMCommon) && IsMCommon)
 #include "Material/Common.hlsl"
 #elif (defined(IsBlend2) && IsBlend2) || (defined(IsMBlend) && IsMBlend)
@@ -19,19 +21,6 @@
 #elif defined(IsRing) && IsRing
 #include "Material/Ring.hlsl"
 #endif
-
-float4 g_GIParam : register(c189);
-float4 g_SGGIParam : register(c190);
-
-float4 g_GIAtlasSize : register(c191);
-float4 g_ShadowMapSize : register(c192);
-
-bool g_IsUseDeferred : register(b6);
-bool g_IsUseSGGI : register(b7);
-bool g_IsUseCubicFilter : register(b8);
-
-samplerCUBE g_DefaultIBLSampler : register(s14);
-sampler2D g_EnvBRDFSampler : register(s15);
 
 float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
 {

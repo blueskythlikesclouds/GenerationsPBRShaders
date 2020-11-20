@@ -7,6 +7,9 @@
 #include "../Functions.hlsl"
 #include "../Material.hlsl"
 
+#include "Default.hlsl"
+
+#undef DECLARATION_TYPE
 #define DECLARATION_TYPE    DefaultDeclaration
 
 sampler2D diffuseSampler : register(s0);
@@ -34,7 +37,7 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
     float3 viewNormal = normalize(mul(float4(material.Normal, 0), g_MtxView).xyz);
     float3 emission = pow(tex2D(emissionSampler, viewNormal * float2(0.5, -0.5) + 0.5), GAMMA).rgb * input.Color.xyz;
 
-    finalColor.rgb += emission * (1 - Blend.x) * mrgLuminanceRange.x;
+    finalColor.rgb += emission * (1 - Blend.x) * g_MiddleGray_Scale_LuminanceLow_LuminanceHigh.x * g_MiddleGray_Scale_LuminanceLow_LuminanceHigh.w;
 }
 
 #endif

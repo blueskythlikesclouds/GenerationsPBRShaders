@@ -221,6 +221,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pre-pass: Render opaque/punch-through objects and terrain. //
     //************************************************************//
 
+    // Set g_MiddleGray_Scale_LuminanceLow_LuminanceHigh
+    pD3DDevice->SetPixelShaderConstantF(193, (const float*)0x1A572D0, 1);
+
     // Enable Z buffer.
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ZENABLE);

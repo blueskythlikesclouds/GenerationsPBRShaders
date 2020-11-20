@@ -7,6 +7,7 @@
 #include "../Functions.hlsl"
 #include "../Material.hlsl"
 
+#undef DECLARATION_TYPE
 #define DECLARATION_TYPE    WaterDeclaration
 
 sampler2D diffuseSampler : register(s0);
