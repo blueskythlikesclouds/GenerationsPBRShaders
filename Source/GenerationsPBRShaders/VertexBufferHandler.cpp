@@ -115,7 +115,7 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
 
         HlHHVertexElement* element = it->elementData;
 
-        while (element->format != 0xFFFFFFFF)
+        while (_byteswap_ushort(element->stream) != 0xFF)
         {
             const D3DDECLTYPE declType = declTypeMap[_byteswap_ulong(element->format)];
 
@@ -160,7 +160,12 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
                 }
             }
 
+            const uint8_t offset = element->offset;
+
             element++;
+
+            if (element->offset <= offset)
+                break;
         }
 
         // Swap again so it becomes valid in the original code.
@@ -171,6 +176,52 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
     }
 
     return originalCreateSharedVertexBuffer(This);
+}
+
+HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9* d3dElements, uint32_t count, HlHHVertexElement* hlElements)
+{
+    D3DVERTEXELEMENT9* minTexCoordElement = nullptr;
+    int32_t maxTexCoordUsageIndex = INT_MIN;
+
+    size_t i;
+
+    for (i = 0; i < count - 1; i++)
+    {
+        HlHHVertexElement* hlElement = &hlElements[i];
+
+        if (_byteswap_ushort(hlElement->stream) == 0xFF)
+            break;
+
+        D3DVERTEXELEMENT9* d3dElement = &d3dElements[i];
+
+        d3dElement->Stream = _byteswap_ushort(hlElement->stream);
+        d3dElement->Offset = _byteswap_ushort(hlElement->offset);
+        d3dElement->Type = declTypeMap[_byteswap_ulong(hlElement->format)];
+        d3dElement->Method = hlElement->method;
+        d3dElement->Usage = hlElement->type;
+        d3dElement->UsageIndex = hlElement->index;
+
+        if (d3dElement->Usage != D3DDECLUSAGE_TEXCOORD)
+            continue;
+
+        if (!minTexCoordElement || d3dElement->Offset < minTexCoordElement->Offset)
+            minTexCoordElement = d3dElement;
+
+        maxTexCoordUsageIndex = std::max<int32_t>(maxTexCoordUsageIndex, d3dElement->UsageIndex);
+    }
+
+    if (minTexCoordElement != nullptr && maxTexCoordUsageIndex >= 0)
+    {
+        // Redirect nonexistent tex coords to the one with the smallest usage index, which will be 0 in most cases.
+        for (size_t j = maxTexCoordUsageIndex + 1; j < 4 && i < count - 1; i++, j++)
+        {
+            d3dElements[i] = *minTexCoordElement;
+            d3dElements[i].UsageIndex = j;
+        }
+    }
+
+    d3dElements[i] = D3DDECL_END();
+    return true;
 }
 
 bool VertexBufferHandler::enabled = false;
@@ -184,6 +235,5 @@ void VertexBufferHandler::applyPatches()
 
     INSTALL_HOOK(CreateVertexBuffer);
     INSTALL_HOOK(CreateSharedVertexBuffer);
-
-    // WRITE_MEMORY(0x725015, uint8_t, 0);
+    INSTALL_HOOK(CreateVertexElements);
 }
