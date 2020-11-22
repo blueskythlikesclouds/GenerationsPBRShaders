@@ -1,10 +1,8 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float4 g_ShadowMapSize : register(c150);
-
-float3x4 g_SHLightFieldMatrices[4] : register(c151);
-float4 g_SHLightFieldParams[4] : register(c163);
+float3x4 g_SHLightFieldMatrices[4] : register(c171);
+float4 g_SHLightFieldParams[4] : register(c183);
 
 sampler3D g_SHLightFieldSamplers[4] : register(s4);
 
@@ -128,6 +126,28 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     float3 indirect = ComputeIndirectLighting(material);
     indirect += lerp(gBuffer0.rgb, 0, gBuffer1.w);
+
+    for (int i = 0; i < 32; i++)
+    {
+        float4 item0 = g_LocalLightData[i * 2 + 0];
+        float4 item1 = g_LocalLightData[i * 2 + 1];
+
+        float3 lightPosition = item0.xyz;
+        float3 lightColor = item1.xyz;
+
+        float innerRange = item0.w;
+        float outerRange = item1.w;
+
+        float3 delta = lightPosition - position;
+        float distance = length(delta);
+        float3 direction = delta / distance;
+
+        float attenuation = innerRange + outerRange * distance + outerRange * distance * distance;
+        attenuation -= 0.002;
+
+        if (attenuation > 0)
+            direct += ComputeDirectLighting(material, direction, lightColor) / max(0.001, attenuation);
+    }
 
     return float4(direct + indirect, material.Alpha);
 }

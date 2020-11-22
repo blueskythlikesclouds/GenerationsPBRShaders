@@ -1,11 +1,11 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float3x4 g_IBLProbeMatrices[8] : register(c150);
-float4 g_IBLProbeParams[8] : register(c174);
-float4 g_IBLProbeLODParams[2] : register(c182);
+float3x4 g_IBLProbeMatrices[8] : register(c171);
+float4 g_IBLProbeParams[8] : register(c195);
+float4 g_IBLProbeLODParams[2] : register(c203);
 
-float4 g_OtherLODParam : register(c184);
+float4 g_OtherLODParam : register(c205);
 
 samplerCUBE g_IBLProbeSamplers[8] : register(s4);
 sampler2D g_RLRSampler : register(s13);

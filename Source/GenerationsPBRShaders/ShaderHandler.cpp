@@ -25,6 +25,12 @@ struct IBLProbeCache
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
 };
 
+struct LightCache
+{
+    boost::shared_ptr<Hedgehog::Mirage::CLightData> m_spLightData;
+    float m_Distance;
+};
+
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassTerrainShader;
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassObjectShader;
 Hedgehog::Mirage::SShaderPair s_FxRLRShader;
@@ -44,7 +50,7 @@ std::vector<std::unique_ptr<SHLightFieldCache>> s_SHLFs;
 std::vector<std::unique_ptr<IBLProbeCache>> s_IBLProbes;
 
 template<typename T>
-struct DistanceCompare
+struct DistanceComparePointer
 {
     bool operator()(const T& lhs, const T& rhs) const
     {
@@ -52,8 +58,18 @@ struct DistanceCompare
     }
 };
 
-std::set<const SHLightFieldCache*, DistanceCompare<const SHLightFieldCache*>> s_SHLFsInFrustum;
-std::set<const IBLProbeCache*, DistanceCompare<const IBLProbeCache*>> s_IBLProbesInFrustum;
+template<typename T>
+struct DistanceCompareReference
+{
+    bool operator()(const T& lhs, const T& rhs) const
+    {
+        return lhs.m_Distance < rhs.m_Distance;
+    }
+};
+
+std::set<const SHLightFieldCache*, DistanceComparePointer<const SHLightFieldCache*>> s_SHLFsInFrustum;
+std::set<const IBLProbeCache*, DistanceComparePointer<const IBLProbeCache*>> s_IBLProbesInFrustum;
+std::set<LightCache, DistanceCompareReference<LightCache>> s_LocalLightsInFrustum;
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> s_spEnvBRDFPicture;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> s_spDefaultIBLPicture;
@@ -330,6 +346,50 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetRenderTarget(2, nullptr);
     pDevice->SetRenderTarget(3, nullptr);
 
+    //***************//
+    // Deferred pass //
+    //***************//
+
+    // Pass 32 omni lights from the view to shaders.
+    if (pSceneRenderer->m_pLightManager && pSceneRenderer->m_pLightManager->m_pStaticLightContext && 
+        pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData)
+    {
+        Hedgehog::Mirage::CLightListData* pLightListData = 
+            pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
+
+        s_LocalLightsInFrustum.clear();
+
+        for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
+        {
+            if ((*it)->m_Type != Hedgehog::Mirage::HH_MR_LIGHT_TYPE_OMNI)
+                continue;
+
+            s_LocalLightsInFrustum.insert({ *it, ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm() });
+        }
+
+        float localLightData[256];
+        memset(localLightData, 0, sizeof(localLightData));
+
+        auto lightIterator = s_LocalLightsInFrustum.begin();
+
+        for (size_t i = 0; i < std::min<size_t>(32, s_LocalLightsInFrustum.size()); i++)
+        {
+            Hedgehog::Mirage::CLightData* pLightData = (*lightIterator++).m_spLightData.get();
+
+            localLightData[i * 8 + 0] = pLightData->m_Position.x();
+            localLightData[i * 8 + 1] = pLightData->m_Position.y();
+            localLightData[i * 8 + 2] = pLightData->m_Position.z();
+            localLightData[i * 8 + 3] = pLightData->m_Range.y();
+
+            localLightData[i * 8 + 4] = pLightData->m_Color.x();
+            localLightData[i * 8 + 5] = pLightData->m_Color.y();
+            localLightData[i * 8 + 6] = pLightData->m_Color.z();
+            localLightData[i * 8 + 7] = pLightData->m_Range.z();
+        }
+
+        pD3DDevice->SetPixelShaderConstantF(106, (const float*)localLightData, 64);
+    }
+
     //*******************************************************//
     // Deferred terrain pass: Add direct lighting to terrain //
     // through deferred rendering.                           //
@@ -393,7 +453,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
     float shadowMapNoTerrainSize[] = { spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, 0, 0 };
-    pD3DDevice->SetPixelShaderConstantF(150, shadowMapNoTerrainSize, 1);
+    pD3DDevice->SetPixelShaderConstantF(170, shadowMapNoTerrainSize, 1);
 
     pDevice->RenderQuad(nullptr, 0, 0);
 
@@ -421,7 +481,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
     float shadowMapSize[] = { spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, 0, 0 };
-    pD3DDevice->SetPixelShaderConstantF(150, shadowMapSize, 1);
+    pD3DDevice->SetPixelShaderConstantF(170, shadowMapSize, 1);
 
     // Pick SHLFs in the view.
     s_SHLFsInFrustum.clear();
@@ -442,10 +502,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        pD3DDevice->SetPixelShaderConstantF(151 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(171 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
-        pD3DDevice->SetPixelShaderConstantF(163 + i, shlfParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(183 + i, shlfParam, 1);
     }
 
     pDevice->RenderQuad(nullptr, 0, 0);
@@ -562,7 +622,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         const IBLProbeCache* cache = *probeIterator++;
 
-        pD3DDevice->SetPixelShaderConstantF(150 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(171 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         probeParams[i * 4 + 0] = cache->m_Position.x();
         probeParams[i * 4 + 1] = cache->m_Position.y();
@@ -579,8 +639,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
     }
 
-    pD3DDevice->SetPixelShaderConstantF(174, probeParams, 1);
-    pD3DDevice->SetPixelShaderConstantF(182, probeLodParams, 1);
+    pD3DDevice->SetPixelShaderConstantF(195, probeParams, 1);
+    pD3DDevice->SetPixelShaderConstantF(203, probeLodParams, 1);
 
     // Set RLR, Default IBL and Env BRDF
     pDevice->SetSampler(13, s_spRLRTex);
@@ -599,7 +659,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (s_spDefaultIBLPicture && s_spDefaultIBLPicture->m_spPictureData && s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
     {
         float iblLodParam[] = { std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()), s_spRLRTex->m_CreationParams.Levels, 0, 0 };
-        pD3DDevice->SetPixelShaderConstantF(184, iblLodParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(205, iblLodParam, 1);
     }
 
     pDevice->RenderQuad(nullptr, 0, 0);

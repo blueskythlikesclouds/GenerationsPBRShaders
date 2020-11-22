@@ -1,8 +1,6 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float4 g_ShadowMapSize : register(c150);
-
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 {
     float3 viewPosition = GetPositionFromDepth(vPos, tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x, g_MtxInvProjection);
@@ -34,5 +32,29 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    return float4(gBuffer0.rgb + ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb) * material.Shadow, material.Alpha);
+    float3 result = gBuffer0.rgb + ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb) * material.Shadow;
+
+    for (int i = 0; i < 32; i++)
+    {
+        float4 item0 = g_LocalLightData[i * 2 + 0];
+        float4 item1 = g_LocalLightData[i * 2 + 1];
+
+        float3 lightPosition = item0.xyz;
+        float3 lightColor = item1.xyz;
+
+        float innerRange = item0.w;
+        float outerRange = item1.w;
+
+        float3 delta = lightPosition - position;
+        float distance = length(delta);
+        float3 direction = delta / distance;
+
+        float attenuation = innerRange + outerRange * distance + outerRange * distance * distance;
+        attenuation -= 0.002;
+
+        if (attenuation > 0)
+            result += ComputeDirectLighting(material, direction, lightColor) / max(0.001, attenuation);
+    }
+
+    return float4(result, material.Alpha);
 }
