@@ -639,8 +639,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
     }
 
-    pD3DDevice->SetPixelShaderConstantF(195, probeParams, 1);
-    pD3DDevice->SetPixelShaderConstantF(203, probeLodParams, 1);
+    pD3DDevice->SetPixelShaderConstantF(195, probeParams, 8);
+    pD3DDevice->SetPixelShaderConstantF(203, probeLodParams, 2);
 
     // Set RLR, Default IBL and Env BRDF
     pDevice->SetSampler(13, s_spRLRTex);
