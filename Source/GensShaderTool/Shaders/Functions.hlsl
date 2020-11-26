@@ -128,10 +128,10 @@ float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSi
     float v0 = (2 - t) / vw0 - 1;
     float v1 = t / vw1 + 1;
 
-    sum += uw0 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u0, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 2048);
-    sum += uw1 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u1, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 2048);
-    sum += uw0 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u0, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 2048);
-    sum += uw1 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u1, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 2048);
+    sum += uw0 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u0, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
+    sum += uw1 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u1, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
+    sum += uw0 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u0, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
+    sum += uw1 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u1, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
 
     return sum * 1.0f / 16;
 }
