@@ -69,6 +69,9 @@ HOOK(uint32_t, __cdecl, ReadAtlasinfo, 0x7299E0, uint8_t* data, void* subTexture
 
 HOOK(uint32_t, __fastcall, SetGIAtlasParam, 0x6FA080, Hedgehog::Mirage::CRenderingDevice* This, void* Edx, float* value)
 {
+    if (value == (float*)0x13DEAB0) // Fail-safe for non-existent GI textures
+        return originalSetGIAtlasParam(This, Edx, value);
+
     float giParam[] = { abs(value[0]), value[1], value[2], value[3] };
     float sggiParam[] = { giParam[0] * 0.5, giParam[1] * 0.5, value[2], value[3] };
     BOOL isSggiEnabled[] = { value[0] < 0.0f };
