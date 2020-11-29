@@ -672,9 +672,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pD3DDevice->SetPixelShaderConstantF(205, probeLodParams, 2);
 
     // Set RLR, Default IBL and Env BRDF
-    pDevice->SetSampler(13, SceneEffect::RLR.Enable ? s_spRLRTex : nullptr);
-    pDevice->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-    pDevice->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
+    if (SceneEffect::RLR.Enable)
+    {
+        pDevice->SetSampler(13, s_spRLRTex);
+        pDevice->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+        pDevice->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
+    }
+    else
+    {
+        pDevice->UnsetSampler(13);
+    }
 
     pDevice->SetSampler(14, s_spDefaultIBLPicture);
     pDevice->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
@@ -690,6 +697,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         float iblLodParam[] = { std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()), s_spRLRTex->m_CreationParams.Levels, 0, 0 };
         pD3DDevice->SetPixelShaderConstantF(207, iblLodParam, 1);
     }
+
+    // Set g_IsEnableRLR
+    // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
+    pD3DDevice->SetPixelShaderConstantB(8, (const BOOL*)&SceneEffect::RLR.Enable, 1);
 
     pDevice->RenderQuad(nullptr, 0, 0);
 

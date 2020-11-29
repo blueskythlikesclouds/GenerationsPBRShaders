@@ -12,6 +12,8 @@ sampler2D g_RLRSampler : register(s13);
 samplerCUBE g_DefaultIBLSampler : register(s14);
 sampler2D g_EnvBRDFSampler : register(s15);
 
+bool g_IsEnableRLR : register(b8);
+
 float4 ComputeIndirectIBLProbe(Material material, float3 position, samplerCUBE iblProbeTex, float3x4 iblProbeMatrix, float3 iblProbePosition, float iblProbeBias, float iblProbeLod)
 {
     float3 localPos = mul(iblProbeMatrix, float4(position, 1)).xyz;
@@ -67,7 +69,9 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    float4 indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, mrgLodParam.y * material.Roughness));
+    float4 indirectSpecular = 0;
+    if (g_IsEnableRLR) 
+        indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, mrgLodParam.y * material.Roughness));
 
     // imagine not being able to unroll loops that access samplers with indexers smh my head 
 
