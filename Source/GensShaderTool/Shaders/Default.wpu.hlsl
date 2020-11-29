@@ -75,6 +75,12 @@ void main(in DECLARATION_TYPE input,
     material.Metalness = material.FresnelFactor > 0.225;
 #endif
 
+    if (g_DebugParam[0].x >= 0) material.Albedo         = 1.0;
+    if (g_DebugParam[0].y >= 0) material.Normal         = normalize(input.Normal);
+    if (g_DebugParam[0].z >= 0) material.FresnelFactor  = g_DebugParam[0].z;
+    if (g_DebugParam[0].w >= 0) material.Roughness      = g_DebugParam[0].w;
+    if (g_DebugParam[1].x >= 0) material.Metalness      = g_DebugParam[1].x;
+
     material.ViewDirection = normalize(g_EyePosition.xyz - input.Position.xyz);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 

@@ -245,6 +245,21 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Set g_MiddleGray_Scale_LuminanceLow_LuminanceHigh
     pD3DDevice->SetPixelShaderConstantF(108, (const float*)0x1A572D0, 1);
 
+    // Set g_DebugParam
+    float debugParam[] = 
+    {
+        SceneEffect::Debug.UseWhiteAlbedo ? 1.0f : -1.0f,
+        SceneEffect::Debug.UseFlatNormal ? 1.0f : -1.0f,
+        std::min<float>(1.0f, SceneEffect::Debug.FresnelFactorOverride),
+        std::min<float>(1.0f, SceneEffect::Debug.RoughnessOverride),
+        std::min<float>(1.0f, SceneEffect::Debug.MetalnessOverride),
+        0,
+        0,
+        0
+    };
+
+    pD3DDevice->SetPixelShaderConstantF(222, debugParam, 2);
+
     // Set g_IsUseCubicFilter
     pD3DDevice->SetPixelShaderConstantB(6, (const BOOL*)&SceneEffect::GI.EnableCubicFilter, 1);
 
@@ -549,14 +564,20 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
         // Set parameters
+        float framebufferSize[] = {
+            This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
+            1.0f / This->m_spColorTex->m_CreationParams.Width, 1.0f / This->m_spColorTex->m_CreationParams.Height,
+        };
+
         float stepCount_maxRoughness_rayLength_fade[] = {
             (float)SceneEffect::RLR.StepCount, SceneEffect::RLR.MaxRoughness, SceneEffect::RLR.RayLength, 1.0f / SceneEffect::RLR.Fade };
 
-        float saturation_brightness[] = {
-            std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)), SceneEffect::RLR.Brightness, 0, 0 };
+        float thickness_saturation_brightness[] = {
+            SceneEffect::RLR.Thickness, std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)), SceneEffect::RLR.Brightness, 0, 0 };
 
-        pD3DDevice->SetPixelShaderConstantF(150, stepCount_maxRoughness_rayLength_fade, 1);
-        pD3DDevice->SetPixelShaderConstantF(151, saturation_brightness, 1);
+        pD3DDevice->SetPixelShaderConstantF(150, framebufferSize, 1);
+        pD3DDevice->SetPixelShaderConstantF(151, stepCount_maxRoughness_rayLength_fade, 1);
+        pD3DDevice->SetPixelShaderConstantF(152, thickness_saturation_brightness, 1);
 
         pDevice->RenderQuad(nullptr, 0, 0);
 

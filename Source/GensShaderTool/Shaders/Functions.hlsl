@@ -476,4 +476,33 @@ float3 Hash(float3 a)
     return frac((a.xxy + a.yxx) * a.zyx);
 }
 
+float PerspectiveCorrectLerp(float a, float b, float t)
+{
+    return (a * b) / lerp(b, a, t);
+}
+
+bool LineIntersection(float2 a1, float2 a2, float2 b1, float2 b2, out float2 intersection)
+{
+    intersection = 0;
+
+    float2 b = a2 - a1;
+    float2 d = b2 - b1;
+    float factor = b.x * d.y - b.y * d.x;
+
+    if (factor == 0)
+        return false;
+
+    float2 c = b1 - a1;
+    float t = (c.x * d.y - c.y * d.x) / factor;
+    if (t < 0 || t > 1)
+        return false;
+
+    float u = (c.x * b.y - c.y * b.x) / factor;
+    if (u < 0 || u > 1)
+        return false;
+
+    intersection = a1 + t * b;
+    return true;
+}
+
 #endif

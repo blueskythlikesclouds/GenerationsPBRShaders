@@ -5,6 +5,8 @@ float4 g_GIParam : register(c106);
 float4 g_SGGIParam : register(c107);
 float4 g_MiddleGray_Scale_LuminanceLow_LuminanceHigh : register(c108);
 
+float4 g_DebugParam[2] : register(c222);
+
 bool g_IsUseCubicFilter : register(b6);
 bool g_IsEnableInverseToneMap : register(b7);
 

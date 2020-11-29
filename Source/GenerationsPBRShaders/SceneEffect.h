@@ -1,5 +1,14 @@
 ﻿#pragma once
 
+struct DebugParam
+{
+    bool UseWhiteAlbedo;
+    bool UseFlatNormal;
+    float FresnelFactorOverride;
+    float RoughnessOverride;
+    float MetalnessOverride;
+};
+
 struct GIParam
 {
     bool EnableCubicFilter;
@@ -25,6 +34,7 @@ struct RLRParam
     float MaxRoughness;
     float RayLength;
     float Fade;
+    float Thickness;
     float Saturation;
     float Brightness;
 };
@@ -32,6 +42,7 @@ struct RLRParam
 class SceneEffect
 {
 public:
+    static DebugParam Debug;
     static GIParam GI;
     static SGGIParam SGGI;
     static ESMParam ESM;
