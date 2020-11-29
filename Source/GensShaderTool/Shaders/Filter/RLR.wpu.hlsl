@@ -3,20 +3,15 @@
 
 #include "../Deferred/Deferred.hlsl"
 
-#define g_FadeParam                   0.1
-
-#define g_RayStepCount                32
-#define g_RayLength                   50
-
-#define g_BinarySearchStepCount       4
+float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c150);
+float4 g_Saturation_Brightness : register(c151);
 
 float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 {
     float4 gBuffer2 = tex2Dlod(g_GBuffer2Sampler, float4(texCoord, 0, 0));
     float4 gBuffer3 = tex2Dlod(g_GBuffer3Sampler, float4(texCoord, 0, 0));
 
-    float sggiRoughness = saturate((gBuffer2.y - 0.3) * 2.85714);
-    if (gBuffer3.a < 0.99 || sggiRoughness > 0.8)
+    if (gBuffer3.a < 0.99 || gBuffer2.y > g_StepCount_MaxRoughness_RayLength_Fade.y)
         return 0;
 
     float depth = tex2Dlod(g_DepthSampler, float4(texCoord.xy, 0, 0)).x;
@@ -28,7 +23,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
     float factor = dot(dir, float3(0, 0, -1));
     if (factor > 0.0)
     {
-        float3 endPosition = position + Hash(position) * gBuffer2.y + dir * g_RayLength;
+        float3 endPosition = position + Hash(position) * gBuffer2.y + dir * g_StepCount_MaxRoughness_RayLength_Fade.z;
 
         float3 begin = float3(texCoord, position.z);
         float4 end = mul(float4(endPosition, 1), g_MtxProjection);
@@ -39,7 +34,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
         float2 delta = end - begin;
         float2 deltaPixel = round(abs(delta) * g_ViewportSize.xy);
 
-        int stepCount = min(g_RayStepCount, abs(max(deltaPixel.x, deltaPixel.y)));
+        int stepCount = min(g_StepCount_MaxRoughness_RayLength_Fade.x, abs(max(deltaPixel.x, deltaPixel.y)));
         float stepSize = 1.0 / stepCount;
 
         [loop] for (int i = 0; i < stepCount; i++)
@@ -59,7 +54,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
                 step += stepSize;
                 step = saturate(step);
 
-                [loop] for (int j = 0; j < g_BinarySearchStepCount; j++)
+                [loop] for (int j = 0; j < 4; j++)
                 {
                     rayCoord = lerp(begin.xy, end.xy, step);
                     depth = (begin.z * end.z) / lerp(end.z, begin.z, step);
@@ -79,11 +74,11 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
                 rayCoord = lerp(begin.xy, end.xy, step);
 
-                factor *= saturate(rayCoord.x / g_FadeParam);
-                factor *= saturate(rayCoord.y / g_FadeParam);
+                factor *= saturate(rayCoord.x * g_StepCount_MaxRoughness_RayLength_Fade.w);
+                factor *= saturate(rayCoord.y * g_StepCount_MaxRoughness_RayLength_Fade.w);
 
-                factor *= saturate((1 - rayCoord.x) / g_FadeParam);
-                factor *= saturate((1 - rayCoord.y) / g_FadeParam);
+                factor *= saturate((1 - rayCoord.x) * g_StepCount_MaxRoughness_RayLength_Fade.w);
+                factor *= saturate((1 - rayCoord.y) * g_StepCount_MaxRoughness_RayLength_Fade.w);
 
                 factor *= dot(dir, mul(float4(tex2Dlod(g_GBuffer3Sampler, float4(rayCoord, 0, 0)).xyz * 2 - 1, 0), g_MtxView).xyz) < 0;
 
@@ -92,6 +87,6 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
         }
     }
 
-    color.rgb = lerp(color.rgb, dot(color.rgb, float3(0.2126, 0.7152, 0.0722)), 0.3);
+    color.rgb = lerp(dot(color.rgb, float3(0.2126, 0.7152, 0.0722)), color.rgb, g_Saturation_Brightness.x) * g_Saturation_Brightness.y;
     return color;
 }

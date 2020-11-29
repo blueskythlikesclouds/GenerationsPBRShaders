@@ -3,9 +3,9 @@
 
 #include "../../global.psparam.hlsl"
 #include "../Material.hlsl"
+#include "../Param.hlsl"
 
-float4 g_LocalLightData[64] : register(c106);
-float4 g_ShadowMapSize : register(c170);
+float4 mrgLocalLightData[64] : register(c109);
 
 sampler2D g_GBuffer0Sampler : register(s0);
 sampler2D g_GBuffer1Sampler : register(s1);

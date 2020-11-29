@@ -30,8 +30,6 @@ namespace GensShaderTool
                 new IShaderInfo[] { new PixelShaderInfoTV() }, pixelShaderGlobalParameterSet);
             */
 
-            /*
-
             //========================//
             // Default Vertex Shader //
             //========================//
@@ -51,14 +49,13 @@ namespace GensShaderTool
                     new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(), new PixelShaderInfoWater05(), new PixelShaderInfoRing()
                 }, pixelShaderGlobalParameterSet);
 
+
             //==================//
             // Sky Pixel Shader //
             //==================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Sky.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
                 new[] { new PixelShaderInfoSky2() }, pixelShaderGlobalParameterSet);
-
-            */
 
             //============//
             // LUT Shader //

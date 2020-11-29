@@ -48,7 +48,7 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
     float3 reflection = tex2D(reflectionSampler, UV(0) + reflectionOffset).rgb;
     float3 reflectionAlpha = tex2D(reflectionSampler, UV(3) + reflectionAlphaOffset).a;
 
-    material.Albedo = lerp((material.Albedo + reflection * material.Metalness) * diffuseAlpha, 1, reflectionAlpha);
+    material.Albedo = lerp((material.Albedo + reflection * (1 - material.Metalness)) * diffuseAlpha, 1, reflectionAlpha);
     material.Alpha = 1;
     material.AmbientOcclusion = lerp(material.AmbientOcclusion, 1, reflectionAlpha);
     material.Metalness = 0;

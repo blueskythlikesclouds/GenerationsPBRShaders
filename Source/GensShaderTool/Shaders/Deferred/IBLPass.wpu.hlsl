@@ -1,11 +1,11 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float3x4 g_IBLProbeMatrices[8] : register(c171);
-float4 g_IBLProbeParams[8] : register(c195);
-float4 g_IBLProbeLODParams[2] : register(c203);
+float3x4 mrgProbeMatrices[8] : register(c173);
+float4 mrgProbeParams[8] : register(c197);
+float4 mrgProbeLodParams[2] : register(c205);
 
-float4 g_OtherLODParam : register(c205);
+float4 mrgLodParam : register(c207);
 
 samplerCUBE g_IBLProbeSamplers[8] : register(s4);
 sampler2D g_RLRSampler : register(s13);
@@ -67,7 +67,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    float4 indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, g_OtherLODParam.y * material.Roughness));
+    float4 indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, mrgLodParam.y * material.Roughness));
 
     // imagine not being able to unroll loops that access samplers with indexers smh my head 
 
@@ -75,7 +75,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     if (indirectSpecular.a < 1.0) \
     { \
         indirectSpecular += ComputeIndirectIBLProbe(material, position, \
-            g_IBLProbeSamplers[index], g_IBLProbeMatrices[index], g_IBLProbeParams[index].xyz, g_IBLProbeParams[index].w, g_IBLProbeLODParams[paramIndex].paramSwizzle) * (1 - indirectSpecular.a); \
+            g_IBLProbeSamplers[index], mrgProbeMatrices[index], mrgProbeParams[index].xyz, mrgProbeParams[index].w, mrgProbeLodParams[paramIndex].paramSwizzle) * (1 - indirectSpecular.a); \
     }
 
     COMPUTE_PROBE(0, 0, x)
@@ -90,10 +90,18 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 #undef COMPUTE_PROBE
 
     if (indirectSpecular.a < 1.0)
-        indirectSpecular += float4(UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * g_OtherLODParam.x))), 1.0) * (1 - indirectSpecular.a);
+        indirectSpecular += float4(UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * mrgLodParam.x))), 1.0) * (1 - indirectSpecular.a);
 
-    material.IndirectSpecular = indirectSpecular;
-    material.IndirectSpecular *= 1 - saturate((material.Roughness - 0.3) * 2.85714);
+    float3 diffuseBRDF, specularBRDF;
+    ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb, diffuseBRDF, specularBRDF);
 
-    return float4(gBuffer0.rgb + ComputeIndirectLighting(material, g_EnvBRDFSampler), material.Alpha);
+    float sggiRoughness = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
+    float sggiRoughnessIblFactor = lerp(1 - sggiRoughness, 1, material.Metalness);
+
+    material.IndirectSpecular = specularBRDF * sggiRoughness + indirectSpecular * sggiRoughnessIblFactor;
+
+    float3 result = gBuffer0.rgb + ComputeIndirectLighting(material, g_EnvBRDFSampler);
+    float2 lightScattering = ComputeLightScattering(position);
+
+    return float4(result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y, material.Alpha);
 }

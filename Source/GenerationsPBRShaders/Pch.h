@@ -19,3 +19,5 @@
 
 #include <Sonic.h>
 #include <Hedgehog.h>
+
+#include "SceneEffect.h"

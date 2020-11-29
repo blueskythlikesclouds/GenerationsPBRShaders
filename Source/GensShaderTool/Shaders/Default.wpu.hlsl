@@ -24,10 +24,17 @@
 
 float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
 {
-    [branch] if (g_IsUseCubicFilter)
-        return tex2DgradFastBicubic(g_GISampler, texCoord.x * g_GIAtlasSize.x, texCoord.y * g_GIAtlasSize.y, g_GIAtlasSize.zw, gradX, gradY);
+    float4 result;
 
-    return tex2Dgrad(g_GISampler, texCoord, gradX, gradY);
+    [branch] if (g_IsUseCubicFilter)
+        result = tex2DgradFastBicubic(g_GISampler, texCoord.x * mrgGIAtlasSize.x, texCoord.y * mrgGIAtlasSize.y, mrgGIAtlasSize.zw, gradX, gradY);
+    else
+        result = tex2Dgrad(g_GISampler, texCoord, gradX, gradY);
+
+    [branch] if (g_IsEnableInverseToneMap)
+        result.rgb = UnpackHDRCustom(result.rgb, g_GIParam.x);
+
+    return result;
 }
 
 void main(in DECLARATION_TYPE input,
@@ -62,7 +69,7 @@ void main(in DECLARATION_TYPE input,
     material.FresnelFactor = specular.x;
     material.Roughness = max(0.01, 1 - specular.y);
     material.AmbientOcclusion = specular.z;
-    material.Metalness = specular.w;
+    material.Metalness = 1 - specular.w;
 
 #if !defined(HasMetalness) || !HasMetalness
     material.Metalness = material.FresnelFactor > 0.225;
@@ -76,33 +83,34 @@ void main(in DECLARATION_TYPE input,
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    float sggiRoughness = saturate((material.Roughness - 0.3) * 2.85714);
+    float sggiRoughness = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
+    float sggiRoughnessIblFactor = lerp(1 - sggiRoughness, 1, material.Metalness);
 
 #if defined(NoGI) && NoGI
     material.IndirectDiffuse = 0;
     material.IndirectSpecular = 0;
     material.Shadow = 1;
 #else
-    float2 giCoord = input.TexCoord0.zw * g_GIParam.xy + g_GIParam.zw;
+    float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;
 
     float2 gradX = ddx(giCoord);
     float2 gradY = ddy(giCoord);
 
     float4 gi = texGI(giCoord, gradX, gradY);
 
-    [branch] if (g_IsUseSGGI)
+    [branch] if (mrgIsUseSGGI)
     {
-        float2 sggiCoord = input.TexCoord0.zw * g_SGGIParam.xy + g_SGGIParam.zw;
+        float2 sggiCoord = input.TexCoord0.zw * mrgSGGIAtlasParam.xy + mrgSGGIAtlasParam.zw;
 
-        float2 sggiCoord0 = sggiCoord + float2(0,             0);
-        float2 sggiCoord1 = sggiCoord + float2(g_SGGIParam.x, 0);
-        float2 sggiCoord2 = sggiCoord + float2(0,             g_SGGIParam.y);
-        float2 sggiCoord3 = sggiCoord + float2(g_SGGIParam.x, g_SGGIParam.y);
+        float2 sggiCoord0 = sggiCoord + float2(0,                   0);
+        float2 sggiCoord1 = sggiCoord + float2(mrgSGGIAtlasParam.x, 0);
+        float2 sggiCoord2 = sggiCoord + float2(0,                   mrgSGGIAtlasParam.y);
+        float2 sggiCoord3 = sggiCoord + float2(mrgSGGIAtlasParam.x, mrgSGGIAtlasParam.y);
 
-        float3 sggiLevel0 = UnpackHDRCustom(texGI(sggiCoord0, gradX, gradY).rgb, g_GI0Scale.x);
-        float3 sggiLevel1 = UnpackHDRCustom(texGI(sggiCoord1, gradX, gradY).rgb, g_GI0Scale.x);
-        float3 sggiLevel2 = UnpackHDRCustom(texGI(sggiCoord2, gradX, gradY).rgb, g_GI0Scale.x);
-        float3 sggiLevel3 = UnpackHDRCustom(texGI(sggiCoord3, gradX, gradY).rgb, g_GI0Scale.x);
+        float3 sggiLevel0 = texGI(sggiCoord0, gradX, gradY).rgb;
+        float3 sggiLevel1 = texGI(sggiCoord1, gradX, gradY).rgb;
+        float3 sggiLevel2 = texGI(sggiCoord2, gradX, gradY).rgb;
+        float3 sggiLevel3 = texGI(sggiCoord3, gradX, gradY).rgb;
 
         const float3 sggiAxis0 = float3(0, 0.57735002, 1);
         const float3 sggiAxis1 = float3(0, 0.57735002, -1);
@@ -129,7 +137,7 @@ void main(in DECLARATION_TYPE input,
     }
     else
     {
-        material.IndirectDiffuse = UnpackHDRCustom(gi.rgb, g_GI0Scale.x);
+        material.IndirectDiffuse = gi.rgb;
     }
 
     material.Shadow = gi.a;
@@ -139,10 +147,10 @@ void main(in DECLARATION_TYPE input,
 
     float cosTheta = dot(-mrgGlobalLight_Direction.xyz, material.Normal);
 
-    if (!g_IsUseDeferred)
+    if (!mrgIsUseDeferred)
     {
-        material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * (1 - sggiRoughness);
-        material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapSize.xy);
+        material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * sggiRoughnessIblFactor;
+        material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapParams.xy, g_ShadowMapParams.z);
 
         float3 directLighting = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb) * material.Shadow;
 
@@ -155,9 +163,11 @@ void main(in DECLARATION_TYPE input,
 
         float3 indirectLighting = ComputeIndirectLighting(material, g_EnvBRDFSampler);
 
-        outColor0 = float4(directLighting + indirectLighting, material.Alpha);
+        outColor0 = float4(directLighting + indirectLighting, material.Alpha) * g_ForceAlphaColor;
 
         PostProcessFinalColor(input, material, false, outColor0);
+
+        outColor0.rgb = outColor0.rgb * input.ExtraParams.x + g_LightScatteringColor.rgb * input.ExtraParams.y;
     }
     else
     {

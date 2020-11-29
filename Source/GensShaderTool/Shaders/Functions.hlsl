@@ -45,7 +45,7 @@ float2 ApproxEnvBRDF(float cosLo, float roughness)
 	return float2(-1.04, 1.04) * a004 + r.zw;
 }
 
-float3 ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 lightColor)
+void ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 lightColor, out float3 diffuseBRDF, out float3 specularBRDF)
 {
 	float3 halfwayDirection = normalize(material.ViewDirection + lightDirection);
 
@@ -59,10 +59,26 @@ float3 ComputeDirectLightingRaw(Material material, float3 lightDirection, float3
 
 	float3 kd = lerp(1 - F, 0, material.Metalness);
 
-	float3 diffuseBRDF = kd * material.Albedo;
-	float3 specularBRDF = (F * D * G) / max(0.0001, 4 * cosLightDirection * cosViewDirection);
+	diffuseBRDF = kd * material.Albedo * lightColor;
+	specularBRDF = max(0, (F * D * G) / max(0.0001, 4 * cosLightDirection * cosViewDirection) * lightColor);
+}
 
-	return (diffuseBRDF + specularBRDF) * lightColor;
+float3 ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 lightColor)
+{
+    float3 diffuseBRDF, specularBRDF;
+    ComputeDirectLightingRaw(material, lightDirection, lightColor, diffuseBRDF, specularBRDF);
+
+    return diffuseBRDF + specularBRDF;
+}
+
+void ComputeDirectLighting(Material material, float3 lightDirection, float3 lightColor, out float3 diffuseBRDF, out float3 specularBRDF)
+{
+    ComputeDirectLightingRaw(material, lightDirection, lightColor, diffuseBRDF, specularBRDF);
+
+    float cosTheta = saturate(dot(lightDirection, material.Normal));
+
+    diffuseBRDF *= cosTheta;
+    specularBRDF *= cosTheta;
 }
 
 float3 ComputeDirectLighting(Material material, float3 lightDirection, float3 lightColor)
@@ -91,7 +107,7 @@ float3 ComputeIndirectLighting(Material material, sampler2D envBRDF)
     return ComputeIndirectLighting(material, tex2Dlod(envBRDF, float4(material.CosViewDirection, material.Roughness, 0, 0)).xy);
 }
 
-float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSize)
+float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSize, float esmFactor)
 {
     if (abs(shadowMapCoord.x) > shadowMapCoord.w || 
         abs(shadowMapCoord.y) > shadowMapCoord.w || 
@@ -128,10 +144,10 @@ float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSi
     float v0 = (2 - t) / vw0 - 1;
     float v1 = t / vw1 + 1;
 
-    sum += uw0 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u0, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
-    sum += uw1 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u1, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
-    sum += uw0 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u0, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
-    sum += uw1 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u1, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, 4096);
+    sum += uw0 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u0, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
+    sum += uw1 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u1, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
+    sum += uw0 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u0, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
+    sum += uw1 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u1, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
 
     return sum * 1.0f / 16;
 }

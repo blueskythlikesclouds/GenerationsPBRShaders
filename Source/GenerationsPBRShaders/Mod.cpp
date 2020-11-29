@@ -1,4 +1,5 @@
 #include "LUTHandler.h"
+#include "SceneEffect.h"
 #include "SGGIHandler.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
@@ -26,4 +27,5 @@ extern "C" void __declspec(dllexport) Init()
     SRGBHandler::applyPatches();
     YggdrasillPatcher::applyPatches();
     VertexBufferHandler::applyPatches();
+    SceneEffect::applyPatches();
 }

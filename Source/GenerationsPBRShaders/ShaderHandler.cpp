@@ -233,12 +233,32 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetDepthStencil(This->m_spDepthSurface);
     pDevice->Clear({ D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0 });
 
+    // Set g_GIParam
+    float giParam[] = { SceneEffect::GI.InverseToneMapFactor, 0, 0, 0 };
+    pD3DDevice->SetPixelShaderConstantF(106, giParam, 1);
+
+    // Set g_SGGIParam
+    float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::SGGI.StartSmoothness - SceneEffect::SGGI.EndSmoothness);
+    float sggiParam[] = { -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale, 0, 0 };
+    pD3DDevice->SetPixelShaderConstantF(107, sggiParam, 1);
+
+    // Set g_MiddleGray_Scale_LuminanceLow_LuminanceHigh
+    pD3DDevice->SetPixelShaderConstantF(108, (const float*)0x1A572D0, 1);
+
+    // Set g_IsUseCubicFilter
+    pD3DDevice->SetPixelShaderConstantB(6, (const BOOL*)&SceneEffect::GI.EnableCubicFilter, 1);
+
+    // Set g_IsEnableInverseToneMap
+    pD3DDevice->SetPixelShaderConstantB(7, (const BOOL*)&SceneEffect::GI.EnableInverseToneMap, 1);
+
     //************************************************************//
     // Pre-pass: Render opaque/punch-through objects and terrain. //
     //************************************************************//
 
-    // Set g_MiddleGray_Scale_LuminanceLow_LuminanceHigh
-    pD3DDevice->SetPixelShaderConstantF(193, (const float*)0x1A572D0, 1);
+    // Enable mrgIsUseDeferred so shaders output data to GBuffer render targets.
+    BOOL isUseDeferred[] = { true };
+    pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
+    pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
     // Enable Z buffer.
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
@@ -261,15 +281,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Disable alpha blending since we're rendering opaque/punch-through meshes.
     pRenderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
-
-    // Enable g_IsUseDeferred so shaders output data to GBuffer render targets.
-    BOOL isUseDeferred[] = { true };
-    pD3DDevice->SetPixelShaderConstantB(6, isUseDeferred, 1);
-    pD3DDevice->SetVertexShaderConstantB(6, isUseDeferred, 1);
-
-    // Enable g_IsUseCubicFilter
-    const BOOL isUseCubicFilter[] = { true };
-    pD3DDevice->SetPixelShaderConstantB(8, isUseCubicFilter, 1);
 
     // Set Default IBL and Env BRDF
     pDevice->SetSampler(14, s_spDefaultIBLPicture);
@@ -352,7 +363,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Pass 32 omni lights from the view to shaders.
     if (pSceneRenderer->m_pLightManager && pSceneRenderer->m_pLightManager->m_pStaticLightContext && 
-        pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData)
+        pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData && false)
     {
         Hedgehog::Mirage::CLightListData* pLightListData = 
             pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
@@ -452,8 +463,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
-    float shadowMapNoTerrainSize[] = { spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, 0, 0 };
-    pD3DDevice->SetPixelShaderConstantF(170, shadowMapNoTerrainSize, 1);
+    float shadowMapNoTerrainParams[] = {
+        spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
+
+    pD3DDevice->SetPixelShaderConstantF(65, shadowMapNoTerrainParams, 1);
 
     pDevice->RenderQuad(nullptr, 0, 0);
 
@@ -480,8 +493,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
-    float shadowMapSize[] = { spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, 0, 0 };
-    pD3DDevice->SetPixelShaderConstantF(170, shadowMapSize, 1);
+    float shadowMapParams[] = {
+        spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
+
+    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     // Pick SHLFs in the view.
     s_SHLFsInFrustum.clear();
@@ -502,10 +517,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        pD3DDevice->SetPixelShaderConstantF(171 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(173 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
-        pD3DDevice->SetPixelShaderConstantF(183 + i, shlfParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(185 + i, shlfParam, 1);
     }
 
     pDevice->RenderQuad(nullptr, 0, 0);
@@ -518,76 +533,90 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Real-time Local Reflections //
     //*****************************//
 
-    // Disable stencil buffer.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
-    pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
-
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
-    s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
-
-    pDevice->SetShader(s_FxRLRShader);
-    pDevice->SetRenderTarget(0, spRLRSurface);
-    pDevice->SetDepthStencil(nullptr);
-    pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
-    pDevice->RenderQuad(nullptr, 0, 0);
-
-    // Apply gaussian blur to it because yes.
-    pDevice->SetShader(s_FxConvolutionFilterShader);
-
-    pDevice->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_POINT);
-    pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
-
-    for (uint32_t i = 1; i < s_spRLRTex->m_CreationParams.Levels; i++)
+    if (SceneEffect::RLR.Enable) 
     {
-        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSrcSurface, spDstSurface, spDstSurfaceTemp;
+        // Disable stencil buffer.
+        pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
+        pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
+        pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
 
-        s_spRLRTex->GetSurface(spSrcSurface, i - 1, 0);
-        s_spRLRTex->GetSurface(spDstSurface, i, 0);
-        s_spRLRTempTex->GetSurface(spDstSurfaceTemp, i, 0);
+        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
+        s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
 
-        D3DSURFACE_DESC desc;
-        spDstSurface->m_pD3DSurface->GetDesc(&desc);
+        pDevice->SetShader(s_FxRLRShader);
+        pDevice->SetRenderTarget(0, spRLRSurface);
+        pDevice->SetDepthStencil(nullptr);
+        pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
-        // Downscale first.
-        pD3DDevice->StretchRect(spSrcSurface->m_pD3DSurface, nullptr, spDstSurface->m_pD3DSurface, nullptr, D3DTEXF_LINEAR);
+        // Set parameters
+        float stepCount_maxRoughness_rayLength_fade[] = {
+            (float)SceneEffect::RLR.StepCount, SceneEffect::RLR.MaxRoughness, SceneEffect::RLR.RayLength, 1.0f / SceneEffect::RLR.Fade };
 
-        // Now apply gaussian filter to it.
-        const float param[] = { 1.0f / desc.Width, 1.0f / desc.Height, exp2f(i), (float)i };
-        pD3DDevice->SetPixelShaderConstantF(150, param, 1);
+        float saturation_brightness[] = {
+            std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)), SceneEffect::RLR.Brightness, 0, 0 };
 
-        // Horizontal
-        pDevice->SetRenderTarget(0, spDstSurfaceTemp);
-
-        float direction[] = { -1, 0, 0, 0 };
-        pD3DDevice->SetPixelShaderConstantF(151, direction, 1);
-
-        pDevice->SetSampler(0, s_spRLRTex);
-
-        pDevice->RenderQuad(nullptr, 0, 0);
-
-        // Vertical
-        pDevice->SetRenderTarget(0, spDstSurface);
-
-        direction[0] = 0;
-        direction[1] = -1;
-        pD3DDevice->SetPixelShaderConstantF(151, direction, 1);
-
-        pDevice->SetSampler(0, s_spRLRTempTex);
+        pD3DDevice->SetPixelShaderConstantF(150, stepCount_maxRoughness_rayLength_fade, 1);
+        pD3DDevice->SetPixelShaderConstantF(151, saturation_brightness, 1);
 
         pDevice->RenderQuad(nullptr, 0, 0);
+
+        // Apply gaussian blur to it because yes.
+        pDevice->SetShader(s_FxConvolutionFilterShader);
+
+        pDevice->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_POINT);
+        pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
+
+        for (uint32_t i = 1; i < s_spRLRTex->m_CreationParams.Levels; i++)
+        {
+            boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSrcSurface, spDstSurface, spDstSurfaceTemp;
+
+            s_spRLRTex->GetSurface(spSrcSurface, i - 1, 0);
+            s_spRLRTex->GetSurface(spDstSurface, i, 0);
+            s_spRLRTempTex->GetSurface(spDstSurfaceTemp, i, 0);
+
+            D3DSURFACE_DESC desc;
+            spDstSurface->m_pD3DSurface->GetDesc(&desc);
+
+            // Downscale first.
+            pD3DDevice->StretchRect(spSrcSurface->m_pD3DSurface, nullptr, spDstSurface->m_pD3DSurface, nullptr, D3DTEXF_LINEAR);
+
+            // Now apply gaussian filter to it.
+            const float param[] = { 1.0f / desc.Width, 1.0f / desc.Height, exp2f(i), (float)i };
+            pD3DDevice->SetPixelShaderConstantF(150, param, 1);
+
+            // Horizontal
+            pDevice->SetRenderTarget(0, spDstSurfaceTemp);
+
+            float direction[] = { -1, 0, 0, 0 };
+            pD3DDevice->SetPixelShaderConstantF(151, direction, 1);
+
+            pDevice->SetSampler(0, s_spRLRTex);
+
+            pDevice->RenderQuad(nullptr, 0, 0);
+
+            // Vertical
+            pDevice->SetRenderTarget(0, spDstSurface);
+
+            direction[0] = 0;
+            direction[1] = -1;
+            pD3DDevice->SetPixelShaderConstantF(151, direction, 1);
+
+            pDevice->SetSampler(0, s_spRLRTempTex);
+
+            pDevice->RenderQuad(nullptr, 0, 0);
+        }
+
+        // Enable stencil buffer back.
+        pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
+        pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
+        pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
+
+        // Revert render targets/textures.
+        pDevice->SetRenderTarget(0, This->m_spColorSurface);
+        pDevice->SetDepthStencil(This->m_spDepthSurface);
+        pDevice->SetSampler(0, This->m_spColorTex);
+        pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     }
-
-    // Enable stencil buffer back.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
-    pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
-
-    // Revert render targets/textures.
-    pDevice->SetRenderTarget(0, This->m_spColorSurface);
-    pDevice->SetDepthStencil(This->m_spDepthSurface);
-    pDevice->SetSampler(0, This->m_spColorTex);
-    pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
 
     //****************************************************//
     // Deferred specular pass: Add specular lighting to   //
@@ -622,7 +651,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         const IBLProbeCache* cache = *probeIterator++;
 
-        pD3DDevice->SetPixelShaderConstantF(171 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(173 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         probeParams[i * 4 + 0] = cache->m_Position.x();
         probeParams[i * 4 + 1] = cache->m_Position.y();
@@ -639,11 +668,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
     }
 
-    pD3DDevice->SetPixelShaderConstantF(195, probeParams, 8);
-    pD3DDevice->SetPixelShaderConstantF(203, probeLodParams, 2);
+    pD3DDevice->SetPixelShaderConstantF(197, probeParams, 8);
+    pD3DDevice->SetPixelShaderConstantF(205, probeLodParams, 2);
 
     // Set RLR, Default IBL and Env BRDF
-    pDevice->SetSampler(13, s_spRLRTex);
+    pDevice->SetSampler(13, SceneEffect::RLR.Enable ? s_spRLRTex : nullptr);
     pDevice->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
 
@@ -659,7 +688,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (s_spDefaultIBLPicture && s_spDefaultIBLPicture->m_spPictureData && s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
     {
         float iblLodParam[] = { std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()), s_spRLRTex->m_CreationParams.Levels, 0, 0 };
-        pD3DDevice->SetPixelShaderConstantF(205, iblLodParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(207, iblLodParam, 1);
     }
 
     pDevice->RenderQuad(nullptr, 0, 0);
@@ -670,8 +699,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // We're doing forward rendering now. Set the deferred bool to false.
     isUseDeferred[0] = false;
-    pD3DDevice->SetPixelShaderConstantB(6, isUseDeferred, 1);
-    pD3DDevice->SetVertexShaderConstantB(6, isUseDeferred, 1);
+    pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
+    pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
     //*****//
     // Sky //
@@ -775,7 +804,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSampler(13, spShadowMap);
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
-    pD3DDevice->SetPixelShaderConstantF(192, shadowMapSize, 1);
+    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     This->RenderScene(
         Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
@@ -783,7 +812,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Terrain
     pDevice->SetSampler(13, spShadowMapNoTerrain);
-    pD3DDevice->SetPixelShaderConstantF(192, shadowMapNoTerrainSize, 1);
+    pD3DDevice->SetPixelShaderConstantF(65, shadowMapNoTerrainParams, 1);
 
     This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_TRANSPARENT);
 

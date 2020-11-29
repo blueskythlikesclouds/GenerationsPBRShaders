@@ -95,46 +95,11 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
     output.Binormal.xyz = mul(float4(output.Binormal.xyz, 0), g_MtxWorld).xyz;
 #endif
 
-    if (!g_IsUseDeferred)
-        output.ShadowMapCoord = mul(float4(output.Position.xyz, 1), g_MtxLightViewProjection);
-
-#if 0
-#if !IsXbox360
-    output.extraParams.z = 1 - saturate(dot(float4(output.normal.xyz, 1), g_VerticalLightDirection));
-#else
-    output.extraParams.z = 0;
-#endif
-
-    // Light scattering code from Vanilla vertex shaders
+    if (!mrgIsUseDeferred)
     {
-        float4 r0 = 0, r1 = 0, r2 = 0, r3 = 0, r4 = 0;
-
-        r1.xyz = g_EyePosition.xyzw + -output.Position.xyz;
-        r2.xyz = normalize(r1.xyz);
-        r1.x = dot(-mrgGlobalLight_Direction.xyzw, r2.xyz);
-        r1.y = g_LightScattering_ConstG_FogDensity.z * r1.x + g_LightScattering_ConstG_FogDensity.y;
-        r1.x = r1.x * r1.x + 1;
-        r2.x = pow(abs(r1.y), 1.5);
-        r1.y = 1.0 / r2.x;
-        r1.y = g_LightScattering_ConstG_FogDensity.x * r1.y;
-        r1.y = g_LightScattering_Ray_Mie_Ray2_Mie2.w * r1.y;
-        r1.x = g_LightScattering_Ray_Mie_Ray2_Mie2.z * r1.x + r1.y;
-        r1.y = g_LightScattering_Ray_Mie_Ray2_Mie2.x + g_LightScattering_Ray_Mie_Ray2_Mie2.y;
-        r1.z = 1.0 / r1.y;
-        r1.x = r1.x * r1.z;
-        r2 = mul(float4(output.Position.xyz, 1), g_MtxView);
-        r0.x = -g_LightScatteringFarNearScale.y + -r2.z;
-        r0.x = saturate(g_LightScatteringFarNearScale.x * r0.x);
-        r0.x = g_LightScatteringFarNearScale.z * r0.x;
-        r0.x = -r1.y * r0.x;
-        r0.x = LOGE2 * r0.x;
-        r0.x = exp2(r0.x);
-        r0.y = 1 + -r0.x;
-        output.extraParams.x = r0.x;
-        r0.x = r1.x * r0.y;
-        output.extraParams.y = g_LightScatteringFarNearScale.w * r0.x;
+        output.ShadowMapCoord = mul(float4(output.Position.xyz, 1), g_MtxLightViewProjection);
+        output.ExtraParams.xy = ComputeLightScattering(input.Position);
     }
-#endif
 
     output.Color = input.Color;
 

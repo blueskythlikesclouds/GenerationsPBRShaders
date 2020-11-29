@@ -22,7 +22,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.Normal = normalize(gBuffer3.xyz * 2 - 1);
 
-    material.Shadow = gBuffer1.w * ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapSize.xy);
+    material.Shadow = gBuffer1.w * ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
 
     material.ViewDirection = normalize(g_EyePosition.xyz - position);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
@@ -34,10 +34,11 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     float3 result = gBuffer0.rgb + ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb) * material.Shadow;
 
+    /*
     for (int i = 0; i < 32; i++)
     {
-        float4 item0 = g_LocalLightData[i * 2 + 0];
-        float4 item1 = g_LocalLightData[i * 2 + 1];
+        float4 item0 = mrgLocalLightData[i * 2 + 0];
+        float4 item1 = mrgLocalLightData[i * 2 + 1];
 
         float3 lightPosition = item0.xyz;
         float3 lightColor = item1.xyz;
@@ -55,6 +56,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         if (attenuation > 0)
             result += ComputeDirectLighting(material, direction, lightColor) / max(0.001, attenuation);
     }
+    */
 
     return float4(result, material.Alpha);
 }

@@ -1,8 +1,8 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float3x4 g_SHLightFieldMatrices[4] : register(c171);
-float4 g_SHLightFieldParams[4] : register(c183);
+float3x4 mrgSHLightFieldMatrices[4] : register(c173);
+float4 mrgSHLightFieldParams[4] : register(c185);
 
 sampler3D g_SHLightFieldSamplers[4] : register(s4);
 
@@ -30,7 +30,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.IndirectDiffuse = 0;
     material.IndirectSpecular = 0;
 
-    material.Shadow = ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapSize.xy);
+    material.Shadow = ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
 
     material.ViewDirection = normalize(g_EyePosition.xyz - position);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
@@ -48,7 +48,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     for (i = 0; i < 4; i++)
     {
-        float3 shCoords = mul(g_SHLightFieldMatrices[i], float4(position, 1)).xyz;
+        float3 shCoords = mul(mrgSHLightFieldMatrices[i], float4(position, 1)).xyz;
 
         if (IsInSHCoordRange(shCoords))
         {
@@ -83,7 +83,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     {
     case 0:
     default:
-        currentShCoords = ComputeSHTexCoords(currentShCoords, g_SHLightFieldParams[0]);
+        currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[0]);
 
         for (i = 0; i < 6; i++)
             shlf[i] = tex3Dlod(g_SHLightFieldSamplers[0], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
@@ -91,7 +91,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         break;
 
     case 1:
-        currentShCoords = ComputeSHTexCoords(currentShCoords, g_SHLightFieldParams[1]);
+        currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[1]);
 
         for (i = 0; i < 6; i++)
             shlf[i] = tex3Dlod(g_SHLightFieldSamplers[1], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
@@ -99,7 +99,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         break;
 
     case 2:
-        currentShCoords = ComputeSHTexCoords(currentShCoords, g_SHLightFieldParams[2]);
+        currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[2]);
 
         for (i = 0; i < 6; i++)
             shlf[i] = tex3Dlod(g_SHLightFieldSamplers[2], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
@@ -107,7 +107,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         break;
 
     case 3:
-        currentShCoords = ComputeSHTexCoords(currentShCoords, g_SHLightFieldParams[3]);
+        currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[3]);
 
         for (i = 0; i < 6; i++)
             shlf[i] = tex3Dlod(g_SHLightFieldSamplers[3], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
@@ -127,10 +127,11 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     float3 indirect = ComputeIndirectLighting(material);
     indirect += lerp(gBuffer0.rgb, 0, gBuffer1.w);
 
+    /*
     for (int i = 0; i < 32; i++)
     {
-        float4 item0 = g_LocalLightData[i * 2 + 0];
-        float4 item1 = g_LocalLightData[i * 2 + 1];
+        float4 item0 = mrgLocalLightData[i * 2 + 0];
+        float4 item1 = mrgLocalLightData[i * 2 + 1];
 
         float3 lightPosition = item0.xyz;
         float3 lightColor = item1.xyz;
@@ -148,6 +149,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         if (attenuation > 0)
             direct += ComputeDirectLighting(material, direction, lightColor) / max(0.001, attenuation);
     }
+    */
 
     return float4(direct + indirect, material.Alpha);
 }

@@ -72,8 +72,8 @@ HOOK(uint32_t, __fastcall, SetGIAtlasParam, 0x6FA080, Hedgehog::Mirage::CRenderi
     if (value == (float*)0x13DEAB0) // Fail-safe for non-existent GI textures
         return originalSetGIAtlasParam(This, Edx, value);
 
-    float giParam[] = { abs(value[0]), value[1], value[2], value[3] };
-    float sggiParam[] = { giParam[0] * 0.5, giParam[1] * 0.5, value[2], value[3] };
+    float giAtlasParam[] = { abs(value[0]), value[1], value[2], value[3] };
+    float sggiAtlasParam[] = { giAtlasParam[0] * 0.5f, giAtlasParam[1] * 0.5f, value[2], value[3] };
     BOOL isSggiEnabled[] = { value[0] < 0.0f };
 
     // BOOL isUseBicubicGIFilter[] = { (GetAsyncKeyState(VK_F1) & (1 << 16)) != 0 };
@@ -86,15 +86,13 @@ HOOK(uint32_t, __fastcall, SetGIAtlasParam, 0x6FA080, Hedgehog::Mirage::CRenderi
     float giAtlasSize[] = 
         { (float)desc.Width, (float)desc.Height, 1.0f / (float)desc.Width, 1.0f / (float)desc.Height };
 
-    This->m_pD3DDevice->SetVertexShaderConstantF(189, giParam, 1);
+    This->m_pD3DDevice->SetVertexShaderConstantF(189, giAtlasParam, 1);
 
-    This->m_pD3DDevice->SetPixelShaderConstantF(189, giParam, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantF(190, sggiParam, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantF(109, giAtlasParam, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantF(110, sggiAtlasParam, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantF(111, giAtlasSize, 1);
 
-    This->m_pD3DDevice->SetPixelShaderConstantB(7, isSggiEnabled, 1);
-    // This->m_pD3DDevice->SetPixelShaderConstantB(7, isUseBicubicGIFilter, 1);
-
-    This->m_pD3DDevice->SetPixelShaderConstantF(191, giAtlasSize, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantB(9, isSggiEnabled, 1);
 
     return 1;
 }

@@ -28,6 +28,9 @@
     <ClCompile Include="YggdrasillPatcher.cpp">
       <Filter>Patches\Other</Filter>
     </ClCompile>
+    <ClCompile Include="SceneEffect.cpp">
+      <Filter>Patches</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -60,6 +63,9 @@
     </ClInclude>
     <ClInclude Include="IBLProbe.h">
       <Filter>Database\Probe</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneEffect.h">
+      <Filter>Patches</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
