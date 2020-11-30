@@ -43,13 +43,13 @@ void SRGBHandler::applyPatches()
 
     // R8G8B8A8 -> R16G16B16A16
     // This is necessary to reduce banding.
-    WRITE_MEMORY(0x010C4FCB, uint8_t, 0x71);
-    WRITE_MEMORY(0x010D1D11, uint8_t, 0x71);
-    WRITE_MEMORY(0x010D1D74, uint8_t, 0x71);
-    WRITE_MEMORY(0x010D1DD7, uint8_t, 0x71);
-    WRITE_MEMORY(0x010D1E4E, uint8_t, 0x71);
-    WRITE_MEMORY(0x010D1ECB, uint8_t, 0x71);
-    WRITE_MEMORY(0x010D1F37, uint8_t, 0x71);
+    WRITE_MEMORY(0x010C4FCB, uint8_t, 36);
+    WRITE_MEMORY(0x010D1D11, uint8_t, 36);
+    WRITE_MEMORY(0x010D1D74, uint8_t, 36);
+    WRITE_MEMORY(0x010D1DD7, uint8_t, 36);
+    WRITE_MEMORY(0x010D1E4E, uint8_t, 36);
+    WRITE_MEMORY(0x010D1ECB, uint8_t, 36);
+    WRITE_MEMORY(0x010D1F37, uint8_t, 36);
 
     INSTALL_HOOK(CFxBloomGlareInitialize);
     INSTALL_HOOK(CFxBloomGlareExecute);
