@@ -30,14 +30,14 @@ float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
     float4 n0 = tex2D(normalSampler, UV(1));
 
     n0.xy = n0.xy * 2 - 1;
-    n0.z = sqrt(1 - dot(n0.xy, n0.xy));
+    n0.z = sqrt(1 - saturate(dot(n0.xy, n0.xy)));
 
     float3 normal = mul(tangentToWorldMatrix, n0.yxz);
 
     float4 n1 = tex2D(normal1Sampler, UV(2));
 
     n1.xy = n1.xy * 2 - 1;
-    n1.z = sqrt(1 - dot(n1.xy, n1.xy));
+    n1.z = sqrt(1 - saturate(dot(n1.xy, n1.xy)));
 
     float3 normal1 = mul(tangentToWorldMatrix, n1.yxz);
 

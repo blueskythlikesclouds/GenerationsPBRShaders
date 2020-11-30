@@ -42,7 +42,7 @@ float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
     float4 normal = tex2D(normalSampler, UV(2));
 
     normal.xy = normal.xy * 2 - 1;
-    normal.z = sqrt(1 - dot(normal.xy, normal.xy));
+    normal.z = sqrt(1 - saturate(dot(normal.xy, normal.xy)));
 
     return mul(tangentToWorldMatrix, normal.yxz);
 }

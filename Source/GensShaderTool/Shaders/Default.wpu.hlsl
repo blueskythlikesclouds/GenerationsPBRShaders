@@ -20,6 +20,8 @@
 #include "Material/Water05.hlsl"
 #elif defined(IsRing) && IsRing
 #include "Material/Ring.hlsl"
+#elif defined(IsEmission) && IsEmission
+#include "Material/Emission.hlsl"
 #endif
 
 float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
@@ -33,6 +35,8 @@ float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
 
     [branch] if (g_IsEnableInverseToneMap)
         result.rgb = UnpackHDRCustom(result.rgb, g_GIParam.x);
+    else
+        result.rgb *= result.rgb;
 
     return result;
 }

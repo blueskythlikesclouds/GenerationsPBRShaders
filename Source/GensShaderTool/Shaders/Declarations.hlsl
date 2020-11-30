@@ -33,23 +33,14 @@ float2 GetTexCoord(DefaultDeclaration input, uint index, float mrgTexcoordIndex[
 #if defined(ConstTexCoord) && ConstTexCoord
 	return input.TexCoord0.xy;
 #endif
+	float value = round(mrgTexcoordIndex[index]);
 
-	switch (abs(round(mrgTexcoordIndex[index])))
-	{
-	case 0:
-		return input.TexCoord0.xy;
+	if (value == 0.0f) return input.TexCoord0.xy;
+	if (value == 1.0f) return input.TexCoord0.zw;
+	if (value == 2.0f) return input.TexCoord1.xy;
+	if (value == 3.0f) return input.TexCoord1.zw;
 
-	case 1:
-		return input.TexCoord0.zw;
-
-	case 2:
-		return input.TexCoord1.xy;
-
-	case 3:
-		return input.TexCoord1.zw;
-	}
-
-	return input.TexCoord0.xy;
+	return 0.0f;
 }
 
 #define UV(i) \
