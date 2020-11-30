@@ -195,7 +195,7 @@ float3 ComputeSggiDiffuse(Material material, float3 amplitude, float3 axis)
     r9.w = rsqrt(r9.w);                     // rsq r9.w, r9.w
     r13.xyz = r9.w * r13.xwz;               // mul r13.xyz, r9.wwww, r13.xwzx,
     */
-    r13.xyz = normalize(r13.xzw);
+    r13.xyz = normalize(r13.xwz);
 
     r14.z = -r9.z;                          // mov r14.z, -r9.z
     r14.xy = r9.xy;                         // mov r14.xy, r9.xyxx
