@@ -73,7 +73,7 @@ void main(in DECLARATION_TYPE input,
     material.FresnelFactor = specular.x;
     material.Roughness = max(0.01, 1 - specular.y);
     material.AmbientOcclusion = specular.z;
-    material.Metalness = 1 - specular.w;
+    material.Metalness = specular.w;
 
 #if !defined(HasMetalness) || !HasMetalness
     material.Metalness = material.FresnelFactor > 0.225;
