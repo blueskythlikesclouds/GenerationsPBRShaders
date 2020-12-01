@@ -47,8 +47,15 @@ namespace GensShaderTool
                 {
                     new PixelShaderInfoCommon2(), new PixelShaderInfoBlend2(), new PixelShaderInfoChrEyeCDRF(), new PixelShaderInfoChrSkinCDRF(),
                     new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(), new PixelShaderInfoWater05(), new PixelShaderInfoRing(), 
-                    new PixelShaderInfoEmission()
+                    new PixelShaderInfoEmission(), new PixelShaderInfoGlass2()
                 }, pixelShaderGlobalParameterSet);
+
+            //===========================//
+            // Ignore Light Pixel Shader //
+            //===========================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "IgnoreLight.wpu.hlsl"),
+                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
+                new[] { new PixelShaderInfoIgnoreLight2() }, pixelShaderGlobalParameterSet);
 
             //==================//
             // Sky Pixel Shader //

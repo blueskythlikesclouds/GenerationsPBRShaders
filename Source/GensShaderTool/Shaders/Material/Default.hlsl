@@ -10,13 +10,10 @@
 #define DECLARATION_TYPE    EyeDeclaration
 
 #elif (defined(HasNormal) && HasNormal) || \
-      (defined(IsDefault2Normal) && IsDefault2Normal)
+      (defined(IsDefault2Normal) && IsDefault2Normal) || \
+      (defined(IsWater2) && IsWater2)
 
 #define DECLARATION_TYPE    NormalDeclaration
-
-#elif defined(IsWater2) && IsWater2
-
-#define DECLARATION_TYPE    WaterDeclaration
 
 #else
 #define DECLARATION_TYPE    DefaultDeclaration

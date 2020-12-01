@@ -73,10 +73,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
     svPosition = mul(mul(float4(output.Position.xyz, 1), g_MtxView), g_MtxProjection);
     svPosition.xy += g_ViewportSize.zw * float2(-1, 1) * svPosition.w;
 
-#if defined(IsWater2) && IsWater2
-    output.SvPosition.xy = svPosition.xy * float2(0.5, -0.5) + svPosition.w * 0.5;
-    output.SvPosition.zw = svPosition.zw;
-#endif
+    output.ExtraParams.zw = svPosition.zw;
 
     output.TexCoord0.xy = input.TexCoord0.xy;
     output.TexCoord0.zw = input.TexCoord1.xy;

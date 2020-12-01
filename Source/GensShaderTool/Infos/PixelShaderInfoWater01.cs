@@ -10,7 +10,7 @@ namespace GensShaderTool.Infos
 
         public virtual IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = new[]
         {
-            PixelShaderTechniqueInfoDefault2Normal.Instance
+            PixelShaderTechniqueInfoWater2.Instance
         };
 
         public virtual IReadOnlyList<SamplerInfo> Samplers { get; } = new[]

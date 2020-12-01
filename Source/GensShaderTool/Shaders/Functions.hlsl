@@ -505,4 +505,9 @@ bool LineIntersection(float2 a1, float2 a2, float2 b1, float2 b2, out float2 int
     return true;
 }
 
+float ComputeFalloff(float cosViewDirection, float3 falloffFactor)
+{
+    return saturate(exp2(log2(saturate(1 - cosViewDirection + falloffFactor.z)) * falloffFactor.y) * falloffFactor.x);
+}
+
 #endif

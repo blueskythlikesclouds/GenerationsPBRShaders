@@ -7,7 +7,8 @@
 #include "../Functions.hlsl"
 #include "../Material.hlsl"
 
-#include "Default.hlsl"
+#undef DECLARATION_TYPE
+#define DECLARATION_TYPE    NormalDeclaration
 
 sampler2D diffuseSampler : register(s0);
 sampler2D normalSampler : register(s1);

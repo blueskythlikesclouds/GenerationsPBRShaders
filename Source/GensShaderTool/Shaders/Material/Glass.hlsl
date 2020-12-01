@@ -1,5 +1,5 @@
-#ifndef SCENE_MATERIAL_SKIN_HLSL_INCLUDED
-#define SCENE_MATERIAL_SKIN_HLSL_INCLUDED
+#ifndef SCENE_MATERIAL_GLASS_HLSL_INCLUDED
+#define SCENE_MATERIAL_GLASS_HLSL_INCLUDED
 
 #include "../../global.psparam.hlsl"
 
@@ -12,15 +12,16 @@
 sampler2D diffuseSampler : register(s0);
 sampler2D specularSampler : register(s1);
 sampler2D normalSampler : register(s2);
-sampler2D cdrSampler : register(s3);
-sampler2D falloffSampler : register(s4);
+sampler2D emissionSampler : register(s3);
 
 float4 PBRFactor : register(c150);
 float4 FalloffFactor : register(c151);
+float4 Refraction : register(c152);
+float4 Luminance : register(c153);
 
 float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 {
-    return pow(abs(tex2D(diffuseSampler, UV(0))), GAMMA);
+    return pow(abs(tex2D(diffuseSampler, UV(0))), GAMMA) * input.Color;
 }
 
 float4 GetSpecular(DECLARATION_TYPE input)
@@ -43,22 +44,28 @@ float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
     return mul(tangentToWorldMatrix, normal.yxz);
 }
 
-float3 GetCdr(float cosTheta, float curvature)
-{
-    return tex2D(cdrSampler, float2(cosTheta * 0.5 + 0.5, curvature));
-}
-
 void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 {
     float factor = ComputeFalloff(material.CosViewDirection, FalloffFactor.xyz);
 
-    float3 falloff = pow(tex2D(falloffSampler, UV(4)), GAMMA).xyz;
-
-    material.Albedo = lerp(material.Albedo, falloff * FalloffFactor.www, factor);
+    material.Alpha += (1 - material.Alpha) * factor;
+    material.F0 += (1 - material.F0) * factor;
 }
 
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
+    if (isDeferred)
+        return;
+
+    // TODO: Handle refraction parallax
+    float4 framebuffer = tex2Dlod(g_FramebufferSampler, float4(input.VPos.xy * g_ViewportSize.zw, 0, 0));
+
+    finalColor.rgb = lerp(framebuffer.rgb * material.Albedo, finalColor.rgb, finalColor.a);
+    finalColor.a = 1.0;
+
+#if defined(HasEmission) && HasEmission
+    finalColor.rgb += tex2D(emissionSampler, UV(3)).rgb * g_Ambient.rgb * Luminance.x;
+#endif
 }
 
 #endif

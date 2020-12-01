@@ -8,7 +8,7 @@
 #include "../Material.hlsl"
 
 #undef DECLARATION_TYPE
-#define DECLARATION_TYPE    WaterDeclaration
+#define DECLARATION_TYPE    NormalDeclaration
 
 sampler2D diffuseSampler : register(s0);
 sampler2D specularSampler : register(s1);
@@ -56,13 +56,14 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
     if (isDeferred)
         return;
 
-    float2 texCoord = input.SvPosition.xy + mul(float4(material.Normal, 0), g_MtxView).xy * RefractionCubemap.y * g_ViewportSize.zw;
+    float2 baseTexCoord = input.VPos * g_ViewportSize.zw;
+    float2 texCoord = baseTexCoord + mul(float4(material.Normal, 0), g_MtxView).xy * RefractionCubemap.y * g_ViewportSize.zw / input.ExtraParams.w;
 
-    float depth = tex2Dproj(g_DepthSampler, float4(texCoord, 0, input.SvPosition.w)).x;
-    if (depth >= input.SvPosition.z / input.SvPosition.w)
-        texCoord = input.SvPosition.xy;
+    float depth = tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x;
+    if (depth >= input.ExtraParams.z / input.ExtraParams.w)
+        texCoord = baseTexCoord;
 
-    float4 color = tex2Dproj(g_FramebufferSampler, float4(texCoord, 0, input.SvPosition.w));
+    float4 color = tex2Dlod(g_FramebufferSampler, float4(texCoord, 0, 0));
 
     finalColor = float4(lerp(finalColor, color.rgb * input.Color.rgb, finalColor.a), input.Color.a);
 }

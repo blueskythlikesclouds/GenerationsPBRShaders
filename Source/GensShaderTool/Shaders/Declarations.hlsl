@@ -10,6 +10,7 @@ struct DefaultDeclaration
 	float4 ShadowMapCoord : TEXCOORD4;
 	float4 ExtraParams : TEXCOORD5;
 	float4 Color : COLOR;
+	float2 VPos : VPOS;
 };
 
 struct NormalDeclaration : DefaultDeclaration
@@ -21,11 +22,6 @@ struct NormalDeclaration : DefaultDeclaration
 struct EyeDeclaration : DefaultDeclaration
 {
 	float3 EyeNormal : TEXCOORD6;
-};
-
-struct WaterDeclaration : NormalDeclaration
-{
-	float4 SvPosition : TEXCOORD8;
 };
 
 float2 GetTexCoord(DefaultDeclaration input, uint index, float mrgTexcoordIndex[16])
