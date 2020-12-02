@@ -39,6 +39,17 @@ struct RLRParam
     float Brightness;
 };
 
+struct HighlightParam
+{
+    bool Enable;
+    float Threshold;
+    float ObjectAmbientScale;
+    float ObjectAlbedoHeighten;
+    float CharaAmbientScale;
+    float CharaAlbedoHeighten;
+    float CharaFalloffScale;
+};
+
 class SceneEffect
 {
 public:
@@ -47,6 +58,7 @@ public:
     static SGGIParam SGGI;
     static ESMParam ESM;
     static RLRParam RLR;
+    static HighlightParam Highlight;
 
     static void applyPatches();
 };

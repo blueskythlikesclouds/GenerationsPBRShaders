@@ -5,6 +5,7 @@ GIParam SceneEffect::GI = { true, false, 1 };
 SGGIParam SceneEffect::SGGI = { 0.7, 0.35 };
 ESMParam SceneEffect::ESM = { 4096 };
 RLRParam SceneEffect::RLR = { false, 32, 0.8f, 50.0f, 0.1f, 1.0f, 1.0f, 1.0f };
+HighlightParam SceneEffect::Highlight = { true, 90, 4, 0.08, 2, 0.02, 0.3 };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
 {
@@ -47,6 +48,17 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.Thickness, "Thickness");
     pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.Saturation, "Saturation");
     pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.Brightness, "Brightness");
+
+    spParameterGroup->Flush();
+
+    Sonic::CParameterCategory* pHighlightParamCategory = spParameterGroup->CreateParameterCategory("Highlight", "Highlight");
+    pHighlightParamCategory->CreateParamBool(&SceneEffect::Highlight.Enable, "Enable");
+    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.Threshold, "Threshold");
+    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.ObjectAmbientScale, "ObjectAmbientScale");
+    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.ObjectAlbedoHeighten, "ObjectAlbedoHeighten");
+    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaAmbientScale, "CharaAmbientScale");
+    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaAlbedoHeighten, "CharaAlbedoHeighten");
+    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaFalloffScale, "CharaFalloffScale");
 
     spParameterGroup->Flush();
 
