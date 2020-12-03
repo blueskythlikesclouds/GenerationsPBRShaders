@@ -53,7 +53,7 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
     finalColor.rgb += ComputeFalloff(material.CosViewDirection, 
-        float3(FalloffFactorE.x, FalloffFactorE.y * g_Ambient.x, FalloffFactorE.z)) *g_Ambient.rgb * Luminance.xxx;
+        float3(FalloffFactorE.x, FalloffFactorE.y * g_Ambient.x, FalloffFactorE.z)) * g_Ambient.rgb * Luminance.xxx;
 }
 
 #endif

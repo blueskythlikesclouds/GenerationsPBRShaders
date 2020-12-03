@@ -71,7 +71,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     float4 indirectSpecular = 0;
     if (g_IsEnableRLR) 
-        indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, mrgLodParam.y * material.Roughness));
+        indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, 0));
 
     // imagine not being able to unroll loops that access samplers with indexers smh my head 
 

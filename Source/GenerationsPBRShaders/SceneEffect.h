@@ -34,7 +34,7 @@ struct RLRParam
     float MaxRoughness;
     float RayLength;
     float Fade;
-    float Thickness;
+    float MaxSpecularExponent;
     float Saturation;
     float Brightness;
 };
