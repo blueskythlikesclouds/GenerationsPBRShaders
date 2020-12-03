@@ -44,4 +44,17 @@ namespace GensShaderTool.Infos
             return hasNormal || technique is PixelShaderTechniqueInfoDefault2;
         }
     }
+
+    public class PixelShaderInfoMEmission : PixelShaderInfoEmission
+    {
+        public override string Name { get; } = "MEmission";
+
+        public override IReadOnlyList<string> Definitions { get; } = new[] { "HasMetalness" };
+
+        public override bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
+        {
+            // Always have specular
+            return ( samplerBits & 0b10 ) == 0b10 && base.ValidatePermutation( samplerBits, technique );
+        }
+    }
 }

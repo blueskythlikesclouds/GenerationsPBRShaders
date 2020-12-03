@@ -20,7 +20,7 @@
 #include "Material/Water05.hlsl"
 #elif defined(IsRing) && IsRing
 #include "Material/Ring.hlsl"
-#elif defined(IsEmission) && IsEmission
+#elif (defined(IsEmission) && IsEmission) || (defined(IsMEmission) && IsMEmission)
 #include "Material/Emission.hlsl"
 #elif defined(IsGlass2) && IsGlass2
 #include "Material/Glass.hlsl"

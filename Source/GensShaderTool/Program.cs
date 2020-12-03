@@ -47,7 +47,7 @@ namespace GensShaderTool
                 {
                     new PixelShaderInfoCommon2(), new PixelShaderInfoBlend2(), new PixelShaderInfoChrEyeCDRF(), new PixelShaderInfoChrSkinCDRF(),
                     new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(), new PixelShaderInfoWater05(), new PixelShaderInfoRing(), 
-                    new PixelShaderInfoEmission(), new PixelShaderInfoGlass2()
+                    new PixelShaderInfoEmission(), new PixelShaderInfoGlass2(), new PixelShaderInfoMEmission()
                 }, pixelShaderGlobalParameterSet);
 
             //===========================//
