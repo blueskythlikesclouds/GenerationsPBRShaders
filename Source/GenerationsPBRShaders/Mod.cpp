@@ -29,3 +29,13 @@ extern "C" void __declspec(dllexport) Init()
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();
 }
+
+extern "C" void __declspec(dllexport) PostInit()
+{
+    if (GetModuleHandle(TEXT("BetterFxPipeline.dll")) == nullptr ||
+        GetModuleHandle(TEXT("GenerationsD3D9Ex.dll")) == nullptr)
+    {
+        MessageBox(nullptr, TEXT("Please have latest versions of Better FxPipeline and Direct3D 9 Ex enabled"), TEXT("PBR Shaders"), MB_OK | MB_ICONERROR);
+        exit(-1);
+    }
+}
