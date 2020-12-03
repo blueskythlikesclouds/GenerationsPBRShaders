@@ -24,6 +24,8 @@
 #include "Material/Emission.hlsl"
 #elif defined(IsGlass2) && IsGlass2
 #include "Material/Glass.hlsl"
+#elif defined(IsChrGlass) && IsChrGlass
+#include "Material/ChrGlass.hlsl"
 #endif
 
 float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
