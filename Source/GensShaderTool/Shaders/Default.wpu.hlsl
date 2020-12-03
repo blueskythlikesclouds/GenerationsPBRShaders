@@ -26,6 +26,8 @@
 #include "Material/Glass.hlsl"
 #elif defined(IsChrGlass) && IsChrGlass
 #include "Material/ChrGlass.hlsl"
+#elif defined(IsInfinite) && IsInfinite
+#include "Material/Infinite.hlsl"
 #endif
 
 float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
