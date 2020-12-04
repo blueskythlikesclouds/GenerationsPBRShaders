@@ -105,13 +105,6 @@ namespace GensShaderTool
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "RLR.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
                 new[] { new PixelShaderInfoRLR() }, pixelShaderGlobalParameterSet);          
-            
-            //===================//
-            // Cone Trace Shader //
-            //===================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "ConeTrace.wpu.hlsl"),
-                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoConeTrace() }, pixelShaderGlobalParameterSet);          
 
             //===============================//
             // Deferred Specular Pass Shader //

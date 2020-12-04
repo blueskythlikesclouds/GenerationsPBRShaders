@@ -3,10 +3,9 @@
 
 #include "../Deferred/Deferred.hlsl"
 
-float4 mrgLodParam : register(c150);
-float4 g_FramebufferSize : register(c151);
-float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c152);
-float4 g_MaxSpecularExponent_Saturation_Brightness : register(c153);
+float4 g_FramebufferSize : register(c150);
+float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c151);
+float4 g_Thickness_Saturation_Brightness : register(c152);
 
 float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 {
@@ -14,13 +13,13 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
     float4 gBuffer3 = tex2Dlod(g_GBuffer3Sampler, float4(texCoord, 0, 0));
 
     if (gBuffer3.a < 0.99 || gBuffer2.y > g_StepCount_MaxRoughness_RayLength_Fade.y)
-        return float4(-1, -1, 1, 1);
+        return 0;
 
     float depth = tex2Dlod(g_DepthSampler, float4(texCoord.xy, 0, 0)).x;
     float3 position = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
     float3 dir = normalize(reflect(position, mul(float4(gBuffer3.xyz * 2 - 1, 0), g_MtxView).xyz));
 
-    float2 resultTexCoord = -1;
+    float4 color = 0;
 
     float factor = dot(dir, float3(0, 0, -1));
     if (factor > 0.0)
@@ -99,11 +98,20 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
                         step += stepSize;
                 }
 
-                resultTexCoord = lerp(begin.xy, end.xy, step);
+                rayCoord = lerp(begin.xy, end.xy, step);
+
+                factor *= saturate(rayCoord.x * g_StepCount_MaxRoughness_RayLength_Fade.w);
+                factor *= saturate(rayCoord.y * g_StepCount_MaxRoughness_RayLength_Fade.w);
+
+                factor *= saturate((1 - rayCoord.x) * g_StepCount_MaxRoughness_RayLength_Fade.w);
+                factor *= saturate((1 - rayCoord.y) * g_StepCount_MaxRoughness_RayLength_Fade.w);
+
+                color = tex2Dlod(g_FramebufferSampler, float4(rayCoord.xy, 0, 0)) * saturate(factor);
                 break;
             }
         }
     }
 
-    return float4(resultTexCoord, -1, 1);
+    color.rgb = lerp(dot(color.rgb, float3(0.2126, 0.7152, 0.0722)), color.rgb, g_Thickness_Saturation_Brightness.y) * g_Thickness_Saturation_Brightness.z;
+    return color;
 }

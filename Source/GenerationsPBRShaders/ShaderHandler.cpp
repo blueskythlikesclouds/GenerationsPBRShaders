@@ -34,7 +34,6 @@ struct LightCache
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassTerrainShader;
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassObjectShader;
 Hedgehog::Mirage::SShaderPair s_FxRLRShader;
-Hedgehog::Mirage::SShaderPair s_FxConeTraceShader;
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassIBLShader;
 Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
 
@@ -44,11 +43,8 @@ boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer1Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer2Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer3Tex;
 
-boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTexCoordTex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTex;
-
-boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spConvolutionFilterTex;
-boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spConvolutionFilterTexTemp;
+boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTempTex;
 
 std::vector<std::unique_ptr<SHLightFieldCache>> s_SHLFs;
 std::vector<std::unique_ptr<IBLProbeCache>> s_IBLProbes;
@@ -103,7 +99,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     This->m_pScheduler->GetShader(s_FxDeferredPassTerrainShader, "FxFilterPT", "FxDeferredPassTerrain");
     This->m_pScheduler->GetShader(s_FxDeferredPassObjectShader, "FxFilterPT", "FxDeferredPassObject");
     This->m_pScheduler->GetShader(s_FxRLRShader, "FxFilterPT", "FxRLR");
-    This->m_pScheduler->GetShader(s_FxConeTraceShader, "FxFilterT", "FxConeTrace");
     This->m_pScheduler->GetShader(s_FxDeferredPassIBLShader, "FxFilterPT", "FxDeferredPassIBL");
 
     This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
@@ -117,11 +112,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     const uint32_t RLR_WIDTH = This->m_spColorTex->m_CreationParams.Width >> 1;
     const uint32_t RLR_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> 1;
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTexCoordTex, RLR_WIDTH, RLR_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_G16R16F, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTex, RLR_WIDTH, RLR_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
-
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spConvolutionFilterTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spConvolutionFilterTexTemp, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTempTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
     s_spEnvBRDFPicture = nullptr;
     s_spDefaultIBLPicture = nullptr;
@@ -421,7 +413,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             localLightData[i * 8 + 7] = pLightData->m_Range.z();
         }
 
-        pD3DDevice->SetPixelShaderConstantF(109, (const float*)localLightData, 64);
+        pD3DDevice->SetPixelShaderConstantF(106, (const float*)localLightData, 64);
     }
 
     //*******************************************************//
@@ -563,30 +555,45 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
         pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
 
-        // Downscale the framebuffer for use in cone trace shader.
+        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
+        s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
+
+        pDevice->SetShader(s_FxRLRShader);
+        pDevice->SetRenderTarget(0, spRLRSurface);
+        pDevice->SetDepthStencil(nullptr);
+        pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
+
+        // Set parameters
+        float framebufferSize[] = {
+            This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
+            1.0f / This->m_spColorTex->m_CreationParams.Width, 1.0f / This->m_spColorTex->m_CreationParams.Height,
+        };
+
+        float stepCount_maxRoughness_rayLength_fade[] = {
+            (float)SceneEffect::RLR.StepCount, SceneEffect::RLR.MaxRoughness, SceneEffect::RLR.RayLength, 1.0f / SceneEffect::RLR.Fade };
+
+        float thickness_saturation_brightness[] = {
+            SceneEffect::RLR.Thickness, std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)), SceneEffect::RLR.Brightness, 0, 0 };
+
+        pD3DDevice->SetPixelShaderConstantF(150, framebufferSize, 1);
+        pD3DDevice->SetPixelShaderConstantF(151, stepCount_maxRoughness_rayLength_fade, 1);
+        pD3DDevice->SetPixelShaderConstantF(152, thickness_saturation_brightness, 1);
+
+        pDevice->RenderQuad(nullptr, 0, 0);
+
+        // Apply gaussian blur to it because yes.
+        pDevice->SetShader(s_FxConvolutionFilterShader);
+
         pDevice->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_POINT);
         pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
-        pDevice->SetShader(s_FxConvolutionFilterShader);
-
-        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spFirstConvolutionFilterSurface;
-        s_spConvolutionFilterTex->GetSurface(spFirstConvolutionFilterSurface, 0, 0);
-
-        if (!spFirstConvolutionFilterSurface->m_pD3DSurface)
-        {
-            pDevice->SetRenderTarget(0, spFirstConvolutionFilterSurface);
-            pDevice->Flush();
-        }
-        
-        pD3DDevice->StretchRect(This->m_spColorSurface->m_pD3DSurface, nullptr, spFirstConvolutionFilterSurface->m_pD3DSurface, nullptr, D3DTEXF_LINEAR);
-
-        for (uint32_t i = 1; i < s_spConvolutionFilterTex->m_CreationParams.Levels; i++)
+        for (uint32_t i = 1; i < s_spRLRTex->m_CreationParams.Levels; i++)
         {
             boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSrcSurface, spDstSurface, spDstSurfaceTemp;
 
-            s_spConvolutionFilterTex->GetSurface(spSrcSurface, i - 1, 0);
-            s_spConvolutionFilterTex->GetSurface(spDstSurface, i, 0);
-            s_spConvolutionFilterTexTemp->GetSurface(spDstSurfaceTemp, i, 0);
+            s_spRLRTex->GetSurface(spSrcSurface, i - 1, 0);
+            s_spRLRTex->GetSurface(spDstSurface, i, 0);
+            s_spRLRTempTex->GetSurface(spDstSurfaceTemp, i, 0);
 
             D3DSURFACE_DESC desc;
             spDstSurface->m_pD3DSurface->GetDesc(&desc);
@@ -604,7 +611,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             float direction[] = { -1, 0, 0, 0 };
             pD3DDevice->SetPixelShaderConstantF(151, direction, 1);
 
-            pDevice->SetSampler(0, s_spConvolutionFilterTex);
+            pDevice->SetSampler(0, s_spRLRTex);
 
             pDevice->RenderQuad(nullptr, 0, 0);
 
@@ -615,56 +622,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             direction[1] = -1;
             pD3DDevice->SetPixelShaderConstantF(151, direction, 1);
 
-            pDevice->SetSampler(0, s_spConvolutionFilterTexTemp);
+            pDevice->SetSampler(0, s_spRLRTempTex);
 
             pDevice->RenderQuad(nullptr, 0, 0);
         }
-
-        // Set parameters
-        float framebufferSize[] = {
-            This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
-            1.0f / This->m_spColorTex->m_CreationParams.Width, 1.0f / This->m_spColorTex->m_CreationParams.Height,
-        };
-
-        float lodParam[] = { s_spConvolutionFilterTex->m_CreationParams.Levels, 0, 0, 0 };
-
-        float stepCount_maxRoughness_rayLength_fade[] = {
-            (float)SceneEffect::RLR.StepCount, SceneEffect::RLR.MaxRoughness, SceneEffect::RLR.RayLength, 1.0f / SceneEffect::RLR.Fade };
-
-        float maxSpecularExponent_saturation_brightness[] = {
-            SceneEffect::RLR.MaxSpecularExponent, std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)), SceneEffect::RLR.Brightness, 0 };
-
-        pD3DDevice->SetPixelShaderConstantF(150, lodParam, 1);
-        pD3DDevice->SetPixelShaderConstantF(151, framebufferSize, 1);
-        pD3DDevice->SetPixelShaderConstantF(152, stepCount_maxRoughness_rayLength_fade, 1);
-        pD3DDevice->SetPixelShaderConstantF(153, maxSpecularExponent_saturation_brightness, 1);
-
-        // Raymarch in screen space and get reflection coordinates.
-
-        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRTexCoordSurface;
-        s_spRLRTexCoordTex->GetSurface(spRLRTexCoordSurface, 0, 0);
-
-        pDevice->SetShader(s_FxRLRShader);
-        pDevice->SetRenderTarget(0, spRLRTexCoordSurface);
-        pDevice->SetDepthStencil(nullptr);
-        pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
-        pDevice->RenderQuad(nullptr, 0, 0);
-
-        // Now we can create the actual RLR texture by cone tracing.
-        pDevice->SetSampler(5, s_spRLRTexCoordTex);
-        pDevice->SetSamplerFilter(5, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-        pDevice->SetSamplerAddressMode(5, D3DTADDRESS_CLAMP);
-
-        pDevice->SetSampler(11, s_spConvolutionFilterTex);
-        pDevice->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-        pDevice->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
-
-        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
-        s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
-
-        pDevice->SetShader(s_FxConeTraceShader);
-        pDevice->SetRenderTarget(0, spRLRSurface);
-        pDevice->RenderQuad(nullptr, 0, 0);
 
         // Enable stencil buffer back.
         pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
@@ -754,7 +715,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Set IBL parameter.
     if (s_spDefaultIBLPicture && s_spDefaultIBLPicture->m_spPictureData && s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
     {
-        float iblLodParam[] = { std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()), 0, 0, 0 };
+        float iblLodParam[] = { std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()), s_spRLRTex->m_CreationParams.Levels, 0, 0 };
         pD3DDevice->SetPixelShaderConstantF(207, iblLodParam, 1);
     }
 
