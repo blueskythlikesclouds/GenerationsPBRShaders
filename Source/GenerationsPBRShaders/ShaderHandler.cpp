@@ -39,12 +39,15 @@ Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
 
 Hedgehog::Mirage::SShaderPair s_FxCopyColorDepthShader;
 
+Hedgehog::Mirage::SShaderPair s_FxHiZShader;
+
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer1Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer2Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer3Tex;
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTempTex;
+boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spHiZTex;
 
 std::vector<std::unique_ptr<SHLightFieldCache>> s_SHLFs;
 std::vector<std::unique_ptr<IBLProbeCache>> s_IBLProbes;
@@ -105,6 +108,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
+    This->m_pScheduler->GetShader(s_FxHiZShader, "FxFilterT", "FxHiZ");
+
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer3Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
@@ -114,6 +119,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTempTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spHiZTex, RLR_WIDTH, RLR_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R32F, D3DPOOL_DEFAULT, NULL);
 
     s_spEnvBRDFPicture = nullptr;
     s_spDefaultIBLPicture = nullptr;
@@ -555,29 +562,40 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
         pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
 
+        // Create the HiZ texture.
+        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spHiZSurface;
+        s_spHiZTex->GetSurface(spHiZSurface, 0, 0);
+
+        pDevice->SetShader(s_FxHiZShader);
+        pDevice->SetRenderTarget(0, spHiZSurface);
+        pDevice->SetDepthStencil(nullptr);
+        pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
+
+        float hizParam[] = { 1.0f / This->m_spDepthTex->m_CreationParams.Width, 1.0f / This->m_spDepthTex->m_CreationParams.Height, 0, 0 };
+        pD3DDevice->SetPixelShaderConstantF(150, hizParam, 1);
+
+        pDevice->SetSampler(0, This->m_spDepthTex);
+
+        pDevice->RenderQuad(nullptr, 0, 0);
+
         boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
         s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
 
         pDevice->SetShader(s_FxRLRShader);
         pDevice->SetRenderTarget(0, spRLRSurface);
-        pDevice->SetDepthStencil(nullptr);
         pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
         // Set parameters
-        float framebufferSize[] = {
-            This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
-            1.0f / This->m_spColorTex->m_CreationParams.Width, 1.0f / This->m_spColorTex->m_CreationParams.Height,
-        };
-
         float stepCount_maxRoughness_rayLength_fade[] = {
             (float)SceneEffect::RLR.StepCount, SceneEffect::RLR.MaxRoughness, SceneEffect::RLR.RayLength, 1.0f / SceneEffect::RLR.Fade };
 
         float thickness_saturation_brightness[] = {
             SceneEffect::RLR.Thickness, std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)), SceneEffect::RLR.Brightness, 0, 0 };
 
-        pD3DDevice->SetPixelShaderConstantF(150, framebufferSize, 1);
-        pD3DDevice->SetPixelShaderConstantF(151, stepCount_maxRoughness_rayLength_fade, 1);
-        pD3DDevice->SetPixelShaderConstantF(152, thickness_saturation_brightness, 1);
+        pD3DDevice->SetPixelShaderConstantF(150, stepCount_maxRoughness_rayLength_fade, 1);
+        pD3DDevice->SetPixelShaderConstantF(151, thickness_saturation_brightness, 1);
+
+        pDevice->SetSampler(0, s_spHiZTex);
 
         pDevice->RenderQuad(nullptr, 0, 0);
 
