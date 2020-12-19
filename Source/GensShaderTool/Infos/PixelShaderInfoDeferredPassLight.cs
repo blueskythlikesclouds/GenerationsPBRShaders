@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace GensShaderTool.Infos
 {
-    public class PixelShaderInfoDeferredPassTerrain : IPixelShaderInfo
+    public class PixelShaderInfoDeferredPassLight : IPixelShaderInfo
     {
-        public string Name { get; } = "FxDeferredPassTerrain";
+        public string Name { get; } = "FxDeferredPassLight";
 
         public IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = Array.Empty<PixelShaderTechniqueInfo>();
 

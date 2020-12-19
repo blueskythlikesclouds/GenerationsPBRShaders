@@ -157,6 +157,8 @@ void main(in DECLARATION_TYPE input,
     }
 
     material.Shadow = gi.a;
+
+    if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
 #endif
 
     PostProcessMaterial(input, material);
@@ -188,23 +190,24 @@ void main(in DECLARATION_TYPE input,
     else
     {
         float3 color = 0;
-        float factor = 0.0;
+        int type;
 
 #if defined(NoGI) && NoGI
 #if defined(HasCdr) && HasCdr
         color = GetCdr(cosTheta, input.Color.y);
-        factor = 1.0;
+        type = 3; // CDRF
+#else
+        type = 2; // NoGI
 #endif
-
 #else
         color = ComputeIndirectLighting(material, g_EnvBRDFSampler);
-        factor = material.Shadow;
+        type = 1; // GI
 #endif
 
         outColor0 = float4(color, material.Alpha);
-        outColor1 = float4(material.Albedo, factor);
+        outColor1 = float4(material.Albedo, material.Shadow);
         outColor2 = float4(material.FresnelFactor, material.Roughness, material.AmbientOcclusion, material.Metalness);
-        outColor3 = float4(material.Normal * 0.5 + 0.5, 1.0);
+        outColor3 = float4(material.Normal * 0.5 + 0.5, type / 4.0f);
 
         PostProcessFinalColor(input, material, true, outColor0);
     }

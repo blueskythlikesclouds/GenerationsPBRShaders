@@ -8,7 +8,7 @@ HOOK(void, __fastcall, CFxColorCorrectionInitialize, Sonic::fpCFxColorCorrection
 {
     originalCFxColorCorrectionInitialize(This);
 
-    This->m_pScheduler->GetShader(lutShader, "FxFilterT", "FxColorCorrectionLUT");
+    This->m_pScheduler->GetShader(lutShader, "FxFilterT2", "FxColorCorrectionLUT");
     spLutPicture = nullptr;
 }
 

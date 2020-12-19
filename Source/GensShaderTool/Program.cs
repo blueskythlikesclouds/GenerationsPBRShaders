@@ -80,24 +80,17 @@ namespace GensShaderTool
             
             //===========================//
             // Convolution Filter Shader //
-            //===============//
+            //===========================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "ConvolutionFilter.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
                 new[] { new PixelShaderInfoConvolutionFilter() }, pixelShaderGlobalParameterSet);        
             
-            //==============================//
-            // Deferred Terrain Pass Shader //
-            //==============================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "TerrainPass.wpu.hlsl"),
+            //============================//
+            // Deferred Light Pass Shader //
+            //============================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "LightPass.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoDeferredPassTerrain() }, pixelShaderGlobalParameterSet);
-
-            //=============================//
-            // Deferred Object Pass Shader //
-            //=============================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "ObjectPass.wpu.hlsl"),
-                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoDeferredPassObject() }, pixelShaderGlobalParameterSet);            
+                new[] { new PixelShaderInfoDeferredPassLight() }, pixelShaderGlobalParameterSet);            
 
             //============//
             // RLR Shader //
@@ -111,7 +104,21 @@ namespace GensShaderTool
             //===============================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLPass.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoDeferredPassIBL() }, pixelShaderGlobalParameterSet);
+                new[] { new PixelShaderInfoDeferredPassIBL() }, pixelShaderGlobalParameterSet);        
+            
+            //=================//
+            // Filter T Shader //
+            //=================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "FxFilterT2.wvu.hlsl"),
+                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
+                new[] { new VertexShaderInfoFxFilterT2() }, vertexShaderGlobalParameterSet);        
+            
+            //==================//
+            // Filter PT Shader //
+            //==================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "FxFilterPT2.wvu.hlsl"),
+                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
+                new[] { new VertexShaderInfoFxFilterPT2() }, vertexShaderGlobalParameterSet);
         }
         
 

@@ -5,7 +5,7 @@ float4 main(in float4 texCoord : TEXCOORD) : COLOR
 {
     const float2 g_LUTParam = float2(256, 16);
 
-    float4 color = tex2D(g_FramebufferSampler, texCoord.xy);
+    float4 color = tex2Dlod(g_FramebufferSampler, float4(texCoord.xy, 0, 0));
 
     float cell = color.b * (g_LUTParam.y - 1);
 
@@ -20,8 +20,8 @@ float4 main(in float4 texCoord : TEXCOORD) : COLOR
     float2 lutTexCoordL = float2(cellL / g_LUTParam.y + rOffset, gOffset);
     float2 lutTexCoordH = float2(cellH / g_LUTParam.y + rOffset, gOffset);
 
-    float4 gradedColorL = tex2D(g_LUTSampler, lutTexCoordL);
-    float4 gradedColorH = tex2D(g_LUTSampler, lutTexCoordH);
+    float4 gradedColorL = tex2Dlod(g_LUTSampler, float4(lutTexCoordL, 0, 0));
+    float4 gradedColorH = tex2Dlod(g_LUTSampler, float4(lutTexCoordH, 0, 0));
 
     return lerp(gradedColorL, gradedColorH, frac(cell));
 }

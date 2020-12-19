@@ -31,8 +31,7 @@ struct LightCache
     float m_Distance;
 };
 
-Hedgehog::Mirage::SShaderPair s_FxDeferredPassTerrainShader;
-Hedgehog::Mirage::SShaderPair s_FxDeferredPassObjectShader;
+Hedgehog::Mirage::SShaderPair s_FxDeferredPassLightShader;
 Hedgehog::Mirage::SShaderPair s_FxRLRShader;
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassIBLShader;
 Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
@@ -96,14 +95,13 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 {
     originalCFxRenderGameSceneInitialize(This);
 
-    This->m_pScheduler->GetShader(s_FxDeferredPassTerrainShader, "FxFilterPT", "FxDeferredPassTerrain");
-    This->m_pScheduler->GetShader(s_FxDeferredPassObjectShader, "FxFilterPT", "FxDeferredPassObject");
-    This->m_pScheduler->GetShader(s_FxRLRShader, "FxFilterPT", "FxRLR");
-    This->m_pScheduler->GetShader(s_FxDeferredPassIBLShader, "FxFilterPT", "FxDeferredPassIBL");
+    This->m_pScheduler->GetShader(s_FxDeferredPassLightShader, "FxFilterPT2", "FxDeferredPassLight");
+    This->m_pScheduler->GetShader(s_FxRLRShader, "FxFilterPT2", "FxRLR");
+    This->m_pScheduler->GetShader(s_FxDeferredPassIBLShader, "FxFilterPT2", "FxDeferredPassIBL");
 
-    This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
+    This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT2", "FxConvolutionFilter");
 
-    This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
+    This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT2", "FxCopyColorDepth");
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
@@ -231,7 +229,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetRenderTarget(2, spGBuffer2Surface);
     pDevice->SetRenderTarget(3, spGBuffer3Surface);
     pDevice->SetDepthStencil(This->m_spDepthSurface);
-    pDevice->Clear({ D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL, 0, 1.0f, 0 });
+    pDevice->Clear({ D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0 });
 
     // Set g_GIParam
     float giParam[] = { SceneEffect::GI.InverseToneMapFactor, 0, 0, 0 };
@@ -253,7 +251,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         std::min<float>(1.0f, SceneEffect::Debug.FresnelFactorOverride),
         std::min<float>(1.0f, SceneEffect::Debug.RoughnessOverride),
         std::min<float>(1.0f, SceneEffect::Debug.MetalnessOverride),
-        0,
+        std::min<float>(1.0f, SceneEffect::Debug.GIShadowMapOverride),
         0,
         0
     };
@@ -282,16 +280,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
 
-    pRenderingDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
+    pRenderingDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
     pRenderingDevice->LockRenderState(D3DRS_ZFUNC);
-
-    // Enable stencil buffer.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
-
-    // We're forward-rendering first, so we'd like to replace the contents of the stencil buffer.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_REPLACE);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILPASS);
 
     // Disable alpha blending since we're rendering opaque/punch-through meshes.
     pRenderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
@@ -305,10 +295,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSampler(15, s_spEnvBRDFPicture);
     pDevice->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
-
-    // We'll render terrain first. Terrain will have a stencil value of 1.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILREF, 1);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILREF);
 
     // We're rendering opaque terrain meshes first, so disable alpha testing.
     pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -327,13 +313,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
-
-    // Done with D3DRS_STENCILREF 1, unlock it.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILREF);
-
-    // We're rendering objects now. Objects will have a stencil value of 2.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILREF, 2);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILREF);
 
     // Opaque meshes first, so disable alpha testing.
     pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -357,15 +336,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
 
-    // Done with D3DRS_STENCILREF 2, unlock it.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILREF);
-
     // Done with D3DRS_ZENABLE/D3DRS_ZWRITEENABLE TRUE, unlock them.
     pRenderingDevice->UnlockRenderState(D3DRS_ZENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
-
-    // Done with D3DRS_STENCILPASS D3DSTENCILOP_REPLACE, unlock it.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILPASS);
 
     // We're done rendering opaque/punch-through terrain and objects!
     pDevice->SetRenderTarget(1, nullptr);
@@ -416,10 +389,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pD3DDevice->SetPixelShaderConstantF(106, (const float*)localLightData, 64);
     }
 
-    //*******************************************************//
-    // Deferred terrain pass: Add direct lighting to terrain //
-    // through deferred rendering.                           //
-    //*******************************************************//
+    //***************************************************//
+    // Deferred light pass: Add direct lighting and SHLF //
+    // to meshes through deferred rendering.             //
+    //***************************************************//
 
     // Since we're going to be rendering to quads, disable Z buffer and alpha test entirely.
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
@@ -431,19 +404,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
-    // We don't want any changes to be done to the stencil buffer.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILPASS, D3DSTENCILOP_KEEP);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILPASS);
-
-    // We only want to render when the stencil value of the pixel equals to our reference value.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILFUNC);
-
-    // Set reference value to 1 since we want to render terrain.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILREF, 1);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILREF);
-
-    pDevice->SetShader(s_FxDeferredPassTerrainShader);
+    pDevice->SetShader(s_FxDeferredPassLightShader);
 
     pDevice->SetSampler(0, This->m_spColorTex);
     pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
@@ -469,47 +430,23 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
-    // We're rendering terrain, so we want to use the shadowmap
-    // that only contains objects.
+    // Set shadowmaps.
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMapNoTerrain;
     This->GetTexture(spShadowMapNoTerrain, "shadowmap_noterrain");
 
-    pDevice->SetSampler(13, spShadowMapNoTerrain);
-    pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
-
-    float shadowMapNoTerrainParams[] = {
-        spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
-
-    pD3DDevice->SetPixelShaderConstantF(65, shadowMapNoTerrainParams, 1);
-
-    pDevice->RenderQuad(nullptr, 0, 0);
-
-    // Done with D3DRS_STENCILREF 1, unlock it.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILREF);
-
-    //****************************************************//
-    // Deferred object pass: Add direct lighting and SHLF //
-    // to objects through deferred rendering.             //
-    //****************************************************//
-
-    // Set reference value to 2 since we want to render objects.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILREF, 2);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILREF);
-
-    pDevice->SetShader(s_FxDeferredPassObjectShader);
-
-    // We're rendering objects, so we want to use the shadowmap
-    // that contains both objects and terrain.
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMap;
-    This->GetTexture(spShadowMapNoTerrain, "shadowmap");
+    This->GetTexture(spShadowMap, "shadowmap");
 
-    pDevice->SetSampler(13, spShadowMapNoTerrain);
+    pDevice->SetSampler(9, spShadowMapNoTerrain);
+    pDevice->SetSamplerFilter(9, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(9, D3DTADDRESS_BORDER);
+
+    pDevice->SetSampler(13, spShadowMap);
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
     float shadowMapParams[] = {
-        spShadowMapNoTerrain->m_CreationParams.Width, 1.0f / spShadowMapNoTerrain->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
+        spShadowMap->m_CreationParams.Width, 1.0f / spShadowMap->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
 
     pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
@@ -540,21 +477,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     pDevice->RenderQuad(nullptr, 0, 0);
 
-    // We're done with D3DRS_STENCILFUNC/D3DRS_STENCILREF, unlock them.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILFUNC);
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILREF);
-
     //*****************************//
     // Real-time Local Reflections //
     //*****************************//
 
     if (SceneEffect::RLR.Enable) 
     {
-        // Disable stencil buffer.
-        pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
-        pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
-        pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
-
         boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
         s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
 
@@ -627,11 +555,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             pDevice->RenderQuad(nullptr, 0, 0);
         }
 
-        // Enable stencil buffer back.
-        pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
-        pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, TRUE);
-        pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
-
         // Revert render targets/textures.
         pDevice->SetRenderTarget(0, This->m_spColorSurface);
         pDevice->SetDepthStencil(This->m_spDepthSurface);
@@ -643,14 +566,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Deferred specular pass: Add specular lighting to   //
     // terrain and objects.                               //
     //****************************************************//
-    
-    // Since we're going to operate on both terrain and objects,
-    // set stencil values accordingly.
-    pRenderingDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_LESS);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILFUNC);
-
-    pRenderingDevice->SetRenderState(D3DRS_STENCILREF, 0);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILREF);
 
     pDevice->SetShader(s_FxDeferredPassIBLShader);
 
@@ -738,15 +653,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Sky //
     //*****//
 
-    // We don't want the sky to intersect with any mesh in the view.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILFUNC);
-    pRenderingDevice->SetRenderState(D3DRS_STENCILFUNC, D3DCMP_EQUAL);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILFUNC);
-
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILREF);
-    pRenderingDevice->SetRenderState(D3DRS_STENCILREF, 0);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILREF);
-
     // Enable Z buffer back.
     pRenderingDevice->UnlockRenderState(D3DRS_ZENABLE);
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
@@ -760,16 +666,20 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Set the depth stencil back.
     pDevice->SetDepthStencil(This->m_spColorSurface);
 
+    // Set framebuffer & depth samplers to prevent intersection with the terrain.
+    pDevice->SetSampler(11, This->m_spColorTex);
+    pDevice->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
+
+    pDevice->SetSampler(12, This->m_spDepthTex);
+    pDevice->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
+
     This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_SKY, -1);
 
     //*********//
     // Capture //
     //*********//
-
-    // Disable stencil buffer as we don't need it anymore.
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
-    pRenderingDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_STENCILENABLE);
 
     // Enable Z writing, but always do it.
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
@@ -844,7 +754,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Terrain
     pDevice->SetSampler(13, spShadowMapNoTerrain);
-    pD3DDevice->SetPixelShaderConstantF(65, shadowMapNoTerrainParams, 1);
+    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_TRANSPARENT);
 
@@ -863,10 +773,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Unlock render states that we're done with.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILENABLE);
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILFUNC);
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILPASS);
-    pRenderingDevice->UnlockRenderState(D3DRS_STENCILREF);
     pRenderingDevice->UnlockRenderState(D3DRS_ZENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ZFUNC);
@@ -895,11 +801,6 @@ void ShaderHandler::applyPatches()
         return;
 
     enabled = true;
-
-    // RAWZ -> INTZ (INTZ supports stencil)
-    constexpr uint32_t INTZ = MAKEFOURCC('I', 'N', 'T', 'Z');
-    WRITE_MEMORY(0x10C8A8B, uint32_t, INTZ);
-    WRITE_MEMORY(0x10C8C23, uint32_t, INTZ);
 
     INSTALL_HOOK(CFxRenderGameSceneInitialize);
     INSTALL_HOOK(CFxRenderGameSceneExecute);

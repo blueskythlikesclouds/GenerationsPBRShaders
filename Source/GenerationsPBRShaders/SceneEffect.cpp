@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::Debug = { false, false, -1, -1, -1 };
+DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1 };
 GIParam SceneEffect::GI = { true, false, 1 };
 SGGIParam SceneEffect::SGGI = { 0.7, 0.35 };
 ESMParam SceneEffect::ESM = { 4096 };
@@ -18,6 +18,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.FresnelFactorOverride, "FresnelFactorOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.RoughnessOverride, "RoughnessOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.MetalnessOverride, "MetalnessOverride");
+    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.GIShadowMapOverride, "GIShadowMapOverride");
 
     spParameterGroup->Flush();
 

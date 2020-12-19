@@ -6,7 +6,7 @@ Hedgehog::Mirage::SShaderPair srgbShader;
 
 HOOK(void, __fastcall, CFxBloomGlareInitialize, Sonic::fpCFxBloomGlareInitialize, Sonic::CFxBloomGlare* This)
 {
-    This->m_pScheduler->GetShader(srgbShader, "FxFilterT", "FxToSRGB");
+    This->m_pScheduler->GetShader(srgbShader, "FxFilterT2", "FxToSRGB");
 
     originalCFxBloomGlareInitialize(This);
 }

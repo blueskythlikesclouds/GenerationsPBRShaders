@@ -62,6 +62,6 @@ void main(
         // while still keeping them properly in the buffers
         outColor1 = 0;
         outColor2 = float4(0, 1, 0, 1);
-        outColor3 = float4(normalize(input.Normal.xyz) * 0.5 + 0.5, 1.0);
+        outColor3 = float4(normalize(input.Normal.xyz) * 0.5 + 0.5, 0);
     }
 }

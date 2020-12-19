@@ -7,6 +7,7 @@ struct DebugParam
     float FresnelFactorOverride;
     float RoughnessOverride;
     float MetalnessOverride;
+    float GIShadowMapOverride;
 };
 
 struct GIParam
