@@ -84,12 +84,6 @@ namespace GensShaderTool
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "ConvolutionFilter.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
                 new[] { new PixelShaderInfoConvolutionFilter() }, pixelShaderGlobalParameterSet);        
-            //============//
-            // HiZ Shader //
-            //============//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "HiZ.wpu.hlsl"),
-                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoHiZ() }, pixelShaderGlobalParameterSet);        
             
             //==============================//
             // Deferred Terrain Pass Shader //

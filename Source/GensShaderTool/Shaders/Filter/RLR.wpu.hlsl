@@ -3,10 +3,9 @@
 
 #include "../Deferred/Deferred.hlsl"
 
-float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c150);
-float4 g_Thickness_Saturation_Brightness : register(c151);
-
-sampler2D g_HiZSampler : register(s0);
+float4 g_FramebufferSize : register(c150);
+float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c151);
+float4 g_Thickness_Saturation_Brightness : register(c152);
 
 float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 {
@@ -60,7 +59,9 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
         }
 
         float2 delta = end.xy - begin.xy;
-        float2 deltaPixel = delta * g_ViewportSize.xy;
+        begin.xy += normalize(delta) * g_FramebufferSize.zw;
+
+        float2 deltaPixel = delta * g_FramebufferSize.xy;
         
         int stepCount = min(g_StepCount_MaxRoughness_RayLength_Fade.x, round(sqrt(dot(deltaPixel, deltaPixel))));
         float stepSize = 1.0f / stepCount;
@@ -72,7 +73,8 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
             float2 rayCoord = lerp(begin.xy, end.xy, step);
             float depth = PerspectiveCorrectLerp(begin.z, end.z, step);
 
-            float cmpDepth = tex2Dlod(g_HiZSampler, float4(rayCoord.xy, 0, 0)).x;
+            float cmpDepth = tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x;
+            cmpDepth = LinearizeDepth(cmpDepth, g_MtxInvProjection);
 
             if (depth < cmpDepth)
             {
@@ -85,7 +87,8 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
                     rayCoord = lerp(begin.xy, end.xy, step);
                     depth = PerspectiveCorrectLerp(begin.z, end.z, step);
 
-                    cmpDepth = tex2Dlod(g_HiZSampler, float4(rayCoord.xy, 0, 0)).x;
+                    cmpDepth = tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x;
+                    cmpDepth = LinearizeDepth(cmpDepth, g_MtxInvProjection);
 
                     stepSize *= 0.5f;
 
