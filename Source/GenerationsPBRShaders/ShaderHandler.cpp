@@ -95,13 +95,13 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 {
     originalCFxRenderGameSceneInitialize(This);
 
-    This->m_pScheduler->GetShader(s_FxDeferredPassLightShader, "FxFilterPT2", "FxDeferredPassLight");
-    This->m_pScheduler->GetShader(s_FxRLRShader, "FxFilterPT2", "FxRLR");
-    This->m_pScheduler->GetShader(s_FxDeferredPassIBLShader, "FxFilterPT2", "FxDeferredPassIBL");
+    This->m_pScheduler->GetShader(s_FxDeferredPassLightShader, "FxFilterPT", "FxDeferredPassLight");
+    This->m_pScheduler->GetShader(s_FxRLRShader, "FxFilterPT", "FxRLR");
+    This->m_pScheduler->GetShader(s_FxDeferredPassIBLShader, "FxFilterPT", "FxDeferredPassIBL");
 
-    This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT2", "FxConvolutionFilter");
+    This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
 
-    This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT2", "FxCopyColorDepth");
+    This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);

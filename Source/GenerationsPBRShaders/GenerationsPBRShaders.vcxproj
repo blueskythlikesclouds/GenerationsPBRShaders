@@ -99,7 +99,6 @@
   <ItemGroup>
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="SGGIHandler.cpp" />
-    <ClCompile Include="LUTHandler.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Mod.cpp" />
     <ClCompile Include="Pch.cpp">
@@ -111,7 +110,7 @@
     <ClCompile Include="ShaderHandler.cpp" />
     <ClCompile Include="ShadowHandler.cpp" />
     <ClCompile Include="StageId.cpp" />
-    <ClCompile Include="SRGBHandler.cpp" />
+    <ClCompile Include="LUTHandler.cpp" />
     <ClCompile Include="VertexBufferHandler.cpp" />
     <ClCompile Include="YggdrasillPatcher.cpp" />
   </ItemGroup>
@@ -120,12 +119,11 @@
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />
     <ClInclude Include="SGGIHandler.h" />
-    <ClInclude Include="LUTHandler.h" />
     <ClInclude Include="Pch.h" />
     <ClInclude Include="ShaderHandler.h" />
     <ClInclude Include="ShadowHandler.h" />
     <ClInclude Include="StageId.h" />
-    <ClInclude Include="SRGBHandler.h" />
+    <ClInclude Include="LUTHandler.h" />
     <ClInclude Include="VertexBufferHandler.h" />
     <ClInclude Include="YggdrasillPatcher.h" />
   </ItemGroup>

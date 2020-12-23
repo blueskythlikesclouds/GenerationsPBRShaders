@@ -13,12 +13,6 @@
     <ClCompile Include="ShaderHandler.cpp">
       <Filter>Patches\Shader</Filter>
     </ClCompile>
-    <ClCompile Include="SRGBHandler.cpp">
-      <Filter>Patches\Shader\Filter</Filter>
-    </ClCompile>
-    <ClCompile Include="LUTHandler.cpp">
-      <Filter>Patches\Shader\Filter</Filter>
-    </ClCompile>
     <ClCompile Include="ShadowHandler.cpp">
       <Filter>Patches\Shader\Shadow</Filter>
     </ClCompile>
@@ -31,6 +25,9 @@
     <ClCompile Include="SceneEffect.cpp">
       <Filter>Patches</Filter>
     </ClCompile>
+    <ClCompile Include="LUTHandler.cpp">
+      <Filter>Patches\Shader\Filter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -42,12 +39,6 @@
     </ClInclude>
     <ClInclude Include="ShaderHandler.h">
       <Filter>Patches\Shader</Filter>
-    </ClInclude>
-    <ClInclude Include="SRGBHandler.h">
-      <Filter>Patches\Shader\Filter</Filter>
-    </ClInclude>
-    <ClInclude Include="LUTHandler.h">
-      <Filter>Patches\Shader\Filter</Filter>
     </ClInclude>
     <ClInclude Include="ShadowHandler.h">
       <Filter>Patches\Shader\Shadow</Filter>
@@ -66,6 +57,9 @@
     </ClInclude>
     <ClInclude Include="SceneEffect.h">
       <Filter>Patches</Filter>
+    </ClInclude>
+    <ClInclude Include="LUTHandler.h">
+      <Filter>Patches\Shader\Filter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

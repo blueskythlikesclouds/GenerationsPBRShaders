@@ -3,7 +3,6 @@
 #include "SGGIHandler.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
-#include "SRGBHandler.h"
 #include "StageId.h"
 #include "VertexBufferHandler.h"
 #include "YggdrasillPatcher.h"
@@ -24,7 +23,6 @@ extern "C" void __declspec(dllexport) Init()
     SGGIHandler::applyPatches();
     ShaderHandler::applyPatches();
     ShadowHandler::applyPatches();
-    SRGBHandler::applyPatches();
     YggdrasillPatcher::applyPatches();
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();

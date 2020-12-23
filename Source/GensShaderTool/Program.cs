@@ -24,12 +24,6 @@ namespace GensShaderTool
         {
             var (vertexShaderGlobalParameterSet, pixelShaderGlobalParameterSet) = ProcessGlobalShaderParameterSets();
 
-            /*
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "TV.wpu.hlsl"),
-                "D:\\Steam\\steamapps\\common\\Sonic Generations\\mods\\Playground\\disk\\bb3\\shader_r",
-                new IShaderInfo[] { new PixelShaderInfoTV() }, pixelShaderGlobalParameterSet);
-            */
-
             //========================//
             // Default Vertex Shader //
             //========================//
@@ -70,14 +64,7 @@ namespace GensShaderTool
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "LUT.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
                 new[] { new PixelShaderInfoLUT() }, pixelShaderGlobalParameterSet);        
-            
-            //===============//
-            // ToSRGB Shader //
-            //===============//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "ToSRGB.wpu.hlsl"),
-                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoToSRGB() }, pixelShaderGlobalParameterSet);             
-            
+
             //===========================//
             // Convolution Filter Shader //
             //===========================//
@@ -104,21 +91,7 @@ namespace GensShaderTool
             //===============================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLPass.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new PixelShaderInfoDeferredPassIBL() }, pixelShaderGlobalParameterSet);        
-            
-            //=================//
-            // Filter T Shader //
-            //=================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "FxFilterT2.wvu.hlsl"),
-                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new VertexShaderInfoFxFilterT2() }, vertexShaderGlobalParameterSet);        
-            
-            //==================//
-            // Filter PT Shader //
-            //==================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "FxFilterPT2.wvu.hlsl"),
-                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
-                new[] { new VertexShaderInfoFxFilterPT2() }, vertexShaderGlobalParameterSet);
+                new[] { new PixelShaderInfoDeferredPassIBL() }, pixelShaderGlobalParameterSet);
         }
         
 
