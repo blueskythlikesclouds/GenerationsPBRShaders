@@ -5,7 +5,7 @@
 
 float4 g_FramebufferSize : register(c150);
 float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c151);
-float4 g_Thickness_Saturation_Brightness : register(c152);
+float4 g_AngleExponent_AngleThreshold_Saturation_Brightness : register(c152);
 
 float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 {
@@ -78,6 +78,13 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
             if (depth < cmpDepth)
             {
+                // If we hit a pixel closer to the camera than the start point,
+                // then it's very likely that the hit point hides the actual reflection.
+                // We should discard the loop immediately in this case.
+                // The gaps should be filled with parallax corrected cubemaps instead.
+                if (begin.z < cmpDepth)
+                    return 0;
+
                 step -= stepSize;
                 stepSize *= 0.5f;
                 step += stepSize;
@@ -100,18 +107,30 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
                 rayCoord = lerp(begin.xy, end.xy, step);
 
+                // Discard the pixel based on the angle between the start position and hit position.
+                float3 cmpPos = GetPositionFromDepth(rayCoord * float2(2, -2) + float2(-1, 1),
+                    tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x, g_MtxInvProjection);
+
+                float3 cmpDir = normalize(cmpPos - position);
+                float cosTheta = saturate(dot(cmpDir, dir));
+
+                if (pow(cosTheta, g_AngleExponent_AngleThreshold_Saturation_Brightness.x) < g_AngleExponent_AngleThreshold_Saturation_Brightness.y)
+                    return 0;
+
                 factor *= saturate(rayCoord.x * g_StepCount_MaxRoughness_RayLength_Fade.w);
                 factor *= saturate(rayCoord.y * g_StepCount_MaxRoughness_RayLength_Fade.w);
 
                 factor *= saturate((1 - rayCoord.x) * g_StepCount_MaxRoughness_RayLength_Fade.w);
                 factor *= saturate((1 - rayCoord.y) * g_StepCount_MaxRoughness_RayLength_Fade.w);
 
-                color = tex2Dlod(g_FramebufferSampler, float4(rayCoord.xy, 0, 0)) * saturate(factor);
+                color = tex2Dlod(g_FramebufferSampler, float4(rayCoord.xy, 0, 0)) * factor;
                 break;
             }
         }
     }
 
-    color.rgb = lerp(dot(color.rgb, float3(0.2126, 0.7152, 0.0722)), color.rgb, g_Thickness_Saturation_Brightness.y) * g_Thickness_Saturation_Brightness.z;
+    float luminosity = dot(color.rgb, float3(0.2126, 0.7152, 0.0722));
+    color.rgb = lerp(luminosity, color.rgb, g_AngleExponent_AngleThreshold_Saturation_Brightness.z) * g_AngleExponent_AngleThreshold_Saturation_Brightness.w;
+
     return color;
 }
