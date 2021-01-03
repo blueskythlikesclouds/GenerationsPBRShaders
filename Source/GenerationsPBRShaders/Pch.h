@@ -8,6 +8,7 @@
 
 // std
 #include <stdint.h>
+#include <array>
 #include <set>
 #include <vector>
 

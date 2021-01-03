@@ -28,6 +28,8 @@ namespace GensShaderTool.Infos
 
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "GIOnly" };
 
+        public virtual int IterationCount { get; } = 1;
+
         public virtual bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {
             // Always have all samplers

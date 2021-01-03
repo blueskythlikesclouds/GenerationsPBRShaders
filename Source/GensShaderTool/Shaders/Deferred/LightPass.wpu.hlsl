@@ -165,7 +165,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     direct *= material.Shadow;
 
-    [unroll] for (int i = 0; i < 32; i++)
+    [unroll] for (int i = 0; i < IterationIndex; i++)
     {
         float4 item0 = mrgLocalLightData[i * 2 + 0];
         float4 item1 = mrgLocalLightData[i * 2 + 1];

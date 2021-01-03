@@ -30,6 +30,8 @@ namespace GensShaderTool.Infos
 
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly" };
 
+        public virtual int IterationCount { get; } = 1;
+
         public virtual bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {
             // Have only one variation with all samplers

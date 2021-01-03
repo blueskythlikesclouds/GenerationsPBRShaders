@@ -42,77 +42,85 @@ namespace GensShaderTool
 
             foreach ( var shader in shaders )
             {
-                if ( shader.Samplers.Count > 0 && shader.Type == ShaderType.Vertex )
-                    throw new InvalidDataException( "A vertex shader cannot have samplers" );
+                for ( int iterationIndex = 0; iterationIndex < Math.Max( 0, shader.IterationCount ); iterationIndex++ )
+                { 
+                    if ( shader.Samplers.Count > 0 && shader.Type == ShaderType.Vertex )
+                        throw new InvalidDataException( "A vertex shader cannot have samplers" );
 
-                if ( shader.Samplers.Count > 16 )
-                    throw new IndexOutOfRangeException( "A pixel shader can have maximum 16 samplers" );
+                    if ( shader.Samplers.Count > 16 )
+                        throw new IndexOutOfRangeException( "A pixel shader can have maximum 16 samplers" );
 
-                for ( int i = 0; i < 1 << shader.Samplers.Count; i++ )
-                {
-                    if ( shader.Techniques.Count > 0 && shader.Type == ShaderType.Pixel )
+                    for ( int i = 0; i < 1 << shader.Samplers.Count; i++ )
                     {
-                        stringBuilder.Clear();
-                        stringBuilder.Append( shader.Name );
-
-                        if ( i != 0 )
+                        if ( shader.Techniques.Count > 0 && shader.Type == ShaderType.Pixel )
                         {
-                            stringBuilder.Append( '_' );
+                            stringBuilder.Clear();
+                            stringBuilder.Append( shader.Name );
 
-                            for ( int j = 0; j < shader.Samplers.Count; j++ )
-                                if ( ( ( i >> j ) & 1 ) != 0 )
-                                    stringBuilder.Append( shader.Samplers[ j ].Suffix );
+                            if ( shader.IterationCount > 1 )
+                                stringBuilder.AppendFormat( "_{0}", iterationIndex );
+
+                            if ( i != 0 )
+                            {
+                                stringBuilder.Append( '_' );
+
+                                for ( int j = 0; j < shader.Samplers.Count; j++ )
+                                    if ( ( ( i >> j ) & 1 ) != 0 )
+                                        stringBuilder.Append( shader.Samplers[ j ].Suffix );
+                            }
+
+                            string name = stringBuilder.ToString().Trim( '_' );
+
+                            var shaderList = new ShaderList();
+                            shaderList.Name = name;
+
+                            bool any = false;
+
+                            foreach ( var technique in shader.Techniques )
+                            {
+                                if ( !shader.ValidatePermutation( ( ushort ) i, technique ) )
+                                    continue;
+
+                                any = true;
+                                for ( int j = 0; j < 1 << sPixelShaderMiragePermutations.Length; j++ )
+                                {
+                                    permutations.Add( new ShaderConverterPermutation
+                                    {
+                                        Name = name,
+                                        ShaderList = shaderList,
+                                        Shader = shader,
+                                        Technique = technique,
+                                        SamplerBits = i,
+                                        MiragePermutationBits = j,
+                                        IterationIndex = iterationIndex
+                                    } );
+                                }
+                            }
+
+                            if ( any )
+                                shaderLists.Add( shaderList );
                         }
-
-                        string name = stringBuilder.ToString().Trim( '_' );
-
-                        var shaderList = new ShaderList();
-                        shaderList.Name = name;
-
-                        bool any = false;
-
-                        foreach ( var technique in shader.Techniques )
+                        else
                         {
-                            if ( !shader.ValidatePermutation( ( ushort ) i, technique ) )
+                            if ( shader.Techniques.Count > 0 && shader.Type == ShaderType.Vertex )
+                                throw new InvalidDataException( "A vertex shader cannot have pixel shader techniques" );
+
+                            if ( shader.Type == ShaderType.Pixel && !shader.ValidatePermutation( ( ushort ) i, null ) )
                                 continue;
 
-                            any = true;
-                            for ( int j = 0; j < 1 << sPixelShaderMiragePermutations.Length; j++ )
-                            {
+                            var miragePermutations = shader.Type == ShaderType.Vertex
+                                ? sVertexShaderMiragePermutations
+                                : Array.Empty<string>();
+
+                            for ( int j = 0; j < 1 << miragePermutations.Length; j++ )
                                 permutations.Add( new ShaderConverterPermutation
                                 {
-                                    Name = name,
-                                    ShaderList = shaderList,
+                                    Name = $"{shader.Name}{( shader.IterationCount > 1 ? $"_{iterationIndex}" : "" )}",
                                     Shader = shader,
-                                    Technique = technique,
-                                    SamplerBits = i,
-                                    MiragePermutationBits = j
+                                    MiragePermutationBits = j,
+                                    IterationIndex = iterationIndex
                                 } );
-                            }
                         }
-
-                        if ( any )
-                            shaderLists.Add( shaderList );
-                    }
-                    else
-                    {
-                        if ( shader.Techniques.Count > 0 && shader.Type == ShaderType.Vertex )
-                            throw new InvalidDataException( "A vertex shader cannot have pixel shader techniques" );
-
-                        if ( shader.Type == ShaderType.Pixel && !shader.ValidatePermutation( ( ushort ) i, null ) )
-                            continue;
-
-                        var miragePermutations = shader.Type == ShaderType.Vertex
-                            ? sVertexShaderMiragePermutations
-                            : Array.Empty<string>();
-
-                        for ( int j = 0; j < 1 << miragePermutations.Length; j++ )
-                            permutations.Add( new ShaderConverterPermutation
-                            {
-                                Name = shader.Name,
-                                Shader = shader,
-                                MiragePermutationBits = j
-                            } );
                     }
                 }
 
@@ -211,6 +219,8 @@ namespace GensShaderTool
                 var constantMap = constantMaps[ permutation.Shader ];
                 foreach ( string constantName in allConstantNames.Where( x => !constantMap.Contains( x ) ) )
                     defsBuilder.AppendFormat( "/D {0}Register=c255 ", constantName );
+
+                defsBuilder.AppendFormat( "/D IterationIndex={0}", permutation.IterationIndex );
 
                 string defines = defsBuilder.ToString();
                 string name = nameBuilder.ToString();
@@ -345,6 +355,7 @@ namespace GensShaderTool
             public int MiragePermutationBits;
             public string Name;
             public int SamplerBits;
+            public int IterationIndex;
             public IShaderInfo Shader;
             public ShaderList ShaderList;
             public PixelShaderTechniqueInfo Technique;

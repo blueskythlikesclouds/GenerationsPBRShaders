@@ -32,9 +32,9 @@ struct LightCache
     float m_Distance;
 };
 
-Hedgehog::Mirage::SShaderPair s_FxDeferredPassLightShader;
+std::array<Hedgehog::Mirage::SShaderPair, 1 + 32> s_FxDeferredPassLightShaders;
 Hedgehog::Mirage::SShaderPair s_FxRLRShader;
-Hedgehog::Mirage::SShaderPair s_FxDeferredPassIBLShader;
+std::array<Hedgehog::Mirage::SShaderPair, 1 + 8> s_FxDeferredPassIBLShaders;
 Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
 
 Hedgehog::Mirage::SShaderPair s_FxCopyColorDepthShader;
@@ -96,9 +96,23 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 {
     originalCFxRenderGameSceneInitialize(This);
 
-    This->m_pScheduler->GetShader(s_FxDeferredPassLightShader, "FxFilterPT", "FxDeferredPassLight");
+    for (size_t i = 0; i < 1 + 32; i++)
+    {
+        char name[32];
+        sprintf(name, "FxDeferredPassLight_%d", i);
+
+        This->m_pScheduler->GetShader(s_FxDeferredPassLightShaders[i], "FxFilterPT", name);
+    }
+
     This->m_pScheduler->GetShader(s_FxRLRShader, "FxFilterPT", "FxRLR");
-    This->m_pScheduler->GetShader(s_FxDeferredPassIBLShader, "FxFilterPT", "FxDeferredPassIBL");
+
+    for (size_t i = 0; i < 1 + 8; i++)
+    {
+        char name[32];
+        sprintf(name, "FxDeferredPassIBL_%d", i);
+
+        This->m_pScheduler->GetShader(s_FxDeferredPassIBLShaders[i], "FxFilterPT", name);
+    }
 
     This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
 
@@ -360,6 +374,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //***************//
 
     // Pass 32 omni lights from the view to shaders.
+    size_t localLightCount = 0;
+
     if (pSceneRenderer->m_pLightManager && pSceneRenderer->m_pLightManager->m_pStaticLightContext && 
         pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData)
     {
@@ -384,7 +400,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         auto lightIterator = s_LocalLightsInFrustum.begin();
 
-        for (size_t i = 0; i < std::min<size_t>(32, s_LocalLightsInFrustum.size()); i++)
+        localLightCount = std::min<size_t>(32, s_LocalLightsInFrustum.size());
+
+        for (size_t i = 0; i < localLightCount; i++)
         {
             Hedgehog::Mirage::CLightData* pLightData = (*lightIterator++).m_spLightData.get();
 
@@ -407,6 +425,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // to meshes through deferred rendering.             //
     //***************************************************//
 
+    // Set the corresponding shader.
+    pDevice->SetShader(s_FxDeferredPassLightShaders[localLightCount]);
+
     // Since we're going to be rendering to quads, disable Z buffer and alpha test entirely.
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
     pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
@@ -416,8 +437,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
-
-    pDevice->SetShader(s_FxDeferredPassLightShader);
 
     pDevice->SetSampler(0, This->m_spColorTex);
     pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
@@ -583,8 +602,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // terrain and objects.                               //
     //****************************************************//
 
-    pDevice->SetShader(s_FxDeferredPassIBLShader);
-
     // Pick probes in the view.
     s_IBLProbesInFrustum.clear();
 
@@ -602,7 +619,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     auto probeIterator = s_IBLProbesInFrustum.begin();
 
-    for (size_t i = 0; i < std::min<size_t>(s_IBLProbesInFrustum.size(), 8); i++)
+    const size_t iblCount = std::min<size_t>(s_IBLProbesInFrustum.size(), 8);
+
+    // Set the corresponding shader.
+    pDevice->SetShader(s_FxDeferredPassIBLShaders[iblCount]);
+
+    for (size_t i = 0; i < iblCount; i++)
     {
         const IBLProbeCache* cache = *probeIterator++;
 

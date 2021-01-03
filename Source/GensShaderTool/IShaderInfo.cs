@@ -11,6 +11,7 @@ namespace GensShaderTool
         public IReadOnlyList<SamplerInfo> Samplers { get; }
         public IReadOnlyList<string> Constants { get; }
         public IReadOnlyList<string> Definitions { get; }
+        public int IterationCount { get; }
 
         public bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique );
     }

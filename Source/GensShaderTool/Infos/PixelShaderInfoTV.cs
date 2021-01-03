@@ -23,6 +23,8 @@ namespace GensShaderTool.Infos
 
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
+        public virtual int IterationCount { get; } = 1;
+
         public virtual bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {
             return samplerBits == 0;
