@@ -165,8 +165,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     direct *= material.Shadow;
 
-    /*
-    for (int i = 0; i < 32; i++)
+    [unroll] for (int i = 0; i < 32; i++)
     {
         float4 item0 = mrgLocalLightData[i * 2 + 0];
         float4 item1 = mrgLocalLightData[i * 2 + 1];
@@ -177,17 +176,8 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         float innerRange = item0.w;
         float outerRange = item1.w;
 
-        float3 delta = lightPosition - position;
-        float distance = length(delta);
-        float3 direction = delta / distance;
-
-        float attenuation = innerRange + outerRange * distance + outerRange * distance * distance;
-        attenuation -= 0.002;
-
-        if (attenuation > 0)
-            direct += ComputeDirectLighting(material, direction, lightColor) / max(0.001, attenuation);
+        direct += ComputeLocalLight(position, material, lightPosition, lightColor, float4(0, innerRange, outerRange, outerRange));
     }
-    */
 
     return float4(direct + indirect, material.Alpha);
 }

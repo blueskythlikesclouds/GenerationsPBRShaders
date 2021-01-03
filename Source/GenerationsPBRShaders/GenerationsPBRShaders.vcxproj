@@ -117,6 +117,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATI2Handler.h" />
+    <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />

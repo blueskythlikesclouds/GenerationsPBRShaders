@@ -21,6 +21,7 @@ struct IBLProbeCache
     Eigen::Matrix4f m_InverseMatrix;
     Eigen::Vector3f m_Position;
     float m_Bias;
+    float m_Radius;
     float m_Distance;
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
 };
@@ -202,6 +203,13 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
                 cache.m_Position = Eigen::Vector3f(iblProbe.Position[0], iblProbe.Position[1], iblProbe.Position[2]) / 10.0f;
                 cache.m_Bias = iblProbe.Bias;
 
+                // help how do I cull OBBs 
+                const float scaleX = matrix.col(0).head<3>().norm();
+                const float scaleY = matrix.col(1).head<3>().norm();
+                const float scaleZ = matrix.col(2).head<3>().norm();
+
+                cache.m_Radius = std::max<float>(std::max<float>(scaleX, scaleY), scaleZ) / 2.0f * sqrtf(2.0f);
+
                 This->m_pScheduler->GetPicture(cache.m_spPicture, iblProbe.Name);
 
                 s_IBLProbes.push_back(std::make_unique<IBLProbeCache>(std::move(cache)));
@@ -214,6 +222,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     Hedgehog::Mirage::CRenderingDevice* pRenderingDevice = &This->m_pScheduler->m_pMisc->m_pRenderingInfrastructure->m_RenderingDevice;
     Hedgehog::Yggdrasill::CYggDevice* pDevice = This->m_pScheduler->m_pMisc->m_pDevice;
     Sonic::CFxSceneRenderer* pSceneRenderer = (Sonic::CFxSceneRenderer*)This->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
+
+    const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
 
     // Prepare and set render targets. Clear their contents.
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spGBuffer1Surface;
@@ -351,7 +361,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Pass 32 omni lights from the view to shaders.
     if (pSceneRenderer->m_pLightManager && pSceneRenderer->m_pLightManager->m_pStaticLightContext && 
-        pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData && false)
+        pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData)
     {
         Hedgehog::Mirage::CLightListData* pLightListData = 
             pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
@@ -363,7 +373,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             if ((*it)->m_Type != Hedgehog::Mirage::HH_MR_LIGHT_TYPE_OMNI)
                 continue;
 
-            s_LocalLightsInFrustum.insert({ *it, ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm() });
+            const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
+
+            if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
+                s_LocalLightsInFrustum.insert({ *it, distance });
         }
 
         float localLightData[256];
@@ -386,7 +399,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             localLightData[i * 8 + 7] = pLightData->m_Range.z();
         }
 
-        pD3DDevice->SetPixelShaderConstantF(106, (const float*)localLightData, 64);
+        pD3DDevice->SetPixelShaderConstantF(109, (const float*)localLightData, 64);
     }
 
     //***************************************************//
@@ -577,6 +590,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     for (auto& probe : s_IBLProbes)
     {
+        if (!frustum.intersects(probe->m_Position, probe->m_Radius))
+            continue;
+
         probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm();
         s_IBLProbesInFrustum.insert(probe.get());
     }

@@ -47,6 +47,21 @@ float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
     return result;
 }
 
+float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
+{
+    float3 result = 0;
+
+#if !defined(NoLight) || !NoLight
+    result += ComputeLocalLight(input.Position, material, mrgLocalLight0_Position.xyz, mrgLocalLight0_Color.rgb, mrgLocalLight0_Range);
+    result += ComputeLocalLight(input.Position, material, mrgLocalLight1_Position.xyz, mrgLocalLight1_Color.rgb, mrgLocalLight1_Range);
+    result += ComputeLocalLight(input.Position, material, mrgLocalLight2_Position.xyz, mrgLocalLight2_Color.rgb, mrgLocalLight2_Range);
+    result += ComputeLocalLight(input.Position, material, mrgLocalLight3_Position.xyz, mrgLocalLight3_Color.rgb, mrgLocalLight3_Range);
+    result += ComputeLocalLight(input.Position, material, mrgLocalLight4_Position.xyz, mrgLocalLight4_Color.rgb, mrgLocalLight4_Range);
+#endif
+
+    return result;
+}
+
 void main(in DECLARATION_TYPE input,
     out float4 outColor0 : COLOR0,
     out float4 outColor1 : COLOR1,
@@ -178,6 +193,8 @@ void main(in DECLARATION_TYPE input,
         directLighting *= saturate(cosTheta);
 #endif
         directLighting *= material.Shadow;
+
+        directLighting += ComputeLocalLight(input, material);
 
         float3 indirectLighting = ComputeIndirectLighting(material, g_EnvBRDFSampler);
 

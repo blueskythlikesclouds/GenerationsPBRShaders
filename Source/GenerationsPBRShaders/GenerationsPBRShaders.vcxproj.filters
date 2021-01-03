@@ -67,6 +67,7 @@
     <ClInclude Include="ATI2Handler.h">
       <Filter>Patches\Other</Filter>
     </ClInclude>
+    <ClInclude Include="Frustum.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Patches">

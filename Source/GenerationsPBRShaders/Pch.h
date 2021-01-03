@@ -20,4 +20,5 @@
 #include <Sonic.h>
 #include <Hedgehog.h>
 
+#include "Frustum.h"
 #include "SceneEffect.h"
