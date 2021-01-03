@@ -33,14 +33,14 @@ float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
     n0.xy = n0.xy * 2 - 1;
     n0.z = sqrt(1 - saturate(dot(n0.xy, n0.xy)));
 
-    float3 normal = mul(tangentToWorldMatrix, n0.yxz);
+    float3 normal = mul(tangentToWorldMatrix, n0.xyz);
 
     float4 n1 = tex2D(normal1Sampler, UV(2));
 
     n1.xy = n1.xy * 2 - 1;
     n1.z = sqrt(1 - saturate(dot(n1.xy, n1.xy)));
 
-    float3 normal1 = mul(tangentToWorldMatrix, n1.yxz);
+    float3 normal1 = mul(tangentToWorldMatrix, n1.xyz);
 
     return lerp(normal, normal1, input.Color.w);
 }

@@ -28,6 +28,9 @@
     <ClCompile Include="LUTHandler.cpp">
       <Filter>Patches\Shader\Filter</Filter>
     </ClCompile>
+    <ClCompile Include="ATI2Handler.cpp">
+      <Filter>Patches\Other</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -60,6 +63,9 @@
     </ClInclude>
     <ClInclude Include="LUTHandler.h">
       <Filter>Patches\Shader\Filter</Filter>
+    </ClInclude>
+    <ClInclude Include="ATI2Handler.h">
+      <Filter>Patches\Other</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,3 +1,4 @@
+#include "ATI2Handler.h"
 #include "LUTHandler.h"
 #include "SceneEffect.h"
 #include "SGGIHandler.h"
@@ -26,6 +27,7 @@ extern "C" void __declspec(dllexport) Init()
     YggdrasillPatcher::applyPatches();
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();
+    ATI2Handler::applyPatches();
 }
 
 extern "C" void __declspec(dllexport) PostInit()

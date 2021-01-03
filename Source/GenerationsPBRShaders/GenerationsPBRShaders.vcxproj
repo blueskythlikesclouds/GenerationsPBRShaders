@@ -97,6 +97,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ATI2Handler.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="SGGIHandler.cpp" />
     <ClCompile Include="DllMain.cpp" />
@@ -115,6 +116,7 @@
     <ClCompile Include="YggdrasillPatcher.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ATI2Handler.h" />
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />

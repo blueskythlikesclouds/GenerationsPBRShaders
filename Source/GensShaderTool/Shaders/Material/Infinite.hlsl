@@ -37,7 +37,7 @@ float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
     normal.xy = normal.xy * 2 - 1;
     normal.z = sqrt(1 - saturate(dot(normal.xy, normal.xy)));
 
-    return mul(tangentToWorldMatrix, normal.yxz);
+    return mul(tangentToWorldMatrix, normal.xyz);
 }
 
 void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
