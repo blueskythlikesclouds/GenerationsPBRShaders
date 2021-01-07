@@ -4,7 +4,7 @@ DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1 };
 GIParam SceneEffect::GI = { true, false, 1 };
 SGGIParam SceneEffect::SGGI = { 0.7, 0.35 };
 ESMParam SceneEffect::ESM = { 4096 };
-RLRParam SceneEffect::RLR = { false, 32, 0.8f, 50.0f, 0.1f, 50.0f, 0.95f, 1.0f, 1.0f };
+RLRParam SceneEffect::RLR = { false, 32, 0.8f, 10000.0f, 0.1f, 50.0f, 0.95f, 1.0f, 1.0f };
 HighlightParam SceneEffect::Highlight = { true, 90, 4, 0.08, 2, 0.02, 0.3 };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)

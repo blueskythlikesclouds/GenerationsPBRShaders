@@ -20,7 +20,6 @@ extern "C" void __declspec(dllexport) Init()
     freopen("CONOUT$", "w", stdout);
 #endif 
 
-    LUTHandler::applyPatches();
     SGGIHandler::applyPatches();
     ShaderHandler::applyPatches();
     ShadowHandler::applyPatches();
@@ -38,4 +37,7 @@ extern "C" void __declspec(dllexport) PostInit()
         MessageBox(nullptr, TEXT("Please have latest versions of Better FxPipeline and Direct3D 9 Ex enabled"), TEXT("PBR Shaders"), MB_OK | MB_ICONERROR);
         exit(-1);
     }
+
+    // Do it in PostInit to not conflict with BFXP's FXAA.
+    LUTHandler::applyPatches();
 }
