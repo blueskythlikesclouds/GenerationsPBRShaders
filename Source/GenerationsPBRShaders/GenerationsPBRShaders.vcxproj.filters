@@ -31,6 +31,9 @@
     <ClCompile Include="ATI2Handler.cpp">
       <Filter>Patches\Other</Filter>
     </ClCompile>
+    <ClCompile Include="PBROnVanillaFunsies.cpp">
+      <Filter>Patches\Other</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -68,6 +71,9 @@
       <Filter>Patches\Other</Filter>
     </ClInclude>
     <ClInclude Include="Frustum.h" />
+    <ClInclude Include="PBROnVanillaFunsies.h">
+      <Filter>Patches\Other</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Patches">

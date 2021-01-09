@@ -98,6 +98,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ATI2Handler.cpp" />
+    <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="SGGIHandler.cpp" />
     <ClCompile Include="DllMain.cpp" />
@@ -119,6 +120,7 @@
     <ClInclude Include="ATI2Handler.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />
+    <ClInclude Include="PBROnVanillaFunsies.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />
     <ClInclude Include="SGGIHandler.h" />

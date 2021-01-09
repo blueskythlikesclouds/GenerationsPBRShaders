@@ -1,5 +1,6 @@
 #include "ATI2Handler.h"
 #include "LUTHandler.h"
+#include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
 #include "SGGIHandler.h"
 #include "ShaderHandler.h"
@@ -11,6 +12,7 @@
 extern "C" void __declspec(dllexport) OnFrame()
 {
     StageId::update();
+    PBROnVanillaFunsies::onFrame();
 }
 
 extern "C" void __declspec(dllexport) Init()
@@ -27,6 +29,8 @@ extern "C" void __declspec(dllexport) Init()
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();
     ATI2Handler::applyPatches();
+
+    // PBROnVanillaFunsies::applyPatches();
 }
 
 extern "C" void __declspec(dllexport) PostInit()
