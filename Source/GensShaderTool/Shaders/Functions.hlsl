@@ -20,7 +20,7 @@ float NdfGGX(float cosLh, float roughness)
 	float alpha = roughness * roughness;
 	float alphaSq = alpha * alpha;
 
-	float denom = (cosLh * cosLh) * (alphaSq - 1) + 1;
+	float denom = (cosLh * alphaSq - cosLh) * cosLh + 1;
 	return alphaSq / (PI * denom * denom);
 }
 
