@@ -39,6 +39,7 @@ struct RLRParam
     float AngleThreshold;
     float Saturation;
     float Brightness;
+    int32_t MaxLod;
 };
 
 struct HighlightParam

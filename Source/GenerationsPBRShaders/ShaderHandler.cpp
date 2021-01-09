@@ -671,7 +671,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Set IBL parameter.
     if (s_spDefaultIBLPicture && s_spDefaultIBLPicture->m_spPictureData && s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
     {
-        float iblLodParam[] = { std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()), s_spRLRTex->m_CreationParams.Levels, 0, 0 };
+        float iblLodParam[] = 
+        {
+            std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()),
+            SceneEffect::RLR.MaxLod >= 0 ? std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels,
+            0,
+            0
+        };
+
         pD3DDevice->SetPixelShaderConstantF(207, iblLodParam, 1);
     }
 
