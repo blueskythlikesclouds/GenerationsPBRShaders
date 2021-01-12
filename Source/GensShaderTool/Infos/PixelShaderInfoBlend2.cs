@@ -27,7 +27,8 @@ namespace GensShaderTool.Infos
 
         public virtual IReadOnlyList<string> Constants { get; } = new[]
         {
-            "PBRFactor"
+            "PBRFactor",
+            "PBRFactor2"
         };
 
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();

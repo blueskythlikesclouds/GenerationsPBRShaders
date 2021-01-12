@@ -18,6 +18,7 @@ sampler2D specularBlendSampler : register(s5);
 sampler2D normalBlendSampler : register(s6);
 
 float4 PBRFactor : register(c150);
+float4 PBRFactor2 : register(c151);
 
 float GetBlend(DECLARATION_TYPE input)
 {
@@ -48,7 +49,7 @@ float4 GetSpecular(DECLARATION_TYPE input)
     return float4(specular.x * 0.25, specular.yzw);
 
 #else
-    return float4(PBRFactor.xy, 1, 1);
+    return float4(lerp(PBRFactor.xy, PBRFactor2.xy, GetBlend(input)), 1, 1);
 #endif
 }
 
