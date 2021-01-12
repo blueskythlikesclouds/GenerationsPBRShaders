@@ -56,7 +56,7 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
     if (isDeferred)
         return;
 
-    float2 baseTexCoord = input.VPos * g_ViewportSize.zw;
+    float2 baseTexCoord = (input.VPos + 0.5) * g_ViewportSize.zw;
     float2 texCoord = baseTexCoord + mul(float4(material.Normal, 0), g_MtxView).xy * RefractionCubemap.y * g_ViewportSize.zw / input.ExtraParams.w;
 
     float depth = tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x;

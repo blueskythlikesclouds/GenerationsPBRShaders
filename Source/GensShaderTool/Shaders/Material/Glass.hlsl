@@ -58,7 +58,7 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
         return;
 
     // TODO: Handle refraction parallax
-    float4 framebuffer = tex2Dlod(g_FramebufferSampler, float4(input.VPos.xy * g_ViewportSize.zw, 0, 0));
+    float4 framebuffer = tex2Dlod(g_FramebufferSampler, float4((input.VPos.xy + 0.5) * g_ViewportSize.zw, 0, 0));
 
     finalColor.rgb = lerp(framebuffer.rgb * material.Albedo, finalColor.rgb, finalColor.a);
     finalColor.a = 1.0;
