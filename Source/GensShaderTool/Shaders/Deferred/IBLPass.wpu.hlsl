@@ -39,7 +39,8 @@ float4 ComputeIndirectIBLProbe(Material material, float3 position, samplerCUBE i
 
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 {
-    float3 viewPosition = GetPositionFromDepth(vPos, tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x, g_MtxInvProjection);
+    float depth = tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x;
+    float3 viewPosition = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
     float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
 
     float4 gBuffer0 = tex2Dlod(g_GBuffer0Sampler, float4(texCoord, 0, 0));
@@ -105,7 +106,12 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.IndirectSpecular = specularBRDF * sggiRoughness + indirectSpecular * sggiRoughnessIblFactor;
 
     float3 result = gBuffer0.rgb + ComputeIndirectLighting(material, g_EnvBRDFSampler);
-    float2 lightScattering = ComputeLightScattering(position);
 
-    return float4(result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y, material.Alpha);
+    if (depth < 1.0)
+    {
+        float2 lightScattering = ComputeLightScattering(position);
+        result = result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y;
+    }
+
+    return float4(result, material.Alpha);
 }
