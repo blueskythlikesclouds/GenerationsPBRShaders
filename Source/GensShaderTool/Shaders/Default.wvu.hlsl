@@ -70,7 +70,8 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
     output.Position.xyz = mul(float4(output.Position.xyz, 1), g_MtxWorld).xyz;
 
-    svPosition = mul(mul(float4(output.Position.xyz, 1), g_MtxView), g_MtxProjection);
+    float4 viewPosition = mul(float4(output.Position.xyz, 1), g_MtxView);
+    svPosition = mul(viewPosition, g_MtxProjection);
     svPosition.xy += g_ViewportSize.zw * float2(-1, 1) * svPosition.w;
 
     output.ExtraParams.zw = svPosition.zw;
@@ -95,7 +96,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
     if (!mrgIsUseDeferred)
     {
         output.ShadowMapCoord = mul(float4(output.Position.xyz, 1), g_MtxLightViewProjection);
-        output.ExtraParams.xy = ComputeLightScattering(input.Position);
+        output.ExtraParams.xy = ComputeLightScattering(input.Position, viewPosition.xyz);
     }
 
     output.Color = input.Color;

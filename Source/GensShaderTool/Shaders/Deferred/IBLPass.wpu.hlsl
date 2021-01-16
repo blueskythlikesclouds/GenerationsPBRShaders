@@ -109,7 +109,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     if (depth < 1.0)
     {
-        float2 lightScattering = ComputeLightScattering(position);
+        float2 lightScattering = ComputeLightScattering(position, viewPosition);
         result = result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y;
     }
 
