@@ -17,6 +17,11 @@ void PBROnVanillaFunsies::onFrame()
     SceneEffect::Debug.MetalnessOverride = 0;
     SceneEffect::RLR.Enable = true;
     SceneEffect::RLR.Brightness = 2;
+
+    SceneEffect::SSAO.Enable = true;
+    SceneEffect::SSAO.Strength = 2;
+
+    *(float*)0x1A4356C = 0;
 }
 
 uint32_t trampolineFunctionAddress = 0x6621A0;

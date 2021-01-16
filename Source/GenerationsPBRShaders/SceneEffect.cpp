@@ -6,6 +6,7 @@ SGGIParam SceneEffect::SGGI = { 0.7, 0.35 };
 ESMParam SceneEffect::ESM = { 4096 };
 RLRParam SceneEffect::RLR = { false, 32, 0.8f, 10000.0f, 0.1f, 50.0f, 0.95f, 1.0f, 1.0f, -1 };
 HighlightParam SceneEffect::Highlight = { true, 90, 4, 0.08, 2, 0.02, 0.3 };
+SSAOParam SceneEffect::SSAO = { false, 32, 0.25f, 0.25f, 1.0f };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
 {
@@ -62,6 +63,15 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaAmbientScale, "CharaAmbientScale");
     pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaAlbedoHeighten, "CharaAlbedoHeighten");
     pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaFalloffScale, "CharaFalloffScale");
+
+    spParameterGroup->Flush();
+
+    Sonic::CParameterCategory* pSSAOParamCategory = spParameterGroup->CreateParameterCategory("SSAO", "SSAO");
+    pSSAOParamCategory->CreateParamBool(&SceneEffect::SSAO.Enable, "Enable");
+    pSSAOParamCategory->CreateParamUnsignedLong(&SceneEffect::SSAO.SampleCount, "SampleCount");
+    pSSAOParamCategory->CreateParamFloat(&SceneEffect::SSAO.Radius, "Radius");
+    pSSAOParamCategory->CreateParamFloat(&SceneEffect::SSAO.DistanceFade, "DistanceFade");
+    pSSAOParamCategory->CreateParamFloat(&SceneEffect::SSAO.Strength, "Strength");
 
     spParameterGroup->Flush();
 

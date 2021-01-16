@@ -92,6 +92,12 @@ namespace GensShaderTool
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLPass.wpu.hlsl"),
                 IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
                 new[] { new PixelShaderInfoDeferredPassIBL() }, pixelShaderGlobalParameterSet);
+            //=============//
+            // SSAO Shader //
+            //=============//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "SSAO.wpu.hlsl"),
+                IS_XBOX_360 ? sOutputXbox360Directory : sOutputDirectory,
+                new[] { new PixelShaderInfoSSAO() }, pixelShaderGlobalParameterSet);
         }
         
 

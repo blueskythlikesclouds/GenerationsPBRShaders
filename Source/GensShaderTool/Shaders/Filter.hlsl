@@ -67,6 +67,30 @@ float4 tex2DFastBicubic(const sampler texref, float x, float y, float2 invSize)
     return r;
 }
 
+float4 tex2DlodFastBicubic(const sampler texref, float x, float y, float2 invSize, float lod)
+{
+    x -= 0.5f;
+    y -= 0.5f;
+    float px = floor(x);
+    float py = floor(y);
+    float fx = x - px;
+    float fy = y - py;
+
+    // note: we could store these functions in a lookup table texture, but maths is cheap
+    float g0x = g0(fx);
+    float g1x = g1(fx);
+    float h0x = h0(fx);
+    float h1x = h1(fx);
+    float h0y = h0(fy);
+    float h1y = h1(fy);
+
+    float4 r = g0(fy) * (g0x * tex2Dlod(texref, float4(float2(px + h0x, py + h0y) * invSize, 0, lod)) +
+                         g1x * tex2Dlod(texref, float4(float2(px + h1x, py + h0y) * invSize, 0, lod))) +
+               g1(fy) * (g0x * tex2Dlod(texref, float4(float2(px + h0x, py + h1y) * invSize, 0, lod)) +
+                         g1x * tex2Dlod(texref, float4(float2(px + h1x, py + h1y) * invSize, 0, lod)));
+    return r;
+}
+
 float4 tex2DgradFastBicubic(const sampler texref, float x, float y, float2 invSize, float2 gradX, float2 gradY)
 {
     x -= 0.5f;

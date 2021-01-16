@@ -39,12 +39,16 @@ Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
 
 Hedgehog::Mirage::SShaderPair s_FxCopyColorDepthShader;
 
+Hedgehog::Mirage::SShaderPair s_FxSSAOShader;
+
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer1Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer2Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer3Tex;
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTempTex;
+
+boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spSSAOTex;
 
 std::vector<std::unique_ptr<SHLightFieldCache>> s_SHLFs;
 std::vector<std::unique_ptr<IBLProbeCache>> s_IBLProbes;
@@ -118,6 +122,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
+    This->m_pScheduler->GetShader(s_FxSSAOShader, "FxFilterPT", "FxSSAO");
+
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer3Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
@@ -127,6 +133,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTempTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+
+    const uint32_t SSAO_WIDTH = This->m_spColorTex->m_CreationParams.Width >> 1;
+    const uint32_t SSAO_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> 1;
+
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spSSAOTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
     s_spEnvBRDFPicture = nullptr;
     s_spDefaultIBLPicture = nullptr;
@@ -373,6 +384,70 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Deferred pass //
     //***************//
 
+    // Since we're going to be rendering to quads, disable Z buffer and alpha test entirely.
+    pRenderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+    pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
+
+    pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+    pRenderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
+
+    pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+    pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
+
+    pDevice->SetSampler(0, This->m_spColorTex);
+    pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
+
+    pDevice->SetSampler(1, s_spGBuffer1Tex);
+    pDevice->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
+
+    pDevice->SetSampler(2, s_spGBuffer2Tex);
+    pDevice->SetSamplerFilter(2, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(2, D3DTADDRESS_CLAMP);
+
+    pDevice->SetSampler(3, s_spGBuffer3Tex);
+    pDevice->SetSamplerFilter(3, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(3, D3DTADDRESS_CLAMP);
+
+    pDevice->SetSampler(11, This->m_spColorTex);
+    pDevice->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
+
+    pDevice->SetSampler(12, This->m_spDepthTex);
+    pDevice->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
+
+    if (SceneEffect::SSAO.Enable)
+    {
+        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSSAOSurface;
+        s_spSSAOTex->GetSurface(spSSAOSurface, 0, 0);
+
+        float sampleCount_invSampleCount_radius_distanceFade[] =
+        {
+            (float)SceneEffect::SSAO.SampleCount,
+            1.0f / (float)SceneEffect::SSAO.SampleCount,
+            SceneEffect::SSAO.Radius,
+            SceneEffect::SSAO.DistanceFade
+        };
+
+        float strength[] =
+        {
+            SceneEffect::SSAO.Strength,
+            0,
+            0,
+            0
+        };
+
+        pD3DDevice->SetPixelShaderConstantF(150, sampleCount_invSampleCount_radius_distanceFade, 1);
+        pD3DDevice->SetPixelShaderConstantF(151, strength, 1);
+
+        pDevice->SetShader(s_FxSSAOShader);
+
+        pDevice->SetRenderTarget(0, spSSAOSurface);
+        pDevice->RenderQuad(nullptr, 0, 0);
+    }   
+
     // Pass 32 omni lights from the view to shaders.
     size_t localLightCount = 0;
 
@@ -428,40 +503,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Set the corresponding shader.
     pDevice->SetShader(s_FxDeferredPassLightShaders[localLightCount]);
 
-    // Since we're going to be rendering to quads, disable Z buffer and alpha test entirely.
-    pRenderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
-
-    pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
-
-    pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
-
-    pDevice->SetSampler(0, This->m_spColorTex);
-    pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
-
-    pDevice->SetSampler(1, s_spGBuffer1Tex);
-    pDevice->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
-
-    pDevice->SetSampler(2, s_spGBuffer2Tex);
-    pDevice->SetSamplerFilter(2, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(2, D3DTADDRESS_CLAMP);
-
-    pDevice->SetSampler(3, s_spGBuffer3Tex);
-    pDevice->SetSamplerFilter(3, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(3, D3DTADDRESS_CLAMP);
-
-    pDevice->SetSampler(11, This->m_spColorTex);
-    pDevice->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
-
-    pDevice->SetSampler(12, This->m_spDepthTex);
-    pDevice->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
-
     // Set shadowmaps.
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMapNoTerrain;
     This->GetTexture(spShadowMapNoTerrain, "shadowmap_noterrain");
@@ -507,7 +548,34 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pD3DDevice->SetPixelShaderConstantF(185 + i, shlfParam, 1);
     }
 
+    // Set SSAO.
+    pD3DDevice->SetPixelShaderConstantB(8, (const BOOL*)&SceneEffect::SSAO.Enable, 1);
+
+    if (SceneEffect::SSAO.Enable)
+    {
+        float ssaoSize[] =
+        {
+            s_spSSAOTex->m_CreationParams.Width,
+            s_spSSAOTex->m_CreationParams.Height,
+
+            1.0f / s_spSSAOTex->m_CreationParams.Width,
+            1.0f / s_spSSAOTex->m_CreationParams.Height,
+        };
+
+        pD3DDevice->SetPixelShaderConstantF(189, ssaoSize, 1);
+        
+        pDevice->SetSampler(10, s_spSSAOTex);
+        pDevice->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+        pDevice->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
+
+        pDevice->SetRenderTarget(1, spGBuffer2Surface); // To update AO in the GBuffer
+    }
+
+    pDevice->SetRenderTarget(0, This->m_spColorSurface);
     pDevice->RenderQuad(nullptr, 0, 0);
+
+    if (SceneEffect::SSAO.Enable)
+        pDevice->SetRenderTarget(1, nullptr);
 
     //*****************************//
     // Real-time Local Reflections //

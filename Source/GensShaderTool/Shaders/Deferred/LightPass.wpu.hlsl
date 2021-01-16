@@ -4,9 +4,15 @@
 float3x4 mrgSHLightFieldMatrices[4] : register(c173);
 float4 mrgSHLightFieldParams[4] : register(c185);
 
+float4 g_SSAOSize : register(c189);
+
 sampler3D g_SHLightFieldSamplers[4] : register(s4);
 
 sampler g_ShadowMapNoTerrainSampler : register(s9);
+
+sampler g_SSAOSampler : register(s10);
+
+bool g_IsEnableSSAO : register(b8);
 
 void ComputeSHLightField(inout Material material, in float3 position)
 {
@@ -91,7 +97,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
     material.IndirectDiffuse = ComputeSHFinal(material.IndirectDiffuse) * 2;
 }
 
-float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
+float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGBuffer2 : COLOR1) : COLOR
 {
     float3 viewPosition = GetPositionFromDepth(vPos, tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x, g_MtxInvProjection);
     float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
@@ -103,13 +109,20 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     uint type = uint(abs(round(gBuffer3.w * 4)));
 
+    float ambientOcclusionEx = 1.0;
+    if (g_IsEnableSSAO)
+    {
+        ambientOcclusionEx = tex2DlodFastBicubic(g_SSAOSampler, texCoord.x * g_SSAOSize.x, texCoord.y * g_SSAOSize.y, g_SSAOSize.zw, 0).x;
+        oGBuffer2 = float4(gBuffer2.x, gBuffer2.y, gBuffer2.z * ambientOcclusionEx, gBuffer2.w);
+    }
+
     Material material;
 
     material.Albedo = gBuffer1.rgb;
     material.Alpha = gBuffer0.a;
     material.FresnelFactor = gBuffer2.x;
     material.Roughness = max(0.01, gBuffer2.y);
-    material.AmbientOcclusion = gBuffer2.z;
+    material.AmbientOcclusion = gBuffer2.z * ambientOcclusionEx;
     material.Metalness = gBuffer2.w;
 
     material.Normal = normalize(gBuffer3.xyz * 2 - 1);
@@ -133,7 +146,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     if (type == 1) // GI
     {
         direct = ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
-        indirect = gBuffer0.rgb;
+        indirect = gBuffer0.rgb * ambientOcclusionEx;
 
         material.Shadow *= ComputeShadow(g_ShadowMapNoTerrainSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
     }
@@ -177,7 +190,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         float outerRange = item1.w;
 
         direct += ComputeLocalLight(position, material, lightPosition, lightColor, float4(0, innerRange, outerRange, outerRange));
-    }
+    } 
 
     return float4(direct + indirect, material.Alpha);
 }

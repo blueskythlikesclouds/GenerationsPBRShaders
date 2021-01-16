@@ -524,4 +524,23 @@ float ComputeFalloff(float cosViewDirection, float3 falloffFactor)
     return saturate(exp2(log2(saturate(1 - cosViewDirection + falloffFactor.z)) * falloffFactor.y) * falloffFactor.x);
 }
 
+float InterleavedGradientNoise(float2 p)
+{
+    float3 magic = float3(0.06711056, 0.00583715, 52.9829189);
+    return frac(magic.z * frac(dot(p, magic.xy)));
+}
+
+float2 CalculateVogelDiskSample(int sampleIndex, int sampleCount, float phi)
+{
+    const float goldenAngle = 2.4;
+
+    float r = sqrt(sampleIndex + 0.5) / sqrt(sampleCount);
+    float theta = sampleIndex * goldenAngle + phi;
+
+    float sine, cosine;
+    sincos(theta, sine, cosine);
+
+    return float2(r * cosine, r * sine);
+}
+
 #endif

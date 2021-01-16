@@ -53,6 +53,15 @@ struct HighlightParam
     float CharaFalloffScale;
 };
 
+struct SSAOParam
+{
+    bool Enable;
+    unsigned long SampleCount;
+    float Radius;
+    float DistanceFade;
+    float Strength;
+};
+
 class SceneEffect
 {
 public:
@@ -62,6 +71,7 @@ public:
     static ESMParam ESM;
     static RLRParam RLR;
     static HighlightParam Highlight;
+    static SSAOParam SSAO;
 
     static void applyPatches();
 };
