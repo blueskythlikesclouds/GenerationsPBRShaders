@@ -75,8 +75,6 @@ namespace GensShaderTool
 
             using (var writer = File.CreateText(outputHlslFilePath))
             {
-                writer.WriteLine("#include \"..\\shadow.hlsl\"");
-
                 for (int j = 0; j < (type == ShaderType.Vertex ? 255 : 224); j++)
                     writer.WriteLine("float4 c{0} : register(c{0});", j);
 
