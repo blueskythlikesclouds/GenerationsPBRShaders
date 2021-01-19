@@ -11,13 +11,49 @@ namespace GensShaderTool
 {
     public static class ShaderTranslator
     {
-        private static readonly ImmutableHashSet<string> sTextureSemantics =
+        private static readonly HashSet<string> sTextureSemantics =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
+                "1D",
                 "2D",
                 "3D",
                 "CUBE"
-            }.ToImmutableHashSet();
+            };
+
+        private static readonly Dictionary<string, string> sTextureSwizzleMap =
+            new Dictionary<string, string>
+            {
+                { "1D", "x" },
+                { "2D", "xy" },
+                { "3D", "xyz" },
+                { "CUBE", "xyz" }
+            };
+
+        private static void ProcessParameterMap(StreamWriter writer, List<ShaderParameter> parameters, Dictionary<string, string> paramMap, char prefix, string type)
+        {
+            foreach (var param in parameters)
+            {
+                if (param.Size > 1)
+                {
+                    for (int i = 0; i < param.Size; i++)
+                    {
+                        string register = $"{prefix}{param.Index + i}";
+                        string name = $"{param.Name}[{i}]";
+                        paramMap[register] = name;
+                    }
+                }
+                else
+                {
+                    string register = $"{prefix}{param.Index}";
+                    paramMap[register] = param.Name;
+                }
+
+                writer.WriteLine("{0} {1}{2} : register({3}{4});", type, param.Name, param.Size > 1 ? $"[{param.Size}]" : "", prefix, param.Index);
+            }
+
+            if (parameters.Count > 0)
+                writer.WriteLine();
+        }
 
         public static void TranslateToHlsl(string sourceFilePath, string outputDirectoryPath)
         {
@@ -28,10 +64,13 @@ namespace GensShaderTool
 
             var lines = File.ReadAllLines(asmFilePath);
 
+            var paramSet = ShaderParameterConverter.ParseAssemblyComments(lines);
+            var paramMap = new Dictionary<string, string>();
+
             var semantics = new List<(string, string)>();
             var constants = new Dictionary<string, (string, string, string, string)>();
 
-            ShaderType type = default;
+            ShaderType shaderType = default;
 
             int i;
             for (i = 0; i < lines.Length; i++)
@@ -42,12 +81,12 @@ namespace GensShaderTool
 
                 if (prettyLine == "vs_3_0")
                 {
-                    type = ShaderType.Vertex;
+                    shaderType = ShaderType.Vertex;
                 }
 
                 else if (prettyLine == "ps_3_0")
                 {
-                    type = ShaderType.Pixel;
+                    shaderType = ShaderType.Pixel;
                 }
 
                 else if (prettyLine.StartsWith("def"))
@@ -75,20 +114,37 @@ namespace GensShaderTool
 
             using (var writer = File.CreateText(outputHlslFilePath))
             {
-                for (int j = 0; j < (type == ShaderType.Vertex ? 255 : 224); j++)
-                    writer.WriteLine("float4 c{0} : register(c{0});", j);
+                ProcessParameterMap(writer, paramSet.SingleParameters, paramMap, 'c', "float4");
+                ProcessParameterMap(writer, paramSet.IntParameters, paramMap, 'i', "int");
+                ProcessParameterMap(writer, paramSet.BoolParameters, paramMap, 'b', "bool");
+
+                foreach ((string type, string register) in semantics.Where(x => sTextureSemantics.Contains(x.Item1)))
+                {
+                    int index = int.Parse(register.AsSpan().Slice(1));
+                    var param = paramSet.SamplerParameters.FirstOrDefault(x => index >= (x.Index & 0xF) && index < (x.Index & 0xF) + x.Size);
+
+                    string name = register;
+
+                    if (param != null)
+                    {
+                        name = param.Size > 1 ? $"{param.Name}{index - param.Index}" : param.Name;
+                        paramMap[register] = name;
+                    }
+
+                    writer.WriteLine("sampler{0} {1} : register({2});", type, name, register);
+                }
 
                 writer.WriteLine();
 
-                for (int j = 0; j < 16; j++)
-                    writer.WriteLine("bool b{0} : register(b{0});", j);
+                foreach (string texSemantic in sTextureSemantics)
+                {
+                    writer.WriteLine("float4 tex(sampler{0} s, float4 texCoord) {{ return tex{0}(s, texCoord.{1}); }}", texSemantic, sTextureSwizzleMap[texSemantic]);
+                    writer.WriteLine("float4 texBias(sampler{0} s, float4 texCoord) {{ return tex{0}bias(s, texCoord); }}", texSemantic);
+                    writer.WriteLine("float4 texLod(sampler{0} s, float4 texCoord) {{ return tex{0}lod(s, texCoord); }}", texSemantic);
+                    writer.WriteLine("float4 texProj(sampler{0} s, float4 texCoord) {{ return tex{0}proj(s, texCoord); }}", texSemantic);
+                }
 
-                writer.WriteLine();
-
-                foreach ((string name, string register) in semantics.Where(x => sTextureSemantics.Contains(x.Item1)))
-                    writer.WriteLine("sampler{0} {1} : register({1});", name, register);
-
-                writer.WriteLine();
+                writer.WriteLine("\nfloat4 normalize(float4 value) { return value / sqrt(dot(value.xyz, value.xyz)); }\n");
 
                 writer.WriteLine("void main(\n{0},\n\tout float4 oC0 : COLOR0)\n{{",
                     string.Join(", \n",
@@ -112,7 +168,15 @@ namespace GensShaderTool
                     if (prettyLine.StartsWith("//") || string.IsNullOrEmpty(prettyLine))
                         continue;
 
-                    writer.WriteLine("\t{0}", new Instruction(prettyLine));
+                    var instruction = new Instruction(prettyLine);
+
+                    foreach (var argument in instruction.Arguments)
+                    {
+                        if (paramMap.TryGetValue(argument.Token, out string paramName))
+                            argument.Token = paramName;
+                    }
+                    
+                    writer.WriteLine("\t{0}", instruction.ToString());
                 }
 
                 writer.WriteLine("}");
@@ -305,8 +369,6 @@ namespace GensShaderTool
 
         public override string ToString()
         {
-            Simplify();
-
             var stringBuilder = new StringBuilder(4);
 
             for (int i = 0; i < 4; i++)
@@ -533,7 +595,6 @@ namespace GensShaderTool
                     break;      
                 
                 case "nrm":
-                    Arguments[0].Swizzle.Resize(3);
                     Arguments[1].Swizzle.Convert(Arguments[0].Swizzle);
 
                     stringBuilder.AppendFormat("{0} = normalize({1});", Arguments[0], Arguments[1]);
@@ -566,19 +627,19 @@ namespace GensShaderTool
                     break;
 
                 case "texld":
-                    stringBuilder.AppendFormat("{0} = tex2D({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
+                    stringBuilder.AppendFormat("{0} = tex({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
                     break;       
                 
                 case "texldb":
-                    stringBuilder.AppendFormat("{0} = tex2Dbias({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
+                    stringBuilder.AppendFormat("{0} = texBias({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
                     break;      
                 
                 case "texldl":
-                    stringBuilder.AppendFormat("{0} = tex2Dlod({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
+                    stringBuilder.AppendFormat("{0} = texLod({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
                     break;        
                 
                 case "texldp":
-                    stringBuilder.AppendFormat("{0} = tex2Dproj({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
+                    stringBuilder.AppendFormat("{0} = texProj({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
                     break;
 
                 default:

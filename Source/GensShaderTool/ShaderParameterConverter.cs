@@ -47,7 +47,6 @@ namespace GensShaderTool
                             if (!parameter.Name.StartsWith("g_"))
                                 parameter.Index |= (byte)(parameter.Index << 4); // index within mrgTexcoordIndex, going to assume it's the same as the register
 
-                            parameter.Size = 0;
                             parameterSet.SamplerParameters.Add( parameter );
                             break;
 
