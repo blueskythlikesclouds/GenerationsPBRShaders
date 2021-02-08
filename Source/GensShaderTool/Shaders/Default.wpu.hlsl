@@ -30,14 +30,14 @@
 #include "Material/Infinite.hlsl"
 #endif
 
-float4 texGI(float2 texCoord, float2 gradX, float2 gradY)
+float4 texGI(float2 texCoord)
 {
     float4 result;
 
     [branch] if (g_IsUseCubicFilter)
-        result = tex2DgradFastBicubic(g_GISampler, texCoord.x * mrgGIAtlasSize.x, texCoord.y * mrgGIAtlasSize.y, mrgGIAtlasSize.zw, gradX, gradY);
+        result = tex2DlodFastBicubic(g_GISampler, texCoord.x * mrgGIAtlasSize.x, texCoord.y * mrgGIAtlasSize.y, mrgGIAtlasSize.zw, 0);
     else
-        result = tex2Dgrad(g_GISampler, texCoord, gradX, gradY);
+        result = tex2Dlod(g_GISampler, float4(texCoord, 0, 0));
 
     [branch] if (g_IsEnableInverseToneMap)
         result.rgb = UnpackHDRCustom(result.rgb, g_GIParam.x);
@@ -124,10 +124,7 @@ void main(in DECLARATION_TYPE input,
 #else
     float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;
 
-    float2 gradX = ddx(giCoord);
-    float2 gradY = ddy(giCoord);
-
-    float4 gi = texGI(giCoord, gradX, gradY);
+    float4 gi = texGI(giCoord);
 
     [branch] if (mrgIsUseSGGI)
     {
@@ -138,10 +135,10 @@ void main(in DECLARATION_TYPE input,
         float2 sggiCoord2 = sggiCoord + float2(0,                   mrgSGGIAtlasParam.y);
         float2 sggiCoord3 = sggiCoord + float2(mrgSGGIAtlasParam.x, mrgSGGIAtlasParam.y);
 
-        float3 sggiLevel0 = texGI(sggiCoord0, gradX, gradY).rgb;
-        float3 sggiLevel1 = texGI(sggiCoord1, gradX, gradY).rgb;
-        float3 sggiLevel2 = texGI(sggiCoord2, gradX, gradY).rgb;
-        float3 sggiLevel3 = texGI(sggiCoord3, gradX, gradY).rgb;
+        float3 sggiLevel0 = texGI(sggiCoord0).rgb;
+        float3 sggiLevel1 = texGI(sggiCoord1).rgb;
+        float3 sggiLevel2 = texGI(sggiCoord2).rgb;
+        float3 sggiLevel3 = texGI(sggiCoord3).rgb;
 
         const float3 sggiAxis0 = float3(0, 0.57735002, 1);
         const float3 sggiAxis1 = float3(0, 0.57735002, -1);
