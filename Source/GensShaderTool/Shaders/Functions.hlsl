@@ -163,7 +163,16 @@ float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSi
     sum += uw0 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u0, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
     sum += uw1 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u1, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
 
-    return sum * 1.0f / 16;
+    float fade;
+
+    fade  = saturate(shadowPos.x / 0.01);
+    fade *= saturate(shadowPos.y / 0.01);
+    fade *= saturate(shadowPos.z / 0.01);
+    fade *= saturate((1 - shadowPos.x) / 0.01);
+    fade *= saturate((1 - shadowPos.y) / 0.01);
+    fade *= saturate((1 - shadowPos.z) / 0.01);
+
+    return lerp(1, sum * 1.0f / 16, fade);
 }
 
 // Welcome to Sonic Forces PC....
