@@ -11,8 +11,6 @@ namespace GensShaderTool.Infos
 
         public IReadOnlyList<SamplerInfo> Samplers { get; } = Array.Empty<SamplerInfo>();
 
-        public IReadOnlyList<string> Constants { get; } = Array.Empty<string>();
-
         public IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
         public virtual int IterationCount { get; } = 1;

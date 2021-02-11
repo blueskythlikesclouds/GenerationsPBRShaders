@@ -70,8 +70,6 @@ namespace GensShaderTool
             var semantics = new List<(string, string)>();
             var constants = new Dictionary<string, (string, string, string, string)>();
 
-            ShaderType shaderType = default;
-
             int i;
             for (i = 0; i < lines.Length; i++)
             {
@@ -79,17 +77,7 @@ namespace GensShaderTool
                 if (prettyLine.StartsWith("//") || string.IsNullOrEmpty(prettyLine))
                     continue;
 
-                if (prettyLine == "vs_3_0")
-                {
-                    shaderType = ShaderType.Vertex;
-                }
-
-                else if (prettyLine == "ps_3_0")
-                {
-                    shaderType = ShaderType.Pixel;
-                }
-
-                else if (prettyLine.StartsWith("def"))
+                if (prettyLine.StartsWith("def"))
                 {
                     var split = prettyLine.Split(',');
                     constants.Add(split[0].Substring(split[0].IndexOf(' ') + 1),

@@ -18,12 +18,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "emissionSampler", "emission", "d" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "PBRFactor",
-            "Blend"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly" };
 
         public virtual int IterationCount { get; } = 1;

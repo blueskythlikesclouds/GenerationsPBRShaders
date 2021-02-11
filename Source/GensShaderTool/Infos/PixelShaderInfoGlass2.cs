@@ -21,14 +21,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "emissionSampler", "emission", "E" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "PBRFactor",
-            "FalloffFactor",
-            "Refraction",
-            "Luminance"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
         public virtual int IterationCount { get; } = 1;

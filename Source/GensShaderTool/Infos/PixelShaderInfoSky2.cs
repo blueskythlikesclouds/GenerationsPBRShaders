@@ -19,10 +19,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo("transparencySampler", "transparency", "a")
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new string[]
-        {
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
         public virtual int IterationCount { get; } = 1;

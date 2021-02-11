@@ -20,11 +20,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "normal1Sampler", "normal", "" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "PBRFactor"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "GIOnly" };
 
         public virtual int IterationCount { get; } = 1;

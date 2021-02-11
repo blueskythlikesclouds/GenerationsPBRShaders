@@ -20,13 +20,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "reflectionSampler", "reflection", "" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "ChrEye1",
-            "ChrEye2",
-            "ChrEye3"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly", "HasMetalness" }; // HasMetalness to prevent rejection of specular W
 
         public virtual int IterationCount { get; } = 1;

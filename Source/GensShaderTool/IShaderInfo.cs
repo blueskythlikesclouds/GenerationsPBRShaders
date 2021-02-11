@@ -9,7 +9,6 @@ namespace GensShaderTool
         public ShaderType Type { get; }
         public IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; }
         public IReadOnlyList<SamplerInfo> Samplers { get; }
-        public IReadOnlyList<string> Constants { get; }
         public IReadOnlyList<string> Definitions { get; }
         public int IterationCount { get; }
 

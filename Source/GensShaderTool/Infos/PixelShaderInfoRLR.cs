@@ -9,13 +9,7 @@ namespace GensShaderTool.Infos
 
         public IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = Array.Empty<PixelShaderTechniqueInfo>();
 
-        public IReadOnlyList<SamplerInfo> Samplers { get; } = new SamplerInfo[]
-        {
-        };
-
-        public IReadOnlyList<string> Constants { get; } = new string[]
-        {
-        };
+        public IReadOnlyList<SamplerInfo> Samplers { get; } = Array.Empty<SamplerInfo>();
 
         public IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 

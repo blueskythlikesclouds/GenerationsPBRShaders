@@ -17,8 +17,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "g_GBuffer3Sampler", "GBuffer3", "" ),
         };
 
-        public IReadOnlyList<string> Constants { get; } = Array.Empty<string>();
-
         public IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
         public virtual int IterationCount { get; } = 1 + 32;

@@ -21,12 +21,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "reflectionSampler", "reflection", "o" )
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "Luminance",
-            "Offset"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
         public virtual int IterationCount { get; } = 1;

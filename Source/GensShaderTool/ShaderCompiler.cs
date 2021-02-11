@@ -4,9 +4,14 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using GensShaderTool.Extensions;
+using SharpGen.Runtime;
+using Vortice.D3DCompiler;
+using Vortice.Direct3D;
 
 namespace GensShaderTool
 {
@@ -25,14 +30,13 @@ namespace GensShaderTool
         };
 
         public static void Compile( string hlslFilePath, string outputDirectory,
-            IReadOnlyList<IShaderInfo> shaders, ShaderParameterSet globalParameterSet, bool isXbox360 = false )
+            IReadOnlyList<IShaderInfo> shaders, ShaderParameterSet globalParameterSet )
         {
-            int maxConstantIndex = globalParameterSet.SingleParameters.Max( x => x.Index ) + 1;
+            string hlslFileName = Path.GetFileName(hlslFilePath);
+            string hlslDirectoryPath = Path.GetDirectoryName(hlslFilePath);
+            string hlslFileData = File.ReadAllText(hlslFilePath);
 
             Directory.CreateDirectory( outputDirectory );
-
-            string asmDirectoryPath = Path.Combine( outputDirectory, "asm" );
-            Directory.CreateDirectory( asmDirectoryPath );
 
             var shaderLists = new List<ShaderList>();
             var permutations = new List<ShaderConverterPermutation>();
@@ -131,10 +135,6 @@ namespace GensShaderTool
                 shaders.ToImmutableDictionary( x => x,
                     x => x.Samplers.ToImmutableDictionary( y => y.Name, y => y, StringComparer.OrdinalIgnoreCase ) );
 
-            var constantMaps =
-                shaders.ToImmutableDictionary( x => x,
-                    x => x.Constants.ToImmutableHashSet( StringComparer.OrdinalIgnoreCase ) );
-
             var samplerDefMap = shaders.SelectMany( x => x.Samplers ).ToDictionary( x => x, x =>
             {
                 stringBuilder.Clear();
@@ -148,161 +148,130 @@ namespace GensShaderTool
                 return stringBuilder.ToString();
             } );
 
-            var allSamplerNames = shaders.SelectMany( x => x.Samplers ).Select( x => x.Name )
-                .ToImmutableHashSet( StringComparer.OrdinalIgnoreCase );
-
-            var allConstantNames = shaders.SelectMany( x => x.Constants )
-                .ToImmutableHashSet( StringComparer.OrdinalIgnoreCase );
-
-            var allDefs = shaders.SelectMany( x => x.Definitions.Append( $"Is{x.Name}" ) )
+            var allDefines = shaders.SelectMany( x => x.Definitions.Append( $"Is{x.Name}" ) )
                 .Concat( samplerDefMap.Values )
-                .Concat( sPixelShaderMiragePermutations ).Append( "IsXbox360" )
+                .Concat( sPixelShaderMiragePermutations )
                 .ToImmutableHashSet( StringComparer.OrdinalIgnoreCase );
 
             var globalParameterNames = globalParameterSet.BoolParameters.Concat( globalParameterSet.IntParameters )
                 .Concat( globalParameterSet.SamplerParameters ).Concat( globalParameterSet.SingleParameters )
                 .Select( x => x.Name ).ToImmutableHashSet( StringComparer.OrdinalIgnoreCase );
 
-            Parallel.ForEach( permutations, permutation =>
+            int currentPermutationIndex = 0;
+
+            Parallel.ForEach(permutations, permutation =>
             {
                 char typeChar = permutation.Shader.Type == ShaderType.Vertex ? 'v' : 'p';
 
-                var nameBuilder = new StringBuilder( permutation.Name.Length * 4 );
-                nameBuilder.Append( permutation.Name );
-                if ( permutation.Technique != null && permutation.Shader.Techniques.Count > 1 )
-                    nameBuilder.AppendFormat( "@@{0}", permutation.Technique.Suffix );
+                var nameBuilder = new StringBuilder(permutation.Name.Length * 4);
+                nameBuilder.Append(permutation.Name);
 
-                var defs = new HashSet<string>( allDefs.Count / 2, StringComparer.OrdinalIgnoreCase );
+                if (permutation.Technique != null && permutation.Shader.Techniques.Count > 1)
+                    nameBuilder.AppendFormat("@@{0}", permutation.Technique.Suffix);
 
-                defs.Add( $"Is{permutation.Shader.Name}" );
-                foreach ( string def in permutation.Shader.Definitions )
-                    defs.Add( def );
+                var permutationDefines = new HashSet<string>(allDefines.Count / 2, StringComparer.OrdinalIgnoreCase);
 
-                if ( isXbox360 )
-                    defs.Add( "IsXbox360" );
+                permutationDefines.Add($"Is{permutation.Shader.Name}");
+                foreach (string def in permutation.Shader.Definitions)
+                    permutationDefines.Add(def);
 
-                for ( int i = 0; i < permutation.Shader.Samplers.Count; i++ )
-                    if ( ( ( permutation.SamplerBits >> i ) & 1 ) != 0 )
-                        defs.Add( samplerDefMap[ permutation.Shader.Samplers[ i ] ] );
+                for (int i = 0; i < permutation.Shader.Samplers.Count; i++)
+                {
+                    if (((permutation.SamplerBits >> i) & 1) != 0)
+                        permutationDefines.Add(samplerDefMap[permutation.Shader.Samplers[i]]);
+                }
 
                 var miragePermutations = permutation.Shader.Type == ShaderType.Vertex
                     ? sVertexShaderMiragePermutations
                     : sPixelShaderMiragePermutations;
 
-                for ( int i = 0; i < miragePermutations.Length; i++ )
+                for (int i = 0; i < miragePermutations.Length; i++)
                 {
-                    if ( ( ( permutation.MiragePermutationBits >> i ) & 1 ) == 0 )
+                    if (((permutation.MiragePermutationBits >> i) & 1) == 0)
                         continue;
 
-                    string permutationName = miragePermutations[ i ];
-                    defs.Add( permutationName );
-                    nameBuilder.AppendFormat( "_{0}", permutationName );
+                    string permutationName = miragePermutations[i];
+                    permutationDefines.Add(permutationName);
+                    nameBuilder.AppendFormat("_{0}", permutationName);
                 }
 
-                var defsBuilder = new StringBuilder( allDefs.Count * 8 );
-                foreach ( string def in allDefs )
-                    defsBuilder.AppendFormat( "/D {0}={1} ", def, defs.Contains( def ) ? 1 : 0 );
+                var defines = new List<ShaderMacro>(allDefines.Count);
 
-                for ( int i = 0; i < permutation.Shader.Samplers.Count; i++ )
-                    defsBuilder.AppendFormat( "/D {0}=s{1} /D {0}Index={1} ",
-                        permutation.Shader.Samplers[ i ].Name.Replace( "Sampler", "Register" ), i );
+                foreach (string define in allDefines)
+                    defines.Add(new ShaderMacro(define, permutationDefines.Contains(define) ? "1" : "0"));
 
-                for ( int i = 0; i < permutation.Shader.Constants.Count; i++ )
-                    defsBuilder.AppendFormat( "/D {0}Register=c{1} ", permutation.Shader.Constants[ i ],
-                        maxConstantIndex + i );
+                defines.Add(new ShaderMacro("IterationIndex", permutation.IterationIndex));
 
-                var samplerMap = samplerMaps[ permutation.Shader ];
-                foreach ( string samplerName in allSamplerNames.Where( x => !samplerMap.ContainsKey( x ) ) )
-                    defsBuilder.AppendFormat( "/D {0}=s15 /D {0}Index=15 ",
-                        samplerName.Replace( "Sampler", "Register" ) );
-
-                var constantMap = constantMaps[ permutation.Shader ];
-                foreach ( string constantName in allConstantNames.Where( x => !constantMap.Contains( x ) ) )
-                    defsBuilder.AppendFormat( "/D {0}Register=c255 ", constantName );
-
-                defsBuilder.AppendFormat( "/D IterationIndex={0}", permutation.IterationIndex );
-
-                string defines = defsBuilder.ToString();
                 string name = nameBuilder.ToString();
+                string codeFilePath = Path.Combine(outputDirectory, name + $".w{typeChar}u");
 
-                string codeFilePath =
-                    Path.Combine( outputDirectory, name + $".{( isXbox360 ? 'x' : 'w' )}{typeChar}u" );
-                string asmFilePath = codeFilePath + ".asm";
+                var result = Compiler.Compile(hlslFileData, defines.ToArray(), new ShaderCompilerInclude(hlslDirectoryPath), "main", hlslFilePath,
+                    $"{typeChar}s_3_0", ShaderFlags.PackMatrixRowMajor | ShaderFlags.OptimizationLevel3, out var blob, out var errorBlob);
 
-                var processStartInfo = new ProcessStartInfo
-                {
-                    FileName = isXbox360 ? "fxc-xbox360" : "fxc",
-                    Arguments =
-                        $"{( isXbox360 ? "/Xmaxtempreg:64 /Gfa" : "" )} /T {typeChar}s_3_0 /Zpr {defines} \"{hlslFilePath}\" /Fo \"{codeFilePath}\" /Fc \"{asmFilePath}\"",
-                    RedirectStandardError = true
-                };
+                if (result.Failure)
+                    throw new Exception(errorBlob.ConvertToString());
 
-                using ( var process = Process.Start( processStartInfo ) )
-                {
-                    process.WaitForExit();
-
-                    if ( !File.Exists( asmFilePath ) )
-                        throw new FileNotFoundException( process.StandardError.ReadToEnd(), asmFilePath );
-                }
+                Compiler.WriteBlobToFile(blob, codeFilePath, true);
 
                 bool anyLocal = false;
                 bool anyGlobal = false;
 
-                void MoveParameters( List<ShaderParameter> source, List<ShaderParameter> destination,
-                    Action<ShaderParameter> evaluation = null )
+                void MoveParameters(List<ShaderParameter> source, List<ShaderParameter> destination,
+                    Action<ShaderParameter> evaluation = null)
                 {
-                    foreach ( var parameter in source )
+                    foreach (var parameter in source)
                     {
-                        if ( globalParameterNames.Contains( parameter.Name ) )
+                        if (globalParameterNames.Contains(parameter.Name))
                         {
                             anyGlobal = true;
                             continue;
                         }
 
                         anyLocal = true;
-                        evaluation?.Invoke( parameter );
-                        destination.Add( parameter );
+                        evaluation?.Invoke(parameter);
+                        destination.Add(parameter);
                     }
                 }
 
-                var parameterSet = ShaderParameterConverter.ParseAssemblyComments( File.ReadAllLines( asmFilePath ) );
+                var samplerMap = samplerMaps[permutation.Shader];
 
-                var mainParameterSet = mainParameterSets[ permutation.Shader ];
+                var parameterSet = ShaderParameterConverter.ParseConstantTable(new MemoryStream(blob.GetBytes()));
 
-                lock ( mainParameterSet )
+                var mainParameterSet = mainParameterSets[permutation.Shader];
+
+                lock (mainParameterSet)
                 {
-                    MoveParameters( parameterSet.BoolParameters, mainParameterSet.BoolParameters );
+                    MoveParameters(parameterSet.BoolParameters, mainParameterSet.BoolParameters);
 
-                    MoveParameters( parameterSet.IntParameters, mainParameterSet.IntParameters );
+                    MoveParameters(parameterSet.IntParameters, mainParameterSet.IntParameters);
 
-                    MoveParameters( parameterSet.SingleParameters, mainParameterSet.SingleParameters );
+                    MoveParameters(parameterSet.SingleParameters, mainParameterSet.SingleParameters);
 
-                    MoveParameters( parameterSet.SamplerParameters, mainParameterSet.SamplerParameters, parameter =>
+                    MoveParameters(parameterSet.SamplerParameters, mainParameterSet.SamplerParameters, parameter =>
                     {
-                        if ( !samplerMap.TryGetValue( parameter.Name, out var info ) )
+                        if (!samplerMap.TryGetValue(parameter.Name, out var info))
                             return;
 
                         parameter.Name = info.Unit;
-                    } );
+                    });
                 }
 
                 var shader = new Shader();
                 shader.FileName = name;
 
-                if ( anyGlobal )
-                    shader.ParameterFileNames.Add( "global" );
+                if (anyGlobal)
+                    shader.ParameterFileNames.Add("global");
 
-                if ( anyLocal )
-                    shader.ParameterFileNames.Add( permutation.Shader.Name );
+                if (anyLocal)
+                    shader.ParameterFileNames.Add(permutation.Shader.Name);
 
-                shader.Save( Path.Combine( outputDirectory,
-                    name + $".{( permutation.Shader.Type == ShaderType.Vertex ? "vertex" : "pixel" )}shader" ) );
+                shader.Save(Path.Combine(outputDirectory,
+                    name + $".{(permutation.Shader.Type == ShaderType.Vertex ? "vertex" : "pixel")}shader"));
 
-                File.Move( asmFilePath,
-                    Path.Combine( asmDirectoryPath, name + $".{( isXbox360 ? 'x' : 'w' )}{typeChar}u.asm" ), true );
+                Console.WriteLine("({0}/{1}): {2}", Interlocked.Increment(ref currentPermutationIndex), permutations.Count, name);
 
-                if ( permutation.Shader.Type != ShaderType.Pixel || permutation.MiragePermutationBits != 0 ||
-                     permutation.ShaderList == null || permutation.Technique == null )
+                if (permutation.Shader.Type != ShaderType.Pixel || permutation.MiragePermutationBits != 0 ||
+                    permutation.ShaderList == null || permutation.Technique == null)
                     return;
 
                 var pixelShaderPermutation = new PixelShaderPermutation
@@ -313,13 +282,11 @@ namespace GensShaderTool
                 };
 
                 pixelShaderPermutation.VertexShaderPermutations.AddRange(
-                    permutation.Technique.VertexShaderPermutations );
+                    permutation.Technique.VertexShaderPermutations);
 
-                lock ( permutation.ShaderList )
-                {
-                    permutation.ShaderList.PixelShaderPermutations.Add( pixelShaderPermutation );
-                }
-            } );
+                lock (permutation.ShaderList)
+                    permutation.ShaderList.PixelShaderPermutations.Add(pixelShaderPermutation);
+            });
 
             foreach ( var (info, mainParameterSet) in mainParameterSets )
             {
@@ -359,6 +326,38 @@ namespace GensShaderTool
             public IShaderInfo Shader;
             public ShaderList ShaderList;
             public PixelShaderTechniqueInfo Technique;
+        }
+    }
+
+    public class ShaderCompilerInclude : Include
+    {
+        private readonly Stack<string> mDirectoryPaths;
+
+        public ShadowContainer Shadow { get; set; }
+
+        public Stream Open(IncludeType type, string fileName, Stream parentStream)
+        {
+            string fullPath = Path.Combine(mDirectoryPaths.Peek(), fileName);
+            mDirectoryPaths.Push(Path.GetDirectoryName(fullPath));
+
+            return File.OpenRead(fullPath);
+        }
+
+        public void Close(Stream stream)
+        {
+            mDirectoryPaths.Pop();
+            stream.Close();
+        }
+
+        public void Dispose()
+        {
+            Shadow.Dispose();
+        }
+
+        public ShaderCompilerInclude(string directoryPath)
+        {
+            mDirectoryPaths = new Stack<string>();
+            mDirectoryPaths.Push(directoryPath);
         }
     }
 }

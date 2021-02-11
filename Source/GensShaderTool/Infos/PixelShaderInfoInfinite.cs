@@ -22,12 +22,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "reflectionSampler", "reflection", "" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "FalloffFactor",
-            "FalloffFactorE"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly" };
 
         public virtual int IterationCount { get; } = 1;

@@ -77,9 +77,6 @@
     <None Update="Shaders\Sky.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\TV.wpu.hlsl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="Shaders\Filter\LUT.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -117,6 +114,10 @@
 
   <ItemGroup>
     <Folder Include="Parameters\Unleashed\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Vortice.D3DCompiler" Version="1.8.59" />
   </ItemGroup>
 
   <ItemGroup>

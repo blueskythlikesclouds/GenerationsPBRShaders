@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Amicitia.IO.Binary;
+using Amicitia.IO.Streams;
 
 namespace GensShaderTool
 {
@@ -57,6 +59,80 @@ namespace GensShaderTool
             }
 
             return parameterSet;
+        }
+
+        public static ShaderParameterSet ParseConstantTable(Stream stream)
+        {
+            var paramSet = new ShaderParameterSet();
+
+            using var reader = new BinaryValueReader(stream, StreamOwnership.Retain, Endianness.Little);
+
+            while (reader.Position < reader.Length)
+            {
+                uint signature = reader.ReadUInt32();
+                if (signature != 0x42415443) // CTAB
+                    continue;
+
+                long offset = reader.Position;
+
+                reader.Seek(12, SeekOrigin.Current);
+
+                int constantCount = reader.ReadInt32();
+                uint constantsOffset = reader.ReadUInt32();
+
+                for (int i = 0; i < constantCount; i++)
+                {
+                    reader.Seek(offset + constantsOffset + i * 20, SeekOrigin.Begin);
+
+                    uint nameOffset = reader.ReadUInt32();
+
+                    reader.Seek(2, SeekOrigin.Current);
+                    ushort index = reader.ReadUInt16();
+                    ushort count = reader.ReadUInt16();
+
+                    reader.Seek(2, SeekOrigin.Current);
+                    uint typeInfoOffset = reader.ReadUInt32();
+
+                    reader.Seek(offset + nameOffset, SeekOrigin.Begin);
+                    string name = reader.ReadString(StringBinaryFormat.NullTerminated);
+
+                    reader.Seek(offset + typeInfoOffset + 2, SeekOrigin.Begin);
+                    ushort type = reader.ReadUInt16();
+
+                    var param = new ShaderParameter
+                    {
+                        Index = (byte)index,
+                        Name = name,
+                        Size = (byte)count
+                    };
+
+                    switch (type)
+                    {
+                        case 1:
+                            paramSet.BoolParameters.Add(param);
+                            break;
+
+                        case 2:
+                            paramSet.IntParameters.Add(param);
+                            break;
+
+                        case 3:
+                            paramSet.SingleParameters.Add(param);
+                            break;
+
+                        default:
+                            if (!param.Name.StartsWith("g_"))
+                                param.Index |= (byte)(param.Index << 4);
+
+                            paramSet.SamplerParameters.Add(param);
+                            break;
+                    }
+                }
+
+                break;
+            }
+
+            return paramSet;
         }
 
         public static void WriteHlslRegisters( ShaderParameterSet parameterSet, TextWriter writer )

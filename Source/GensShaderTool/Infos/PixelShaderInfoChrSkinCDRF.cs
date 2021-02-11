@@ -23,12 +23,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "falloffSampler", "falloff", "f" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "PBRFactor",
-            "FalloffFactor"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = new[] { "NoGIOnly" };
 
         public virtual int IterationCount { get; } = 1;

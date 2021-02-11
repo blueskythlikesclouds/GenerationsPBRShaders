@@ -25,12 +25,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "normalBlendSampler", "normal", "n" ),
         };
 
-        public virtual IReadOnlyList<string> Constants { get; } = new[]
-        {
-            "PBRFactor",
-            "PBRFactor2"
-        };
-
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
         public virtual int IterationCount { get; } = 1;
