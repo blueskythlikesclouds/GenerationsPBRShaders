@@ -331,41 +331,30 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
 
-    // We're rendering opaque terrain meshes first, so disable alpha testing.
+    // We're rendering opaque meshes first, so disable alpha testing.
     pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
-
-    // Done with D3DRS_ALPHATESTENABLE FALSE, unlock it.
-    pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
-
-    // Render punch-through terrain meshes this time and enable alpha testing.
-    pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
-    pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
-
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
-
-    // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
-    pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
-
-    // Opaque meshes first, so disable alpha testing.
-    pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
-
+    // Render objects & player separately from terrain so it gets culled better.
     This->RenderScene(
         Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
+        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
+
+    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, 
         Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
 
     // Done with D3DRS_ALPHATESTENABLE FALSE, unlock it.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
 
-    // We can render punch-through meshes now. Enable alpha testing.
+    // Render punch-through meshes this time and enable alpha testing.
     pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
     This->RenderScene(
         Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
+        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
+
+    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, 
         Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
 
     // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
