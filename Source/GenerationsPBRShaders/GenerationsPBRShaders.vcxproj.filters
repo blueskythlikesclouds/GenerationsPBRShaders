@@ -34,6 +34,9 @@
     <ClCompile Include="PBROnVanillaFunsies.cpp">
       <Filter>Patches\Other</Filter>
     </ClCompile>
+    <ClCompile Include="CompressionHandler.cpp">
+      <Filter>Database</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -73,6 +76,9 @@
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="PBROnVanillaFunsies.h">
       <Filter>Patches\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="CompressionHandler.h">
+      <Filter>Database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

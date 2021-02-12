@@ -13,6 +13,7 @@
 #include <vector>
 
 // HedgeLib
+#include <hedgelib/hl_compression.h>
 #include <hedgelib/io/hl_bina.h>
 
 // BlueBlur

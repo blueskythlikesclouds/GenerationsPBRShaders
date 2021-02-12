@@ -102,6 +102,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ATI2Handler.cpp" />
+    <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="SGGIHandler.cpp" />
@@ -122,6 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ATI2Handler.h" />
+    <ClInclude Include="CompressionHandler.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="PBROnVanillaFunsies.h" />
@@ -137,7 +139,7 @@
     <ClInclude Include="YggdrasillPatcher.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\Users\Skyth\source\repos\DllMods\Dependencies\HedgeLib\HedgeLib\HedgeLib.vcxproj">
+    <ProjectReference Include="C:\Users\Skyth\source\repos\GenerationsPBRShaders\Dependencies\HedgeLib\HedgeLib\HedgeLib.vcxproj">
       <Project>{b98fb53d-a55c-1049-ce75-fef0baa145d7}</Project>
     </ProjectReference>
   </ItemGroup>

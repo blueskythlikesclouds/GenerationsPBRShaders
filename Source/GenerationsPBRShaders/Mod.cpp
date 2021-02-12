@@ -1,4 +1,5 @@
 #include "ATI2Handler.h"
+#include "CompressionHandler.h"
 #include "LUTHandler.h"
 #include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
@@ -29,6 +30,7 @@ extern "C" void __declspec(dllexport) Init()
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();
     ATI2Handler::applyPatches();
+    CompressionHandler::applyPatches();
 
     // PBROnVanillaFunsies::applyPatches();
 }
