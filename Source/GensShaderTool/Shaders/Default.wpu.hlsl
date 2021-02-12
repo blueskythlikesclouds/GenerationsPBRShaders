@@ -28,6 +28,8 @@
 #include "Material/ChrGlass.hlsl"
 #elif defined(IsInfinite) && IsInfinite
 #include "Material/Infinite.hlsl"
+#elif defined(IsDry) && IsDry
+#include "Material/Dry.hlsl"
 #endif
 
 float4 texGI(float2 texCoord)
@@ -193,7 +195,11 @@ void main(in DECLARATION_TYPE input,
 
         directLighting += ComputeLocalLight(input, material);
 
+#if defined(UseApproxEnvBRDF) && UseApproxEnvBRDF
+        float3 indirectLighting = ComputeIndirectLighting(material);
+#else
         float3 indirectLighting = ComputeIndirectLighting(material, g_EnvBRDFSampler);
+#endif
 
         outColor0 = float4(directLighting + indirectLighting, material.Alpha) * g_ForceAlphaColor;
 
@@ -214,7 +220,11 @@ void main(in DECLARATION_TYPE input,
         type = 2; // NoGI
 #endif
 #else
+#if defined(UseApproxEnvBRDF) && UseApproxEnvBRDF
+        color = ComputeIndirectLighting(material);
+#else
         color = ComputeIndirectLighting(material, g_EnvBRDFSampler);
+#endif
         type = 1; // GI
 #endif
 
