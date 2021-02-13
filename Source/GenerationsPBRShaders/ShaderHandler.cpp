@@ -167,10 +167,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         if (spShlfData && spShlfData->m_spData)
         {
-            HlBlob hlBlob = { spShlfData->m_spData.get(), spShlfData->m_DataSize };
-            hlBINAV2Fix(&hlBlob);
+            hlBINAV2Fix(spShlfData->m_spData.get(), spShlfData->m_DataSize);
             
-            SHLightFieldSet* shlfSet = (SHLightFieldSet*)hlBINAV2GetData(&hlBlob);
+            SHLightFieldSet* shlfSet = (SHLightFieldSet*)hlBINAV2GetData(spShlfData->m_spData.get());
 
             for (uint32_t i = 0; i < shlfSet->SHLFCount; i++)
             {
@@ -207,10 +206,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         if (spProbeData && spProbeData->m_spData)
         {
-            HlBlob hlBlob = { spProbeData->m_spData.get(), spProbeData->m_DataSize };
-            hlBINAV2Fix(&hlBlob);
+            hlBINAV2Fix(spProbeData->m_spData.get(), spProbeData->m_DataSize);
 
-            IBLProbeSet* iblProbeSet = (IBLProbeSet*)hlBINAV2GetData(&hlBlob);
+            IBLProbeSet* iblProbeSet = (IBLProbeSet*)hlBINAV2GetData(spProbeData->m_spData.get());
 
             for (uint32_t i = 0; i < iblProbeSet->ProbeCount; i++)
             {
@@ -508,7 +506,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
     float shadowMapParams[] = {
-        spShadowMap->m_CreationParams.Width, 1.0f / spShadowMap->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
+        (float)spShadowMap->m_CreationParams.Width, 1.0f / (float)spShadowMap->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
 
     pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
@@ -544,11 +542,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         float ssaoSize[] =
         {
-            s_spSSAOTex->m_CreationParams.Width,
-            s_spSSAOTex->m_CreationParams.Height,
+            (float)s_spSSAOTex->m_CreationParams.Width,
+            (float)s_spSSAOTex->m_CreationParams.Height,
 
-            1.0f / s_spSSAOTex->m_CreationParams.Width,
-            1.0f / s_spSSAOTex->m_CreationParams.Height,
+            1.0f / (float)s_spSSAOTex->m_CreationParams.Width,
+            1.0f / (float)s_spSSAOTex->m_CreationParams.Height,
         };
 
         pD3DDevice->SetPixelShaderConstantF(189, ssaoSize, 1);
@@ -582,12 +580,17 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         // Set parameters
         float framebufferSize[] = {
-            This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
-            1.0f / This->m_spColorTex->m_CreationParams.Width, 1.0f / This->m_spColorTex->m_CreationParams.Height,
+            (float)This->m_spColorTex->m_CreationParams.Width,
+            (float)This->m_spColorTex->m_CreationParams.Height,
+            1.0f / (float)This->m_spColorTex->m_CreationParams.Width,
+            1.0f / (float)This->m_spColorTex->m_CreationParams.Height,
         };
 
         float stepCount_maxRoughness_rayLength_fade[] = {
-            (float)SceneEffect::RLR.StepCount, SceneEffect::RLR.MaxRoughness, SceneEffect::RLR.RayLength, 1.0f / SceneEffect::RLR.Fade };
+            (float)SceneEffect::RLR.StepCount,
+            SceneEffect::RLR.MaxRoughness,
+            SceneEffect::RLR.RayLength,
+            1.0f / SceneEffect::RLR.Fade };
 
         float angleExponent_angleThreshold_saturation_brightness[] = {
             SceneEffect::RLR.AngleExponent,
@@ -622,7 +625,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             pD3DDevice->StretchRect(spSrcSurface->m_pD3DSurface, nullptr, spDstSurface->m_pD3DSurface, nullptr, D3DTEXF_LINEAR);
 
             // Now apply gaussian filter to it.
-            const float param[] = { 1.0f / desc.Width, 1.0f / desc.Height, exp2f(i), (float)i };
+            const float param[] = { 1.0f / desc.Width, 1.0f / desc.Height, exp2f((float)i), (float)i };
             pD3DDevice->SetPixelShaderConstantF(150, param, 1);
 
             // Horizontal
@@ -693,7 +696,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         probeParams[i * 4 + 3] = cache->m_Bias;
 
         if (cache->m_spPicture && cache->m_spPicture->m_spPictureData && cache->m_spPicture->m_spPictureData->m_pD3DTexture)
-            probeLodParams[i] = std::min<float>(3, cache->m_spPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
+            probeLodParams[i] = std::min<float>(3.0f, (float)cache->m_spPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
         else
             probeLodParams[i] = 0.0f;
 
@@ -730,8 +733,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         float iblLodParam[] = 
         {
-            std::min<float>(3, s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()),
-            SceneEffect::RLR.MaxLod >= 0 ? std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels,
+            std::min<float>(3, (float)s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()),
+            (float)(SceneEffect::RLR.MaxLod >= 0 ? std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels),
             0,
             0
         };

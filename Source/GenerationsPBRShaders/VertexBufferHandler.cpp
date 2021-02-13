@@ -160,7 +160,7 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
                 }
             }
 
-            const uint8_t offset = element->offset;
+            const HlU16 offset = element->offset;
 
             element++;
 
@@ -216,7 +216,7 @@ HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9*
         for (size_t j = maxTexCoordUsageIndex + 1; j < 4 && i < count - 1; i++, j++)
         {
             d3dElements[i] = *minTexCoordElement;
-            d3dElements[i].UsageIndex = j;
+            d3dElements[i].UsageIndex = (BYTE)j;
         }
     }
 
