@@ -605,15 +605,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             SceneEffect::RLR.RayLength,
             1.0f / SceneEffect::RLR.Fade };
 
-        float angleExponent_angleThreshold_saturation_brightness[] = {
-            SceneEffect::RLR.AngleExponent,
-            std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.AngleThreshold)),
+        float accuracyThreshold_saturation_brightness[] = {
+            SceneEffect::RLR.AccuracyThreshold,
             std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::RLR.Saturation)),
-            SceneEffect::RLR.Brightness, 0, 0 };
+            SceneEffect::RLR.Brightness,
+            0 };
 
         pD3DDevice->SetPixelShaderConstantF(150, framebufferSize, 1);
         pD3DDevice->SetPixelShaderConstantF(151, stepCount_maxRoughness_rayLength_fade, 1);
-        pD3DDevice->SetPixelShaderConstantF(152, angleExponent_angleThreshold_saturation_brightness, 1);
+        pD3DDevice->SetPixelShaderConstantF(152, accuracyThreshold_saturation_brightness, 1);
 
         pDevice->RenderQuad(nullptr, 0, 0);
 

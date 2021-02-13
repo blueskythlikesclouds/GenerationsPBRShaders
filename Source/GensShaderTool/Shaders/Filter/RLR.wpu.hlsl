@@ -5,7 +5,7 @@
 
 float4 g_FramebufferSize : register(c150);
 float4 g_StepCount_MaxRoughness_RayLength_Fade : register(c151);
-float4 g_AngleExponent_AngleThreshold_Saturation_Brightness : register(c152);
+float4 g_AccuracyThreshold_Saturation_Brightness : register(c152);
 
 float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 {
@@ -107,14 +107,13 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
                 rayCoord = lerp(begin.xy, end.xy, step);
 
-                // Discard the pixel based on the angle between the start position and hit position.
+                // Check the accuracy of the hit position and discard the pixel if necessary.
                 float3 cmpPos = GetPositionFromDepth(rayCoord * float2(2, -2) + float2(-1, 1),
                     tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x, g_MtxInvProjection);
 
-                float3 cmpDir = normalize(cmpPos - position);
-                float cosTheta = saturate(dot(cmpDir, dir));
+                float3 d = abs(cmpPos - (position + dir * distance(cmpPos, position)));
 
-                if (pow(cosTheta, g_AngleExponent_AngleThreshold_Saturation_Brightness.x) < g_AngleExponent_AngleThreshold_Saturation_Brightness.y)
+                if (max(d.x, max(d.y, d.z)) > g_AccuracyThreshold_Saturation_Brightness.x * -cmpPos.z)
                     return 0;
 
                 factor *= saturate(rayCoord.x * g_StepCount_MaxRoughness_RayLength_Fade.w);
@@ -130,7 +129,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
     }
 
     float luminosity = dot(color.rgb, float3(0.2126, 0.7152, 0.0722));
-    color.rgb = lerp(luminosity, color.rgb, g_AngleExponent_AngleThreshold_Saturation_Brightness.z) * g_AngleExponent_AngleThreshold_Saturation_Brightness.w;
+    color.rgb = lerp(luminosity, color.rgb, g_AccuracyThreshold_Saturation_Brightness.y) * g_AccuracyThreshold_Saturation_Brightness.z;
 
     return color;
 }
