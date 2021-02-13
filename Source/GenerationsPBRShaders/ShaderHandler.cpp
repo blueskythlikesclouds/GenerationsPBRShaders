@@ -168,7 +168,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         if (spShlfData && spShlfData->m_spData)
         {
             hlBINAV2Fix(spShlfData->m_spData.get(), spShlfData->m_DataSize);
-            
+
             SHLightFieldSet* shlfSet = (SHLightFieldSet*)hlBINAV2GetData(spShlfData->m_spData.get());
 
             for (uint32_t i = 0; i < shlfSet->SHLFCount; i++)
@@ -277,9 +277,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pD3DDevice->SetPixelShaderConstantF(108, (const float*)0x1A572D0, 1);
 
     // Set g_DebugParam
-    float debugParam[] = 
+    float debugParam[] =
     {
-        SceneEffect::Debug.UseWhiteAlbedo ? 1.0f : -1.0f,
+        SceneEffect::Debug.UseWhiteAlbedo || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY ? 1.0f : -1.0f,
         SceneEffect::Debug.UseFlatNormal ? 1.0f : -1.0f,
         std::min<float>(1.0f, SceneEffect::Debug.FresnelFactorOverride),
         std::min<float>(1.0f, SceneEffect::Debug.RoughnessOverride),
@@ -338,7 +338,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
         Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, 
+    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN,
         Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
 
     // Done with D3DRS_ALPHATESTENABLE FALSE, unlock it.
@@ -352,7 +352,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
         Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, 
+    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN,
         Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
 
     // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
@@ -433,15 +433,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         pDevice->SetRenderTarget(0, spSSAOSurface);
         pDevice->RenderQuad(nullptr, 0, 0);
-    }   
+    }
 
     // Pass 32 omni lights from the view to shaders.
     size_t localLightCount = 0;
 
-    if (pSceneRenderer->m_pLightManager && pSceneRenderer->m_pLightManager->m_pStaticLightContext && 
+    if (pSceneRenderer->m_pLightManager && pSceneRenderer->m_pLightManager->m_pStaticLightContext &&
         pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData)
     {
-        Hedgehog::Mirage::CLightListData* pLightListData = 
+        Hedgehog::Mirage::CLightListData* pLightListData =
             pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
 
         s_LocalLightsInFrustum.clear();
@@ -481,6 +481,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         pD3DDevice->SetPixelShaderConstantF(109, (const float*)localLightData, 64);
     }
+
+    if (SceneEffect::Debug.DisableOmniLight || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
+        localLightCount = 0;
 
     //***************************************************//
     // Deferred light pass: Add direct lighting and SHLF //
@@ -533,6 +536,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
         pD3DDevice->SetPixelShaderConstantF(185 + i, shlfParam, 1);
+
+        if (SceneEffect::Debug.DisableSHLightField)
+            pDevice->UnsetSampler(4 + i);
     }
 
     // Set SSAO.
@@ -550,12 +556,19 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         };
 
         pD3DDevice->SetPixelShaderConstantF(189, ssaoSize, 1);
-        
+
         pDevice->SetSampler(10, s_spSSAOTex);
         pDevice->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         pDevice->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
 
         pDevice->SetRenderTarget(1, spGBuffer2Surface); // To update AO in the GBuffer
+    }
+
+    if (SceneEffect::Debug.DisableDirectLight || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
+    {
+        float globalLightColor[] = { 0, 0, 0, 0 };
+        pD3DDevice->SetPixelShaderConstantF(36, globalLightColor, 1);
+        pD3DDevice->SetPixelShaderConstantF(37, globalLightColor, 1);
     }
 
     pDevice->SetRenderTarget(0, This->m_spColorSurface);
@@ -568,7 +581,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Real-time Local Reflections //
     //*****************************//
 
-    if (SceneEffect::RLR.Enable) 
+    if (SceneEffect::RLR.Enable)
     {
         boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
         s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
@@ -679,7 +692,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     auto probeIterator = s_IBLProbesInFrustum.begin();
 
-    const size_t iblCount = std::min<size_t>(s_IBLProbesInFrustum.size(), 8);
+    size_t iblCount = std::min<size_t>(s_IBLProbesInFrustum.size(), 8);
+
+    if (SceneEffect::Debug.DisableIBLProbe)
+        iblCount = 0;
 
     // Set the corresponding shader.
     pDevice->SetShader(s_FxDeferredPassIBLShaders[iblCount]);
@@ -731,7 +747,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Set IBL parameter.
     if (s_spDefaultIBLPicture && s_spDefaultIBLPicture->m_spPictureData && s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
     {
-        float iblLodParam[] = 
+        float iblLodParam[] =
         {
             std::min<float>(3, (float)s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()),
             (float)(SceneEffect::RLR.MaxLod >= 0 ? std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels),
@@ -741,6 +757,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         pD3DDevice->SetPixelShaderConstantF(207, iblLodParam, 1);
     }
+
+    if (SceneEffect::Debug.DisableDefaultIBL)
+        pDevice->UnsetSampler(14);
+
+    if (SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
+        pDevice->UnsetSampler(15);
 
     // Set g_IsEnableRLR
     // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
@@ -885,14 +907,47 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ZFUNC);
 
-    This->SetDefaultTexture(This->m_spColorTex);
-    This->SetBuffer("colortex", This->m_spColorTex);
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> colorTex = nullptr;
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> capturedColorTex = nullptr;
+
+    switch (SceneEffect::Debug.ViewMode)
+    {
+    case DEBUG_VIEW_MODE_GBUFFER1:
+        colorTex = s_spGBuffer1Tex;
+        break;
+
+    case DEBUG_VIEW_MODE_GBUFFER2:
+        colorTex = s_spGBuffer2Tex;
+        break;
+
+    case DEBUG_VIEW_MODE_GBUFFER3:
+        colorTex = s_spGBuffer3Tex;
+        break;
+
+    case DEBUG_VIEW_MODE_RLR:
+        colorTex = s_spRLRTex;
+        break;
+
+    case DEBUG_VIEW_MODE_SSAO:
+        colorTex = s_spSSAOTex;
+        break;
+
+    case DEBUG_VIEW_MODE_NONE:
+    case DEBUG_VIEW_MODE_GI_ONLY:
+    default:
+        colorTex = This->m_spColorTex;
+        capturedColorTex = This->m_spCapturedColorTex;
+        break;
+    }
+
+    This->SetDefaultTexture(colorTex);
+    This->SetBuffer("colortex", colorTex);
+    This->SetBuffer("captured_colortex", capturedColorTex == nullptr ? colorTex : capturedColorTex);
     This->SetBuffer("depthtex", This->m_spDepthTex);
-    This->SetBuffer("captured_colortex", This->m_spCapturedColorTex);
     This->SetBuffer("captured_depthtex", This->m_spCapturedDepthTex);
 }
 
-HOOK(void, __fastcall, CRenderingDeviceSetViewMatrix, Hedgehog::Mirage::fpCRenderingDeviceSetViewMatrix, 
+HOOK(void, __fastcall, CRenderingDeviceSetViewMatrix, Hedgehog::Mirage::fpCRenderingDeviceSetViewMatrix,
     Hedgehog::Mirage::CRenderingDevice* This, void* Edx, const Eigen::Matrix4f& viewMatrix)
 {
     const Eigen::Matrix4f inverseViewMatrix = viewMatrix.inverse();

@@ -49,7 +49,7 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
     float factor = ComputeFalloff(material.CosViewDirection, FalloffFactor.xyz);
 
     material.Alpha += (1 - material.Alpha) * factor;
-    material.F0 += (1 - material.F0) * factor;
+    material.FresnelFactor += (1 - material.FresnelFactor) * factor;
 }
 
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)

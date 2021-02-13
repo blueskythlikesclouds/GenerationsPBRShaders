@@ -26,8 +26,6 @@
 #include "Material/Glass.hlsl"
 #elif defined(IsChrGlass) && IsChrGlass
 #include "Material/ChrGlass.hlsl"
-#elif defined(IsInfinite) && IsInfinite
-#include "Material/Infinite.hlsl"
 #elif defined(IsDry) && IsDry
 #include "Material/Dry.hlsl"
 #endif
@@ -76,13 +74,13 @@ void main(in DECLARATION_TYPE input,
     return;
 #endif
 
-    Material material;
+    Material material = NewMaterial();
 
 #if (defined(HasNormal) && HasNormal)
     float3x3 worldToTangentMatrix = float3x3(input.Tangent.xyz, input.Binormal.xyz, input.Normal.xyz);
     float3x3 tangentToWorldMatrix = transpose(worldToTangentMatrix);
 
-    material.Normal = normalize(GetNormal(input, tangentToWorldMatrix));
+    material.Normal = normalize(g_DebugParam[0].y >= 0 ? input.Normal.xyz : GetNormal(input, tangentToWorldMatrix));
 #else
     material.Normal = normalize(input.Normal);
 #endif
@@ -102,17 +100,18 @@ void main(in DECLARATION_TYPE input,
     material.Metalness = material.FresnelFactor > 0.225;
 #endif
 
-    if (g_DebugParam[0].x >= 0) material.Albedo         = 1.0;
-    if (g_DebugParam[0].y >= 0) material.Normal         = normalize(input.Normal);
-    if (g_DebugParam[0].z >= 0) material.FresnelFactor  = g_DebugParam[0].z;
-    if (g_DebugParam[0].w >= 0) material.Roughness      = g_DebugParam[0].w;
-    if (g_DebugParam[1].x >= 0) material.Metalness      = g_DebugParam[1].x;
-
     material.ViewDirection = normalize(g_EyePosition.xyz - input.Position.xyz);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 
     material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
+
+    PostProcessMaterial(input, material);
+
+    if (g_DebugParam[0].x >= 0) material.Albedo = 1.0;
+    if (g_DebugParam[0].z >= 0) material.FresnelFactor = g_DebugParam[0].z;
+    if (g_DebugParam[0].w >= 0) material.Roughness = g_DebugParam[0].w;
+    if (g_DebugParam[1].x >= 0) material.Metalness = g_DebugParam[1].x;
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
@@ -174,8 +173,6 @@ void main(in DECLARATION_TYPE input,
 
     if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
 #endif
-
-    PostProcessMaterial(input, material);
 
     float cosTheta = dot(-mrgGlobalLight_Direction.xyz, material.Normal);
 

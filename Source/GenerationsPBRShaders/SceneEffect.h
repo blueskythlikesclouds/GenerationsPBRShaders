@@ -1,5 +1,16 @@
 ﻿#pragma once
 
+enum DebugViewMode : uint32_t
+{
+    DEBUG_VIEW_MODE_NONE,
+    DEBUG_VIEW_MODE_GI_ONLY,
+    DEBUG_VIEW_MODE_GBUFFER1,
+    DEBUG_VIEW_MODE_GBUFFER2,
+    DEBUG_VIEW_MODE_GBUFFER3,
+    DEBUG_VIEW_MODE_RLR,
+    DEBUG_VIEW_MODE_SSAO
+};
+
 struct DebugParam
 {
     bool UseWhiteAlbedo;
@@ -8,6 +19,12 @@ struct DebugParam
     float RoughnessOverride;
     float MetalnessOverride;
     float GIShadowMapOverride;
+    DebugViewMode ViewMode;
+    bool DisableDirectLight;
+    bool DisableOmniLight;
+    bool DisableSHLightField;
+    bool DisableDefaultIBL;
+    bool DisableIBLProbe;
 };
 
 struct GIParam

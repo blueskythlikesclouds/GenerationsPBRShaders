@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1 };
+DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false };
 GIParam SceneEffect::GI = { true, false, 1 };
 SGGIParam SceneEffect::SGGI = { 0.7, 0.35 };
 ESMParam SceneEffect::ESM = { 4096 };
@@ -20,6 +20,21 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.RoughnessOverride, "RoughnessOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.MetalnessOverride, "MetalnessOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.GIShadowMapOverride, "GIShadowMapOverride");
+    pDebugParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::Debug.ViewMode, "ViewMode", "ViewMode",
+        {
+            { "None", DEBUG_VIEW_MODE_NONE },
+            { "GIOnly", DEBUG_VIEW_MODE_GI_ONLY },
+            { "GBuffer1", DEBUG_VIEW_MODE_GBUFFER1 },
+            { "GBuffer2", DEBUG_VIEW_MODE_GBUFFER2 },
+            { "GBuffer3", DEBUG_VIEW_MODE_GBUFFER3 },
+            { "RLR", DEBUG_VIEW_MODE_RLR },
+            { "SSAO", DEBUG_VIEW_MODE_SSAO }
+        });
+    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableDirectLight, "DisableDirectLight");
+    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableOmniLight, "DisableOmniLight");
+    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableSHLightField, "DisableSHLightField");
+    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableDefaultIBL, "DisableDefaultIBL");
+    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableIBLProbe, "DisableIBLProbe");
 
     spParameterGroup->Flush();
 
@@ -78,7 +93,50 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     originalInitializeSceneEffectParameterFile(This);
 }
 
+std::array<bool*, 12> POST_PROCESSING_TOGGLES =
+{
+    (bool*)0x01A4358E, // HDR
+    (bool*)0x01A43102, // BoostBlur3D
+    (bool*)0x01AD6198, // BoostBlur2D
+    (bool*)0x01A43103, // MotionBlur
+    (bool*)0x01A4323D, // BloomStar
+    (bool*)0x01E5E333, // LightShaft
+    (bool*)0x01A4358D, // DepthOfField
+    (bool*)0x01AD6277, // FadeOut
+    (bool*)0x01B22E78, // ReflectionMap
+    (bool*)0x01B22E8C, // ColorCorrection
+    (bool*)0x01A46DE7, // AfterImage
+    (bool*)0x01B22EA8, // CrossFade
+};
+
+HOOK(void, __fastcall, ExecuteFxPipelineJobs, 0x78A3D0, void* This, void* Edx, void* A2)
+{
+    if (SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_NONE)
+        return originalExecuteFxPipelineJobs(This, Edx, A2);
+
+    // Disable post processing when debug view mode in on.
+    std::array<bool, POST_PROCESSING_TOGGLES.size()> toggleHistory{};
+
+    // Keep tonemapping on for GIOnly/RLR.
+    const size_t index = 
+        SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY ||
+        SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_RLR ? 1 : 0;
+
+    for (size_t i = index; i < POST_PROCESSING_TOGGLES.size(); i++)
+    {
+        toggleHistory[i] = *POST_PROCESSING_TOGGLES[i];
+        *POST_PROCESSING_TOGGLES[i] = false;
+    }
+
+    originalExecuteFxPipelineJobs(This, Edx, A2);
+
+    // Restore
+    for (size_t i = index; i < POST_PROCESSING_TOGGLES.size(); i++)
+        *POST_PROCESSING_TOGGLES[i] = toggleHistory[i];
+}
+
 void SceneEffect::applyPatches()
 {
     INSTALL_HOOK(InitializeSceneEffectParameterFile);
+    INSTALL_HOOK(ExecuteFxPipelineJobs);
 }

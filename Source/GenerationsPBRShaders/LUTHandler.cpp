@@ -42,7 +42,7 @@ HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic:
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(1, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
-    const BOOL isEnableLUT[] = { s_spLutPicture != nullptr };
+    const BOOL isEnableLUT[] = { s_spLutPicture != nullptr && SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_NONE };
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantB(8, isEnableLUT, 1);
 
     This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
