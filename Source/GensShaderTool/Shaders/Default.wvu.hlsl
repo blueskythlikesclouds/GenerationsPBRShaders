@@ -28,10 +28,10 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 #if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
     float3 binormal;
 
-    [branch] if (input.Tangent.w == 0)
-        binormal = input.Binormal.xyz;
-    else
+    [branch] if (dot(input.Binormal.xyz, input.Binormal.xyz) == 0)
         binormal = cross(input.Normal.xyz, input.Tangent.xyz) * sign(input.Tangent.w);
+    else
+        binormal = input.Binormal.xyz;
 #endif
 
     if (hasBone)
