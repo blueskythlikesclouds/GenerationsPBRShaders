@@ -13,7 +13,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
     float3 position = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
     float3 normal = normalize(mul(tex2Dlod(g_GBuffer3Sampler, float4(texCoord.xy, 0, 0)).xyz * 2 - 1, g_MtxView));
 
-    float radius = g_SampleCount_InvSampleCount_Radius_DistanceFade.z / position.z;
+    float radius = g_SampleCount_InvSampleCount_Radius_DistanceFade.z / max(0.0001, -position.z);
     float noise = InterleavedGradientNoise(texCoord.xy * g_ViewportSize.xy);
 
     float occlusion = 0;
@@ -30,7 +30,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
         float3 direction = cmpPos - position;
         float distance = length(direction);
-        float invDistance = abs(distance) > 0.0001 ? 1.0f / distance : 0;
+        float invDistance = distance > 0.0001 ? 1.0f / distance : 0;
 
         occlusion += saturate(dot(direction * invDistance, normal)) * smoothstep(0, 1, saturate(g_SampleCount_InvSampleCount_Radius_DistanceFade.w * invDistance));
     }
