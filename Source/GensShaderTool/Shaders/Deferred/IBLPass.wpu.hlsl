@@ -48,6 +48,8 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     float4 gBuffer2 = tex2Dlod(g_GBuffer2Sampler, float4(texCoord, 0, 0));
     float4 gBuffer3 = tex2Dlod(g_GBuffer3Sampler, float4(texCoord, 0, 0));
 
+    uint type = uint(abs(round(gBuffer3.w * 4)));
+
     Material material;
 
     material.Albedo = gBuffer1.rgb;
@@ -100,8 +102,14 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     float3 diffuseBRDF, specularBRDF;
     ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb, diffuseBRDF, specularBRDF);
 
-    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
-    float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
+    float sggiBlendFactor = 0.0;
+    float iblBlendFactor = 1.0;
+
+    if (type == 1) // GI
+    {
+        sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
+        iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
+    }
 
     material.IndirectSpecular = specularBRDF * sggiBlendFactor + indirectSpecular * iblBlendFactor;
 

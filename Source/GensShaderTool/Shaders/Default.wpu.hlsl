@@ -115,14 +115,17 @@ void main(in DECLARATION_TYPE input,
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
-    float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
-
 #if defined(NoGI) && NoGI
+    float sggiBlendFactor = 0.0;
+    float iblBlendFactor = 1.0;
+
     material.IndirectDiffuse = 0;
     material.IndirectSpecular = 0;
     material.Shadow = 1;
 #else
+    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
+    float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
+
     float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;
 
     float4 gi = texGI(giCoord);
