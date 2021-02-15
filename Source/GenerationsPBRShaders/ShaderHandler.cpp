@@ -479,7 +479,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             localLightData[i * 8 + 7] = pLightData->m_Range.z();
         }
 
-        pD3DDevice->SetPixelShaderConstantF(109, (const float*)localLightData, 64);
+        if (localLightCount > 0)
+            pD3DDevice->SetPixelShaderConstantF(109, (const float*)localLightData, 2 * localLightCount);
     }
 
     if (SceneEffect::Debug.DisableOmniLight || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
@@ -721,8 +722,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
     }
 
-    pD3DDevice->SetPixelShaderConstantF(197, probeParams, 8);
-    pD3DDevice->SetPixelShaderConstantF(205, probeLodParams, 2);
+    if (iblCount > 0)
+    {
+        pD3DDevice->SetPixelShaderConstantF(197, probeParams, iblCount);
+        pD3DDevice->SetPixelShaderConstantF(205, probeLodParams, 2);
+    }
 
     // Set RLR, Default IBL and Env BRDF
     if (SceneEffect::RLR.Enable)
@@ -737,12 +741,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
 
     pDevice->SetSampler(14, s_spDefaultIBLPicture);
-    pDevice->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-    pDevice->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
+    pDevice->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+    pDevice->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
 
     pDevice->SetSampler(15, s_spEnvBRDFPicture);
-    pDevice->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(9, D3DTADDRESS_CLAMP);
+    pDevice->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
 
     // Set IBL parameter.
     if (s_spDefaultIBLPicture && s_spDefaultIBLPicture->m_spPictureData && s_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)

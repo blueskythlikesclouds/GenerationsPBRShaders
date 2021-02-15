@@ -29,7 +29,7 @@ float2 GetTexCoord(DefaultDeclaration input, uint index, float mrgTexcoordIndex[
 #if defined(ConstTexCoord) && ConstTexCoord
 	return input.TexCoord0.xy;
 #endif
-	float value = round(mrgTexcoordIndex[index]);
+	float value = trunc(mrgTexcoordIndex[index]);
 
 	if (value == 0.0f) return input.TexCoord0.xy;
 	if (value == 1.0f) return input.TexCoord0.zw;

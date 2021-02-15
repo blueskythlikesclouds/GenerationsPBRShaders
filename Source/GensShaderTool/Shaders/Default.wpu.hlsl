@@ -115,8 +115,8 @@ void main(in DECLARATION_TYPE input,
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    float sggiRoughness = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
-    float sggiRoughnessIblFactor = lerp(1 - sggiRoughness, 1, material.Metalness);
+    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x) * material.AmbientOcclusion;
+    float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
 
 #if defined(NoGI) && NoGI
     material.IndirectDiffuse = 0;
@@ -152,6 +152,7 @@ void main(in DECLARATION_TYPE input,
         material.IndirectDiffuse += ComputeSggiDiffuse(material, sggiLevel3, sggiAxis3);
 
         material.IndirectDiffuse *= ComputeSggiDiffuseFactor();
+        material.IndirectDiffuse *= material.AmbientOcclusion;
 
         float4 r6;
         float sggiSpecularFactor = ComputeSggiSpecularFactor(material, r6);
@@ -162,11 +163,11 @@ void main(in DECLARATION_TYPE input,
         material.IndirectSpecular += ComputeSggiSpecular(material, sggiLevel3, sggiAxis3, r6);
 
         material.IndirectSpecular *= sggiSpecularFactor;
-        material.IndirectSpecular *= sggiRoughness;
+        material.IndirectSpecular *= sggiBlendFactor;
     }
     else
     {
-        material.IndirectDiffuse = gi.rgb;
+        material.IndirectDiffuse = gi.rgb * material.AmbientOcclusion;
     }
 
     material.Shadow = gi.a;
@@ -178,10 +179,10 @@ void main(in DECLARATION_TYPE input,
 
     if (!mrgIsUseDeferred)
     {
-        material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * sggiRoughnessIblFactor;
+        material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * iblBlendFactor;
         material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapParams.xy, g_ShadowMapParams.z);
 
-        float3 directLighting = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb) * material.Shadow;
+        float3 directLighting = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
 
 #if defined(HasCdr) && HasCdr
         directLighting *= GetCdr(cosTheta, input.Color.y);
