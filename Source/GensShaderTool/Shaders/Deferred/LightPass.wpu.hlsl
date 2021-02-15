@@ -94,7 +94,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
     [unroll] for (i = 0; i < 6; i++)
         material.IndirectDiffuse += ComputeSHBasis(material, shlf[i], directions[i]);
 
-    material.IndirectDiffuse = ComputeSHFinal(material.IndirectDiffuse) * 2 * material.AmbientOcclusion;
+    material.IndirectDiffuse = ComputeSHFinal(material.IndirectDiffuse) * 2;
 }
 
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGBuffer2 : COLOR1) : COLOR

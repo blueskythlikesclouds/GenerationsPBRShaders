@@ -108,7 +108,7 @@ float3 ComputeIndirectLighting(Material material, float2 specularBRDF)
 
     float3 specularIBL = max(0, (material.F0 * specularBRDF.x + specularBRDF.y) * material.IndirectSpecular);
 
-    return diffuseIBL + specularIBL;
+    return (diffuseIBL + specularIBL) * material.AmbientOcclusion;
 }
 
 float3 ComputeIndirectLighting(Material material)

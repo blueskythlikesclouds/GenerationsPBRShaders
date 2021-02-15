@@ -115,7 +115,7 @@ void main(in DECLARATION_TYPE input,
 
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
-    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x) * material.AmbientOcclusion;
+    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
     float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
 
 #if defined(NoGI) && NoGI
@@ -152,7 +152,6 @@ void main(in DECLARATION_TYPE input,
         material.IndirectDiffuse += ComputeSggiDiffuse(material, sggiLevel3, sggiAxis3);
 
         material.IndirectDiffuse *= ComputeSggiDiffuseFactor();
-        material.IndirectDiffuse *= material.AmbientOcclusion;
 
         float4 r6;
         float sggiSpecularFactor = ComputeSggiSpecularFactor(material, r6);
@@ -167,7 +166,7 @@ void main(in DECLARATION_TYPE input,
     }
     else
     {
-        material.IndirectDiffuse = gi.rgb * material.AmbientOcclusion;
+        material.IndirectDiffuse = gi.rgb;
     }
 
     material.Shadow = gi.a;
