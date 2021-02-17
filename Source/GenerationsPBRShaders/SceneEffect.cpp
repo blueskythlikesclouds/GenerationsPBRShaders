@@ -2,10 +2,10 @@
 
 DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false };
 GIParam SceneEffect::GI = { true, false, 1 };
-SGGIParam SceneEffect::SGGI = { 0.7, 0.35 };
+SGGIParam SceneEffect::SGGI = { 0.7f, 0.35f };
 ESMParam SceneEffect::ESM = { 4096 };
 RLRParam SceneEffect::RLR = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
-HighlightParam SceneEffect::Highlight = { true, 90, 4, 0.08, 2, 0.02, 0.3 };
+HighlightParam SceneEffect::Highlight = { true, 90, 4, 0.08f, 2, 0.02f, 0.3f };
 SSAOParam SceneEffect::SSAO = { false, 32, 0.25f, 0.25f, 1.0f };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
@@ -28,7 +28,9 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
             { "GBuffer2", DEBUG_VIEW_MODE_GBUFFER2 },
             { "GBuffer3", DEBUG_VIEW_MODE_GBUFFER3 },
             { "RLR", DEBUG_VIEW_MODE_RLR },
-            { "SSAO", DEBUG_VIEW_MODE_SSAO }
+            { "SSAO", DEBUG_VIEW_MODE_SSAO },
+            { "ShadowMap", DEBUG_VIEW_MODE_SHADOW_MAP },
+            { "ShadowMapNoTerrain", DEBUG_VIEW_MODE_SHADOW_MAP_NO_TERRAIN },
         });
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableDirectLight, "DisableDirectLight");
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableOmniLight, "DisableOmniLight");
