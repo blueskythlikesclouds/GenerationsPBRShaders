@@ -12,7 +12,9 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
     float4 gBuffer2 = tex2Dlod(g_GBuffer2Sampler, float4(texCoord, 0, 0));
     float4 gBuffer3 = tex2Dlod(g_GBuffer3Sampler, float4(texCoord, 0, 0));
 
-    if (gBuffer3.a == 0 || gBuffer2.y > g_StepCount_MaxRoughness_RayLength_Fade.y)
+    uint type = UnpackPrimitiveType(gBuffer3.w);
+
+    if (type == PRIMITIVE_TYPE_RAW || type == PRIMITIVE_TYPE_EMISSION || gBuffer2.y > g_StepCount_MaxRoughness_RayLength_Fade.y)
         return 0;
 
     float depth = tex2Dlod(g_DepthSampler, float4(texCoord.xy, 0, 0)).x;

@@ -5,7 +5,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Reflection.Metadata;
 using System.Text;
+using Vortice.D3DCompiler;
 
 namespace GensShaderTool
 {
@@ -29,7 +31,8 @@ namespace GensShaderTool
                 { "CUBE", "xyz" }
             };
 
-        private static void ProcessParameterMap(StreamWriter writer, List<ShaderParameter> parameters, Dictionary<string, string> paramMap, char prefix, string type)
+        private static void ProcessParameterMap(TextWriter writer, List<ShaderParameter> parameters,
+            Dictionary<string, string> paramMap, char prefix, string type)
         {
             foreach (var param in parameters)
             {
@@ -48,23 +51,28 @@ namespace GensShaderTool
                     paramMap[register] = param.Name;
                 }
 
-                writer.WriteLine("{0} {1}{2} : register({3}{4});", type, param.Name, param.Size > 1 ? $"[{param.Size}]" : "", prefix, param.Index);
+                writer.WriteLine("{0} {1}{2} : register({3}{4});", type, param.Name,
+                    param.Size > 1 ? $"[{param.Size}]" : "", prefix, param.Index);
             }
 
             if (parameters.Count > 0)
                 writer.WriteLine();
         }
 
-        public static void TranslateToHlsl(string sourceFilePath, string outputDirectoryPath)
+        public static void Translate(byte[] bytes, TextWriter writer)
         {
-            string asmFilePath = sourceFilePath + ".asm";
+            string[] lines;
 
-            using (var process = Process.Start("fxc", $"/dumpbin \"{sourceFilePath}\" /Fc \"{asmFilePath}\""))
-                process.WaitForExit();
-
-            var lines = File.ReadAllLines(asmFilePath);
-
-            var paramSet = ShaderParameterConverter.ParseAssemblyComments(lines);
+            unsafe
+            {
+                fixed (byte* ptr = bytes)
+                {
+                    Compiler.Disassemble(new IntPtr(ptr), bytes.Length, DisasmFlags.InstructionOnly, null, out var blob);
+                    lines = blob.ConvertToString().Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+            }
+            
+            var paramSet = ShaderParameterConverter.ReadConstantTable(new MemoryStream(bytes));
             var paramMap = new Dictionary<string, string>();
 
             var semantics = new List<(string, string)>();
@@ -73,20 +81,21 @@ namespace GensShaderTool
             int i;
             for (i = 0; i < lines.Length; i++)
             {
-                string prettyLine = lines[i].Trim();
-                if (prettyLine.StartsWith("//") || string.IsNullOrEmpty(prettyLine))
+                string line = lines[i];
+
+                if (line.StartsWith("//") || line.StartsWith("vs_") || line.StartsWith("ps_"))
                     continue;
 
-                if (prettyLine.StartsWith("def"))
+                if (line.StartsWith("def"))
                 {
-                    var split = prettyLine.Split(',');
+                    var split = line.Split(',');
                     constants.Add(split[0].Substring(split[0].IndexOf(' ') + 1),
                         (split[1].Trim(), split[2].Trim(), split[3].Trim(), split[4].Trim()));
                 }
 
-                else if (prettyLine.StartsWith("dcl"))
+                else if (line.StartsWith("dcl"))
                 {
-                    var split = prettyLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var split = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                     var split2 = split[0].Split('_');
 
                     semantics.Add((split2.Length > 1 ? split2[1].ToUpperInvariant() : "VPOS", split[1]));
@@ -97,78 +106,103 @@ namespace GensShaderTool
                 }
             }
 
-            string outputFilePath = Path.Combine(outputDirectoryPath, Path.GetFileName(sourceFilePath));
-            string outputHlslFilePath = outputFilePath + ".hlsl";
+            ProcessParameterMap(writer, paramSet.SingleParameters, paramMap, 'c', "float4");
+            ProcessParameterMap(writer, paramSet.IntParameters, paramMap, 'i', "int");
+            ProcessParameterMap(writer, paramSet.BoolParameters, paramMap, 'b', "bool");
 
-            using (var writer = File.CreateText(outputHlslFilePath))
+            foreach ((string type, string register) in semantics.Where(x => sTextureSemantics.Contains(x.Item1)))
             {
-                ProcessParameterMap(writer, paramSet.SingleParameters, paramMap, 'c', "float4");
-                ProcessParameterMap(writer, paramSet.IntParameters, paramMap, 'i', "int");
-                ProcessParameterMap(writer, paramSet.BoolParameters, paramMap, 'b', "bool");
+                int index = int.Parse(register.AsSpan().Slice(1));
+                var param = paramSet.SamplerParameters.FirstOrDefault(x =>
+                    index >= (x.Index & 0xF) && index < (x.Index & 0xF) + x.Size);
 
-                foreach ((string type, string register) in semantics.Where(x => sTextureSemantics.Contains(x.Item1)))
+                string name = register;
+
+                if (param != null)
                 {
-                    int index = int.Parse(register.AsSpan().Slice(1));
-                    var param = paramSet.SamplerParameters.FirstOrDefault(x => index >= (x.Index & 0xF) && index < (x.Index & 0xF) + x.Size);
-
-                    string name = register;
-
-                    if (param != null)
-                    {
-                        name = param.Size > 1 ? $"{param.Name}{index - param.Index}" : param.Name;
-                        paramMap[register] = name;
-                    }
-
-                    writer.WriteLine("sampler{0} {1} : register({2});", type, name, register);
+                    name = param.Size > 1 ? $"{param.Name}{index - param.Index}" : param.Name;
+                    paramMap[register] = name;
                 }
 
+                writer.WriteLine("sampler{0} {1} : register({2});", type, name, register);
+            }
+
+            writer.WriteLine();
+
+            foreach (string texSemantic in sTextureSemantics)
+            {
+                writer.WriteLine("float4 tex(sampler{0} s, float4 texCoord) {{ return tex{0}(s, texCoord.{1}); }}",
+                    texSemantic, sTextureSwizzleMap[texSemantic]);
+                writer.WriteLine("float4 texBias(sampler{0} s, float4 texCoord) {{ return tex{0}bias(s, texCoord); }}",
+                    texSemantic);
+                writer.WriteLine("float4 texLod(sampler{0} s, float4 texCoord) {{ return tex{0}lod(s, texCoord); }}",
+                    texSemantic);
+                writer.WriteLine("float4 texProj(sampler{0} s, float4 texCoord) {{ return tex{0}proj(s, texCoord); }}",
+                    texSemantic);
+            }
+
+            writer.WriteLine("\nfloat4 normalize(float4 value) { return value / sqrt(dot(value.xyz, value.xyz)); }\n");
+
+            writer.WriteLine("void main(\n{0}\n\tout float4 oC0 : COLOR0,\n\tout float4 oC1 : COLOR1,\n\tout float4 oC2 : COLOR2,\n\tout float4 oC3 : COLOR3,\n\tout float oDepth : DEPTH)\n{{",
+                string.Join(" \n",
+                    semantics.Where(x => !sTextureSemantics.Contains(x.Item1)).Select(x =>
+                        $"\t{(x.Item2[0] == 'o' ? "out" : "in")} float4 {x.Item2.Split('.')[0]} : {x.Item1},")));
+
+            foreach (var constant in constants)
+                writer.WriteLine("\tfloat4 {0} = float4{1};", constant.Key, string.Join(", ", constant.Value));
+
+            if (constants.Count > 0)
                 writer.WriteLine();
 
-                foreach (string texSemantic in sTextureSemantics)
+            for (int j = 0; j < 32; j++)
+                writer.WriteLine("\tfloat4 r{0} = float4(0, 0, 0, 0);", j);
+
+            writer.WriteLine();
+
+            for (; i < lines.Length; i++)
+            {
+                string prettyLine = lines[i].Trim();
+                if (prettyLine.StartsWith("//") || string.IsNullOrEmpty(prettyLine))
+                    continue;
+
+                var instruction = new Instruction(prettyLine);
+
+                if (instruction.Arguments != null)
                 {
-                    writer.WriteLine("float4 tex(sampler{0} s, float4 texCoord) {{ return tex{0}(s, texCoord.{1}); }}", texSemantic, sTextureSwizzleMap[texSemantic]);
-                    writer.WriteLine("float4 texBias(sampler{0} s, float4 texCoord) {{ return tex{0}bias(s, texCoord); }}", texSemantic);
-                    writer.WriteLine("float4 texLod(sampler{0} s, float4 texCoord) {{ return tex{0}lod(s, texCoord); }}", texSemantic);
-                    writer.WriteLine("float4 texProj(sampler{0} s, float4 texCoord) {{ return tex{0}proj(s, texCoord); }}", texSemantic);
-                }
-
-                writer.WriteLine("\nfloat4 normalize(float4 value) { return value / sqrt(dot(value.xyz, value.xyz)); }\n");
-
-                writer.WriteLine("void main(\n{0},\n\tout float4 oC0 : COLOR0)\n{{",
-                    string.Join(", \n",
-                        semantics.Where(x => !sTextureSemantics.Contains(x.Item1)).Select(x =>
-                            $"\t{(x.Item2[0] == 'o' ? "out" : "in")} float4 {x.Item2.Split('.')[0]} : {x.Item1}")));
-
-                foreach (var constant in constants)
-                    writer.WriteLine("\tfloat4 {0} = float4{1};", constant.Key, string.Join(", ", constant.Value));
-
-                if (constants.Count > 0)
-                    writer.WriteLine();
-
-                for (int j = 0; j < 32; j++)
-                    writer.WriteLine("\tfloat4 r{0} = float4(0, 0, 0, 0);", j);
-
-                writer.WriteLine();
-
-                for (; i < lines.Length; i++)
-                {
-                    string prettyLine = lines[i].Trim();
-                    if (prettyLine.StartsWith("//") || string.IsNullOrEmpty(prettyLine))
-                        continue;
-
-                    var instruction = new Instruction(prettyLine);
-
                     foreach (var argument in instruction.Arguments)
                     {
                         if (paramMap.TryGetValue(argument.Token, out string paramName))
                             argument.Token = paramName;
                     }
-                    
-                    writer.WriteLine("\t{0}", instruction.ToString());
                 }
 
-                writer.WriteLine("}");
+                writer.WriteLine("\t{0}", instruction);
             }
+
+            writer.WriteLine("}");
+        }
+
+        public static string Translate(byte[] bytes)
+        {
+            using var writer = new StringWriter();
+            Translate(bytes, writer);
+            return writer.ToString();
+        }
+
+        public static string Translate(string sourceFilePath)
+        {
+            return Translate(File.ReadAllBytes(sourceFilePath));
+        }
+
+        public static void Translate(byte[] bytes, string destinationFilePath)
+        {
+            using var writer = File.CreateText(destinationFilePath);
+            Translate(bytes, writer);
+        }        
+        
+        public static void Translate(string sourceFilePath, string destinationFilePath)
+        {
+            Translate(File.ReadAllBytes(sourceFilePath), destinationFilePath);
         }
     }
 
@@ -636,6 +670,9 @@ namespace GensShaderTool
                     if (Saturate)
                         stringBuilder.Append("_sat");
 
+                    if (Arguments == null) 
+                        return stringBuilder.ToString();
+
                     for (var i = 0; i < Arguments.Length; i++)
                     {
                         if (i != 0)
@@ -656,14 +693,20 @@ namespace GensShaderTool
         public Instruction(string instruction)
         {
             var args = instruction.Split(',');
+
             var opArgsSplit = args[0].Split(' ');
-            args[0] = opArgsSplit[1];
+            if (opArgsSplit.Length > 1)
+                args[0] = opArgsSplit[1];
+            else
+                args = null;
+
             var opCodeSplit = opArgsSplit[0].Split('_');
 
             OpCode = opCodeSplit[0];
             Saturate = opCodeSplit.Contains("sat");
 
-            Arguments = args.Select(x => new Argument(x)).ToArray();
+            if (args != null)
+                Arguments = args.Select(x => new Argument(x)).ToArray();
         }
     }
 }

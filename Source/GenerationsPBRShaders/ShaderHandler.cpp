@@ -264,6 +264,33 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetDepthStencil(This->m_spDepthSurface);
     pDevice->Clear({ D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0 });
 
+    //***********************//
+    // Pre-pass: Render sky. //
+    //***********************//
+
+    // Disable Z buffer.
+    pRenderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+    pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
+
+    // Disable alpha testing.
+    pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+    pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
+
+    // Enable alpha blending.
+    pRenderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+    pRenderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
+
+    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_SKY, -1);
+
+    // Unlock render states we're done with.
+    pRenderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
+    pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
+    pRenderingDevice->UnlockRenderState(D3DRS_ZENABLE);
+
+    //************************************************************//
+    // Pre-pass: Render opaque/punch-through objects and terrain. //
+    //************************************************************//
+
     // Set g_GIParam
     float giParam[] = { SceneEffect::GI.InverseToneMapFactor, 0, 0, 0 };
     pD3DDevice->SetPixelShaderConstantF(106, giParam, 1);
@@ -296,10 +323,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set g_IsEnableInverseToneMap
     pD3DDevice->SetPixelShaderConstantB(7, (const BOOL*)&SceneEffect::GI.EnableInverseToneMap, 1);
-
-    //************************************************************//
-    // Pre-pass: Render opaque/punch-through objects and terrain. //
-    //************************************************************//
 
     // Enable mrgIsUseDeferred so shaders output data to GBuffer render targets.
     BOOL isUseDeferred[] = { true };
@@ -774,48 +797,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     pDevice->RenderQuad(nullptr, 0, 0);
 
-    //***************************************************************//
-    // Forward rendering: Render sky, transparent objects and water. //
-    //***************************************************************//
-
-    // We're doing forward rendering now. Set the deferred bool to false.
-    isUseDeferred[0] = false;
-    pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
-    pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
-
-    //*****//
-    // Sky //
-    //*****//
-
-    // Enable Z buffer back.
-    pRenderingDevice->UnlockRenderState(D3DRS_ZENABLE);
-    pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-    pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
-
-    // We don't want sky to write to the Z buffer.
-    pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
-    pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-    pRenderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
-
-    // Set the depth stencil back.
-    pDevice->SetDepthStencil(This->m_spColorSurface);
-
-    // Set framebuffer & depth samplers to prevent intersection with the terrain.
-    pDevice->SetSampler(11, This->m_spColorTex);
-    pDevice->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
-
-    pDevice->SetSampler(12, This->m_spDepthTex);
-    pDevice->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
-
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_SKY, -1);
-
     //*********//
     // Capture //
     //*********//
 
     // Enable Z writing, but always do it.
+    pRenderingDevice->UnlockRenderState(D3DRS_ZENABLE);
+    pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+    pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
+
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
     pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
@@ -846,9 +836,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     pDevice->RenderQuad(nullptr, 0, 0);
 
-    //*********************//
-    // Transparent objects //
-    //*********************//
+    //***************************************************************//
+    // Forward rendering: Render transparent objects and water. //
+    //***************************************************************//
+
+    // We're doing forward rendering now. Set the deferred bool to false.
+    isUseDeferred[0] = false;
+    pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
+    pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
     pDevice->SetRenderTarget(0, This->m_spColorSurface);
     pDevice->SetDepthStencil(This->m_spDepthSurface);
@@ -859,7 +854,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
 
     pRenderingDevice->UnlockRenderState(D3DRS_ZFUNC);
-    pRenderingDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESS);
+    pRenderingDevice->SetRenderState(D3DRS_ZFUNC, D3DCMP_LESSEQUAL);
     pRenderingDevice->LockRenderState(D3DRS_ZFUNC);
 
     // Set the framebuffer and depth samplers.
@@ -934,6 +929,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     case DEBUG_VIEW_MODE_SSAO:
         colorTex = s_spSSAOTex;
+        break;
+
+    case DEBUG_VIEW_MODE_SHADOW_MAP:
+        colorTex = spShadowMap;
+        break;
+
+    case DEBUG_VIEW_MODE_SHADOW_MAP_NO_TERRAIN:
+        colorTex = spShadowMapNoTerrain;
         break;
 
     case DEBUG_VIEW_MODE_NONE:

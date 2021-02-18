@@ -61,7 +61,7 @@ namespace GensShaderTool
             return parameterSet;
         }
 
-        public static ShaderParameterSet ParseConstantTable(Stream stream)
+        public static ShaderParameterSet ReadConstantTable(Stream stream)
         {
             var paramSet = new ShaderParameterSet();
 

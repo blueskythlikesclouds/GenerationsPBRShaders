@@ -43,12 +43,20 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     float3 viewPosition = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
     float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
 
+    float2 lightScattering = ComputeLightScattering(position, viewPosition);
+
     float4 gBuffer0 = tex2Dlod(g_GBuffer0Sampler, float4(texCoord, 0, 0));
     float4 gBuffer1 = tex2Dlod(g_GBuffer1Sampler, float4(texCoord, 0, 0));
     float4 gBuffer2 = tex2Dlod(g_GBuffer2Sampler, float4(texCoord, 0, 0));
     float4 gBuffer3 = tex2Dlod(g_GBuffer3Sampler, float4(texCoord, 0, 0));
 
-    uint type = uint(abs(round(gBuffer3.w * 4)));
+    uint type = UnpackPrimitiveType(gBuffer3.w);
+
+    if (type == PRIMITIVE_TYPE_RAW)
+        return gBuffer0;
+
+    if (type == PRIMITIVE_TYPE_EMISSION)
+        return float4(gBuffer0.rgb * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y, 1.0);
 
     Material material;
 
@@ -73,7 +81,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
 
     float4 indirectSpecular = 0;
-    if (g_IsEnableRLR) 
+    if (g_IsEnableRLR)
         indirectSpecular = tex2Dlod(g_RLRSampler, float4(texCoord.xy, 0, mrgLodParam.y * material.Roughness));
 
     // imagine not being able to unroll loops that access samplers with indexers smh my head 
@@ -105,7 +113,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     float sggiBlendFactor = 0.0;
     float iblBlendFactor = 1.0;
 
-    if (type == 1) // GI
+    if (type == PRIMITIVE_TYPE_GI)
     {
         sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
         iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
@@ -114,12 +122,5 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.IndirectSpecular = specularBRDF * sggiBlendFactor + indirectSpecular * iblBlendFactor;
 
     float3 result = gBuffer0.rgb + ComputeIndirectLighting(material, g_EnvBRDFSampler);
-
-    if (depth < 1.0)
-    {
-        float2 lightScattering = ComputeLightScattering(position, viewPosition);
-        result = result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y;
-    }
-
-    return float4(result, material.Alpha);
+    return float4(result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y, material.Alpha);
 }

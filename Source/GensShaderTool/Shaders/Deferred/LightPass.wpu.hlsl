@@ -107,7 +107,10 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     float4 gBuffer2 = tex2Dlod(g_GBuffer2Sampler, float4(texCoord, 0, 0));
     float4 gBuffer3 = tex2Dlod(g_GBuffer3Sampler, float4(texCoord, 0, 0));
 
-    uint type = uint(abs(round(gBuffer3.w * 4)));
+    uint type = UnpackPrimitiveType(gBuffer3.w);
+
+    if (type == PRIMITIVE_TYPE_RAW || type == PRIMITIVE_TYPE_EMISSION)
+        return gBuffer0;
 
     float ambientOcclusionEx = 1.0;
     if (g_IsEnableSSAO)
@@ -143,14 +146,14 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     float3 direct;
     float3 indirect;
 
-    if (type == 1) // GI
+    if (type == PRIMITIVE_TYPE_GI)
     {
         direct = ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
         indirect = gBuffer0.rgb * ambientOcclusionEx;
 
         material.Shadow *= ComputeShadow(g_ShadowMapNoTerrainSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
     }
-    else if (type == 2 || type == 3) // NoGI & CDRF
+    else
     {
         ComputeSHLightField(material, position);
 
@@ -158,22 +161,17 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
 
         direct = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
 
-        if (type == 3) // CDRF
+        if (type == PRIMITIVE_TYPE_CDR)
         {
             direct *= gBuffer0.rgb;
         }
-        else // NoGI
+        else
         {
             direct *= saturate(dot(-mrgGlobalLight_Direction.xyz, material.Normal));
             indirect += gBuffer0.rgb;
         }
 
         material.Shadow *= ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
-    }
-    else // Anything else (like IgnoreLight)
-    {
-        direct = 0;
-        indirect = gBuffer0.rgb;
     }
 
     direct *= material.Shadow;

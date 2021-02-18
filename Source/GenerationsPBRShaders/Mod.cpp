@@ -44,6 +44,11 @@ extern "C" void __declspec(dllexport) PostInit()
         exit(-1);
     }
 
-    // Do it in PostInit to not conflict with BFXP's FXAA.
+    // Do these in PostInit to not conflict with other mods.
     LUTHandler::applyPatches();
+
+    WRITE_MEMORY(0x1AD99D0, char*, "shader_vanilla.ar");
+    WRITE_MEMORY(0x1AD99D4, char*, "shader_pbr.ar");
+    WRITE_MEMORY(0x1AD99E8, char*, "shader_vanilla.arl");
+    WRITE_MEMORY(0x1AD99EC, char*, "shader_pbr.arl");
 }

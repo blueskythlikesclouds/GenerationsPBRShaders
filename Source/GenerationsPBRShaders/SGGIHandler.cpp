@@ -76,8 +76,6 @@ HOOK(uint32_t, __fastcall, SetGIAtlasParam, 0x6FA080, Hedgehog::Mirage::CRenderi
     float sggiAtlasParam[] = { giAtlasParam[0] * 0.5f, giAtlasParam[1] * 0.5f, value[2], value[3] };
     BOOL isSggiEnabled[] = { value[0] < 0.0f };
 
-    // BOOL isUseBicubicGIFilter[] = { (GetAsyncKeyState(VK_F1) & (1 << 16)) != 0 };
-
     DX_PATCH::IDirect3DTexture9* dxpTexture = *(DX_PATCH::IDirect3DTexture9**)((uint32_t)value + 16);
 
     D3DSURFACE_DESC desc;
@@ -86,7 +84,7 @@ HOOK(uint32_t, __fastcall, SetGIAtlasParam, 0x6FA080, Hedgehog::Mirage::CRenderi
     float giAtlasSize[] = 
         { (float)desc.Width, (float)desc.Height, 1.0f / (float)desc.Width, 1.0f / (float)desc.Height };
 
-    This->m_pD3DDevice->SetVertexShaderConstantF(189, giAtlasParam, 1);
+    This->m_pD3DDevice->SetVertexShaderConstantF(186, giAtlasParam, 1);
 
     This->m_pD3DDevice->SetPixelShaderConstantF(109, giAtlasParam, 1);
     This->m_pD3DDevice->SetPixelShaderConstantF(110, sggiAtlasParam, 1);

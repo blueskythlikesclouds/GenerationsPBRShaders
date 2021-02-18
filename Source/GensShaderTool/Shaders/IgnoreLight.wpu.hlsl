@@ -57,11 +57,8 @@ void main(
     else
     {
         outColor0 = float4(result, diffuse.a);
-
-        // This should nullify any computation done in deferred shaders
-        // while still keeping them properly in the buffers
         outColor1 = 0;
         outColor2 = float4(0, 1, 0, 1);
-        outColor3 = float4(normalize(input.Normal.xyz) * 0.5 + 0.5, 0);
+        outColor3 = float4(normalize(input.Normal.xyz) * 0.5 + 0.5, PackPrimitiveType(PRIMITIVE_TYPE_EMISSION));
     }
 }

@@ -13,6 +13,8 @@ using SharpGen.Runtime;
 using Vortice.D3DCompiler;
 using Vortice.Direct3D;
 
+using ShaderCompileIncludeCache = System.Collections.Generic.Dictionary<string, byte[]>;
+
 namespace GensShaderTool
 {
     public static class ShaderCompiler
@@ -29,14 +31,14 @@ namespace GensShaderTool
             "ConstTexCoord"
         };
 
-        public static void Compile( string hlslFilePath, string outputDirectory,
+        public static void Compile( string hlslFilePath, ArchiveDatabase archiveDatabase,
             IReadOnlyList<IShaderInfo> shaders, ShaderParameterSet globalParameterSet )
         {
+            var cache = new ShaderCompileIncludeCache();
+
             string hlslFileName = Path.GetFileName(hlslFilePath);
             string hlslDirectoryPath = Path.GetDirectoryName(hlslFilePath);
             string hlslFileData = File.ReadAllText(hlslFilePath);
-
-            Directory.CreateDirectory( outputDirectory );
 
             var shaderLists = new List<ShaderList>();
             var permutations = new List<ShaderConverterPermutation>();
@@ -203,15 +205,15 @@ namespace GensShaderTool
                 defines.Add(new ShaderMacro("IterationIndex", permutation.IterationIndex));
 
                 string name = nameBuilder.ToString();
-                string codeFilePath = Path.Combine(outputDirectory, name + $".w{typeChar}u");
 
-                var result = Compiler.Compile(hlslFileData, defines.ToArray(), new ShaderCompilerInclude(hlslDirectoryPath), "main", hlslFilePath,
+                var result = Compiler.Compile(hlslFileData, defines.ToArray(), new ShaderCompilerInclude(cache, hlslDirectoryPath), "main", hlslFilePath,
                     $"{typeChar}s_3_0", ShaderFlags.PackMatrixRowMajor | ShaderFlags.OptimizationLevel3, out var blob, out var errorBlob);
 
                 if (result.Failure)
                     throw new Exception(errorBlob.ConvertToString());
 
-                Compiler.WriteBlobToFile(blob, codeFilePath, true);
+                archiveDatabase.LockedAdd(
+                    new DatabaseData { Name = $"{name}.w{typeChar}u", Data = blob.GetBytes() });
 
                 bool anyLocal = false;
                 bool anyGlobal = false;
@@ -235,7 +237,7 @@ namespace GensShaderTool
 
                 var samplerMap = samplerMaps[permutation.Shader];
 
-                var parameterSet = ShaderParameterConverter.ParseConstantTable(new MemoryStream(blob.GetBytes()));
+                var parameterSet = ShaderParameterConverter.ReadConstantTable(new MemoryStream(blob.GetBytes()));
 
                 var mainParameterSet = mainParameterSets[permutation.Shader];
 
@@ -265,8 +267,12 @@ namespace GensShaderTool
                 if (anyLocal)
                     shader.ParameterFileNames.Add(permutation.Shader.Name);
 
-                shader.Save(Path.Combine(outputDirectory,
-                    name + $".{(permutation.Shader.Type == ShaderType.Vertex ? "vertex" : "pixel")}shader"));
+                archiveDatabase.LockedAdd(
+                    new DatabaseData
+                    {
+                        Name = $"{name}.{(permutation.Shader.Type == ShaderType.Vertex ? "vertex" : "pixel")}shader",
+                        Data = shader.Save()
+                    });
 
                 Console.WriteLine("({0}/{1}): {2}", Interlocked.Increment(ref currentPermutationIndex), permutations.Count, name);
 
@@ -309,12 +315,51 @@ namespace GensShaderTool
                 if ( distinctParameterSet.IsEmpty() )
                     continue;
 
-                distinctParameterSet.Save( Path.Combine( outputDirectory,
-                    info.Name + $".{( info.Type == ShaderType.Vertex ? 'v' : 'p' )}sparam" ) );
+                archiveDatabase.Contents.Add(new DatabaseData
+                {
+                    Name = $"{info.Name}.{( info.Type == ShaderType.Vertex ? 'v' : 'p' )}sparam",
+                    Data = distinctParameterSet.Save()
+                });
             }
 
-            foreach ( var shaderList in shaderLists )
-                shaderList.Save( Path.Combine( outputDirectory, shaderList.Name + ".shader-list" ) );
+            foreach (var shaderList in shaderLists)
+                archiveDatabase.Contents.Add(new DatabaseData
+                {
+                    Name = shaderList.Name + ".shader-list",
+                    Data = shaderList.Save()
+                });
+        }
+
+        public static byte[] Compile(string hlslData, ShaderType type)
+        {
+            var result = Compiler.Compile(hlslData, "main", null, type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0",
+                out var blob, out var errorBlob);
+
+            if (result.Failure)
+                throw new Exception(errorBlob.ConvertToString());
+
+            return blob.GetBytes();
+        }
+
+        public static byte[] CompileFromFile(string sourceFilePath, ShaderType type)
+        {
+            return Compile(File.ReadAllText(sourceFilePath), type);
+        }
+
+        public static void Compile(string hlslData, ShaderType type, string destinationFilePath)
+        {
+            var result = Compiler.Compile(hlslData, "main", null, type == ShaderType.Vertex ? "ps_3_0" : "vs_3_0",
+                out var blob, out var errorBlob);
+
+            if (result.Failure)
+                throw new Exception(errorBlob.ConvertToString());
+
+            Compiler.WriteBlobToFile(blob, destinationFilePath, true);
+        }
+
+        public static void CompileFromFile(string sourceFilePath, ShaderType type, string destinationFilePath)
+        {
+            Compile(File.ReadAllText(sourceFilePath), type, destinationFilePath);
         }
 
         private class ShaderConverterPermutation
@@ -331,16 +376,25 @@ namespace GensShaderTool
 
     public class ShaderCompilerInclude : Include
     {
+        private readonly ShaderCompileIncludeCache mCache;
         private readonly Stack<string> mDirectoryPaths;
 
         public ShadowContainer Shadow { get; set; }
 
         public Stream Open(IncludeType type, string fileName, Stream parentStream)
         {
-            string fullPath = Path.Combine(mDirectoryPaths.Peek(), fileName);
+            string fullPath = Path.GetFullPath(Path.Combine(mDirectoryPaths.Peek(), fileName));
             mDirectoryPaths.Push(Path.GetDirectoryName(fullPath));
 
-            return File.OpenRead(fullPath);
+            byte[] data;
+
+            lock (mCache)
+            {
+                if (!mCache.TryGetValue(fullPath, out data))
+                    mCache[fullPath] = data = File.ReadAllBytes(fullPath);
+            }
+
+            return new MemoryStream(data);
         }
 
         public void Close(Stream stream)
@@ -354,8 +408,9 @@ namespace GensShaderTool
             Shadow.Dispose();
         }
 
-        public ShaderCompilerInclude(string directoryPath)
+        public ShaderCompilerInclude(ShaderCompileIncludeCache cache, string directoryPath)
         {
+            mCache = cache;
             mDirectoryPaths = new Stack<string>();
             mDirectoryPaths.Push(directoryPath);
         }

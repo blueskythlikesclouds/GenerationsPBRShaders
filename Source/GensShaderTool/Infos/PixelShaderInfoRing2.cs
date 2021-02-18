@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace GensShaderTool.Infos
 {
-    public class PixelShaderInfoRing : IPixelShaderInfo
+    public class PixelShaderInfoRing2 : IPixelShaderInfo
     {
-        public virtual string Name { get; } = "Ring";
+        public virtual string Name { get; } = "Ring2";
 
         public virtual IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = new PixelShaderTechniqueInfo[]
         {

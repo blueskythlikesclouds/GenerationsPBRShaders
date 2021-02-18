@@ -18,7 +18,7 @@
 #include "Material/Water01.hlsl"
 #elif defined(IsWater05) && IsWater05
 #include "Material/Water05.hlsl"
-#elif defined(IsRing) && IsRing
+#elif defined(IsRing2) && IsRing2
 #include "Material/Ring.hlsl"
 #elif (defined(IsEmission) && IsEmission) || (defined(IsMEmission) && IsMEmission)
 #include "Material/Emission.hlsl"
@@ -60,6 +60,17 @@ float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
 #endif
 
     return result;
+}
+
+float3 ComputeLightField(float3 normal)
+{
+    float3 squared = normal * normal;
+    int3 positive = normal >= 0.0;
+
+    return
+        squared.x * g_aLightField[positive.x] +
+        squared.y * g_aLightField[positive.y + 2] +
+        squared.z * g_aLightField[positive.z + 4];
 }
 
 void main(in DECLARATION_TYPE input,
@@ -179,8 +190,15 @@ void main(in DECLARATION_TYPE input,
 
     float cosTheta = dot(-mrgGlobalLight_Direction.xyz, material.Normal);
 
+    uint type = PRIMITIVE_TYPE_RAW;
+
     if (!mrgIsUseDeferred)
     {
+#if defined(NoGI) && NoGI
+        material.IndirectDiffuse = ComputeLightField(material.Normal);
+        material.Shadow *= g_aLightField[0].w;
+#endif
+
         material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * iblBlendFactor;
         material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapParams.xy, g_ShadowMapParams.z);
 
@@ -202,7 +220,6 @@ void main(in DECLARATION_TYPE input,
 #endif
 
         outColor0 = float4(directLighting + indirectLighting, material.Alpha) * g_ForceAlphaColor;
-
         PostProcessFinalColor(input, material, false, outColor0);
 
         outColor0.rgb = outColor0.rgb * input.ExtraParams.x + g_LightScatteringColor.rgb * input.ExtraParams.y;
@@ -210,14 +227,13 @@ void main(in DECLARATION_TYPE input,
     else
     {
         float3 color = 0;
-        int type;
 
 #if defined(NoGI) && NoGI
 #if defined(HasCdr) && HasCdr
         color = GetCdr(cosTheta, input.Color.y);
-        type = 3; // CDRF
+        type = PRIMITIVE_TYPE_CDR;
 #else
-        type = 2; // NoGI
+        type = PRIMITIVE_TYPE_NO_GI;
 #endif
 #else
 #if defined(UseApproxEnvBRDF) && UseApproxEnvBRDF
@@ -225,14 +241,14 @@ void main(in DECLARATION_TYPE input,
 #else
         color = ComputeIndirectLighting(material, g_EnvBRDFSampler);
 #endif
-        type = 1; // GI
+        type = PRIMITIVE_TYPE_GI;
 #endif
 
         outColor0 = float4(color, material.Alpha);
-        outColor1 = float4(material.Albedo, material.Shadow);
-        outColor2 = float4(material.FresnelFactor, material.Roughness, material.AmbientOcclusion, material.Metalness);
-        outColor3 = float4(material.Normal * 0.5 + 0.5, type / 4.0f);
-
         PostProcessFinalColor(input, material, true, outColor0);
     }
+
+    outColor1 = float4(material.Albedo, material.Shadow);
+    outColor2 = float4(material.FresnelFactor, material.Roughness, material.AmbientOcclusion, material.Metalness);
+    outColor3 = float4(material.Normal * 0.5 + 0.5, PackPrimitiveType(type));
 }

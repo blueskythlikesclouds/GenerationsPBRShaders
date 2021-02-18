@@ -3,15 +3,14 @@ using System.Linq;
 using System.Text;
 using Amicitia.IO.Binary;
 using Amicitia.IO.Binary.Extensions;
+using Amicitia.IO.Streams;
 
 namespace GensShaderTool
 {
     public static class BinarySerializableEx
     {
-        public static void Load( this IBinarySerializable binarySerializable, string filePath )
+        public static void Load(this IBinarySerializable binarySerializable, BinaryObjectReader reader)
         {
-            using var reader = new BinaryObjectReader( filePath, Endianness.Big, Encoding.UTF8 );
-
             reader.Seek( 12, SeekOrigin.Begin );
             reader.ReadOffset( () =>
             {
@@ -20,9 +19,20 @@ namespace GensShaderTool
             } );
         }
 
-        public static void Save( this IBinarySerializable binarySerializable, string filePath )
+        public static void Load(this IBinarySerializable binarySerializable, Stream stream)
         {
-            using var writer = new BinaryObjectWriter( filePath, Endianness.Big, Encoding.UTF8 );
+            using var reader = new BinaryObjectReader(stream, StreamOwnership.Retain, Endianness.Big, Encoding.UTF8);
+            binarySerializable.Load(reader);
+        }
+
+        public static void Load( this IBinarySerializable binarySerializable, string filePath )
+        {
+            using var stream = File.OpenRead(filePath);
+            binarySerializable.Load(stream);
+        }
+
+        public static void Save( this IBinarySerializable binarySerializable, BinaryObjectWriter writer )
+        {
             writer.Seek( 24, SeekOrigin.Begin );
             writer.PushOffsetOrigin();
             writer.WriteObject( binarySerializable );
@@ -44,6 +54,25 @@ namespace GensShaderTool
             writer.Write( 0x18 );
             writer.Write( ( uint ) relocPos );
             writer.Write( ( uint ) ( length - 4 ) );
+        }
+
+        public static void Save(this IBinarySerializable binarySerializable, Stream stream)
+        {
+            using var writer = new BinaryObjectWriter(stream, StreamOwnership.Retain, Endianness.Big, Encoding.UTF8);
+            binarySerializable.Save(writer);
+        }
+
+        public static void Save( this IBinarySerializable binarySerializable, string filePath )
+        {
+            using var stream = File.Create(filePath);
+            binarySerializable.Save(stream);
+        }
+
+        public static byte[] Save(this IBinarySerializable binarySerializable)
+        {
+            using var stream = new MemoryStream();
+            binarySerializable.Save(stream);
+            return stream.ToArray();
         }
 
         public static T Load<T>( params string[] filePaths ) where T : IBinarySerializable, new()

@@ -52,18 +52,6 @@ HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic:
     originalCFxCrossFadeExecute(This);
 }
 
-HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
-{
-    // Since we're gamma correcting at the very end (after particles are rendered), particles
-    // will incorrectly get corrected twice. To prevent that, we need to treat their textures as SRGB.
-    This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, TRUE);
-
-    originalCFxRenderParticleExecute(This);
-
-    // Undo the changes.
-    This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, FALSE);
-}
-
 void LUTHandler::applyPatches()
 {
     if (enabled)
@@ -93,5 +81,4 @@ void LUTHandler::applyPatches()
 
     INSTALL_HOOK(CFxCrossFadeInitialize);
     INSTALL_HOOK(CFxCrossFadeExecute);
-    INSTALL_HOOK(CFxRenderParticleExecute);
 }
