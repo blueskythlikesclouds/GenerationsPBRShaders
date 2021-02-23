@@ -7,9 +7,6 @@
     <ClCompile Include="StageId.cpp">
       <Filter>Base</Filter>
     </ClCompile>
-    <ClCompile Include="SGGIHandler.cpp">
-      <Filter>Patches\SGGI</Filter>
-    </ClCompile>
     <ClCompile Include="ShaderHandler.cpp">
       <Filter>Patches\Shader</Filter>
     </ClCompile>
@@ -37,15 +34,15 @@
     <ClCompile Include="CompressionHandler.cpp">
       <Filter>Database</Filter>
     </ClCompile>
+    <ClCompile Include="GIHandler.cpp">
+      <Filter>Patches\GI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
       <Filter>Base</Filter>
     </ClInclude>
     <ClInclude Include="Pch.h" />
-    <ClInclude Include="SGGIHandler.h">
-      <Filter>Patches\SGGI</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderHandler.h">
       <Filter>Patches\Shader</Filter>
     </ClInclude>
@@ -80,13 +77,13 @@
     <ClInclude Include="CompressionHandler.h">
       <Filter>Database</Filter>
     </ClInclude>
+    <ClInclude Include="GIHandler.h">
+      <Filter>Patches\GI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Patches">
       <UniqueIdentifier>{dfab192b-8221-468d-9bcd-6a94ba8da68d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Patches\SGGI">
-      <UniqueIdentifier>{89a630be-0b20-4d2a-b147-8a79b5b72d3a}</UniqueIdentifier>
     </Filter>
     <Filter Include="Patches\Shader">
       <UniqueIdentifier>{8c1c872a-2df1-4ee3-aee6-29b13d4a80b6}</UniqueIdentifier>
@@ -111,6 +108,9 @@
     </Filter>
     <Filter Include="Database\Probe">
       <UniqueIdentifier>{45bd06a1-333f-485d-9683-e005a6f5932b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Patches\GI">
+      <UniqueIdentifier>{89a630be-0b20-4d2a-b147-8a79b5b72d3a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

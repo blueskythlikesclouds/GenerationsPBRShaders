@@ -329,6 +329,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
     pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
+    // Setup GI & occlusion flags.
+    pDevice->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(9, D3DTADDRESS_CLAMP);
+    pDevice->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
+
     // Enable Z buffer.
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ZENABLE);
@@ -844,6 +850,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     isUseDeferred[0] = false;
     pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
     pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
+
+    // Setup GI & occlusion flags.
+    pDevice->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(9, D3DTADDRESS_CLAMP);
+    pDevice->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
 
     pDevice->SetRenderTarget(0, This->m_spColorSurface);
     pDevice->SetDepthStencil(This->m_spDepthSurface);

@@ -30,23 +30,6 @@
 #include "Material/Dry.hlsl"
 #endif
 
-float4 texGI(float2 texCoord)
-{
-    float4 result;
-
-    [branch] if (g_IsUseCubicFilter)
-        result = tex2DlodFastBicubic(g_GISampler, texCoord.x * mrgGIAtlasSize.x, texCoord.y * mrgGIAtlasSize.y, mrgGIAtlasSize.zw, 0);
-    else
-        result = tex2Dlod(g_GISampler, float4(texCoord, 0, 0));
-
-    [branch] if (g_IsEnableInverseToneMap)
-        result.rgb = UnpackHDRCustom(result.rgb, g_GIParam.x);
-    else
-        result.rgb *= result.rgb;
-
-    return result;
-}
-
 float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
 {
     float3 result = 0;
@@ -137,53 +120,79 @@ void main(in DECLARATION_TYPE input,
     float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
     float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
 
-    float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;
+    const float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;
+    const float2 occlusionCoord = input.TexCoord0.zw * mrgOcclusionAtlasParam.xy + mrgOcclusionAtlasParam.zw;
 
-    float4 gi = texGI(giCoord);
-
-    [branch] if (mrgIsUseSGGI)
+    [branch] if (mrgIsSG)
     {
-        float2 sggiCoord = input.TexCoord0.zw * mrgSGGIAtlasParam.xy + mrgSGGIAtlasParam.zw;
+        const float2 sggiCoord[4] =
+        {
+            giCoord + float2(0, 0),
+            giCoord + float2(mrgGIAtlasParam.x, 0),
+            giCoord + float2(0, mrgGIAtlasParam.y),
+            giCoord + float2(mrgGIAtlasParam.x, mrgGIAtlasParam.y)
+        };
 
-        float2 sggiCoord0 = sggiCoord + float2(0,                   0);
-        float2 sggiCoord1 = sggiCoord + float2(mrgSGGIAtlasParam.x, 0);
-        float2 sggiCoord2 = sggiCoord + float2(0,                   mrgSGGIAtlasParam.y);
-        float2 sggiCoord3 = sggiCoord + float2(mrgSGGIAtlasParam.x, mrgSGGIAtlasParam.y);
+        float4 sggi[4];
 
-        float3 sggiLevel0 = texGI(sggiCoord0).rgb;
-        float3 sggiLevel1 = texGI(sggiCoord1).rgb;
-        float3 sggiLevel2 = texGI(sggiCoord2).rgb;
-        float3 sggiLevel3 = texGI(sggiCoord3).rgb;
+        int i;
 
-        const float3 sggiAxis0 = float3(0, 0.57735002, 1);
-        const float3 sggiAxis1 = float3(0, 0.57735002, -1);
-        const float3 sggiAxis2 = float3(1, 0.57735002, 0);
-        const float3 sggiAxis3 = float3(-1, 0.57735002, 0);
+        [unroll] for (i = 0; i < 4; i++)
+            sggi[i] = tex2Dlod(g_GISampler, float4(sggiCoord[i], 0, 0));
 
-        material.IndirectDiffuse =  ComputeSggiDiffuse(material, sggiLevel0, sggiAxis0);
-        material.IndirectDiffuse += ComputeSggiDiffuse(material, sggiLevel1, sggiAxis1);
-        material.IndirectDiffuse += ComputeSggiDiffuse(material, sggiLevel2, sggiAxis2);
-        material.IndirectDiffuse += ComputeSggiDiffuse(material, sggiLevel3, sggiAxis3);
+        [branch] if (mrgHasOcclusion)
+        {
+            [unroll] for (i = 0; i < 4; i++)
+                sggi[i].rgb = UnpackHDR(sggi[i]);
+
+            material.Shadow = tex2Dlod(g_OcclusionSampler, float4(occlusionCoord, 0, 0)).x;
+        }
+        else 
+        {
+            material.Shadow = tex2Dlod(g_GISampler, float4(occlusionCoord, 0, 0)).a;
+        }
+
+        const float3 axis[4] =
+        {
+            float3(0, 0.57735002, 1),
+            float3(0, 0.57735002, -1),
+            float3(1, 0.57735002, 0),
+            float3(-1, 0.57735002, 0)
+        };
+
+        material.IndirectDiffuse = 0;
+
+        [unroll] for (i = 0; i < 4; i++)
+            material.IndirectDiffuse += ComputeSggiDiffuse(material, sggi[i].rgb, axis[i]);
 
         material.IndirectDiffuse *= ComputeSggiDiffuseFactor();
 
         float4 r6;
         float sggiSpecularFactor = ComputeSggiSpecularFactor(material, r6);
 
-        material.IndirectSpecular =  ComputeSggiSpecular(material, sggiLevel0, sggiAxis0, r6);
-        material.IndirectSpecular += ComputeSggiSpecular(material, sggiLevel1, sggiAxis1, r6);
-        material.IndirectSpecular += ComputeSggiSpecular(material, sggiLevel2, sggiAxis2, r6);
-        material.IndirectSpecular += ComputeSggiSpecular(material, sggiLevel3, sggiAxis3, r6);
+        material.IndirectSpecular = 0;
+
+        [unroll] for (i = 0; i < 4; i++)
+            material.IndirectSpecular += ComputeSggiSpecular(material, sggi[i].rgb, axis[i], r6);
 
         material.IndirectSpecular *= sggiSpecularFactor;
         material.IndirectSpecular *= sggiBlendFactor;
     }
     else
     {
-        material.IndirectDiffuse = gi.rgb;
-    }
+        float4 gi = tex2Dlod(g_GISampler, float4(giCoord, 0, 0));
 
-    material.Shadow = gi.a;
+        [branch] if (mrgHasOcclusion)
+        {
+            material.IndirectDiffuse = UnpackHDR(gi);
+            material.Shadow = tex2Dlod(g_OcclusionSampler, float4(occlusionCoord, 0, 0)).x;
+        }
+        else
+        {
+            material.IndirectDiffuse = gi.rgb * gi.rgb;
+            material.Shadow = gi.a;
+        }
+    }
 
     if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
 #endif

@@ -23,12 +23,13 @@
 float4 mrgGIAtlasParam : register(c109);
 #endif
 
-float4 mrgSGGIAtlasParam : register(c110);
-float4 mrgGIAtlasSize : register(c111);
+float4 mrgOcclusionAtlasParam : register(c110);
 
 bool mrgIsUseDeferred : register(b8);
-bool mrgIsUseSGGI : register(b9);
+bool mrgIsSG : register(b9);
+bool mrgHasOcclusion : register(b10);
 
+sampler2D g_OcclusionSampler : register(s9);
 samplerCUBE g_DefaultIBLSampler : register(s14);
 sampler2D g_EnvBRDFSampler : register(s15);
 

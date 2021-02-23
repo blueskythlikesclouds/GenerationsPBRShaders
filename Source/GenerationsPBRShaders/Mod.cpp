@@ -3,7 +3,7 @@
 #include "LUTHandler.h"
 #include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
-#include "SGGIHandler.h"
+#include "GIHandler.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
 #include "StageId.h"
@@ -23,7 +23,7 @@ extern "C" void __declspec(dllexport) Init()
     freopen("CONOUT$", "w", stdout);
 #endif 
 
-    SGGIHandler::applyPatches();
+    GIHandler::applyPatches();
     ShaderHandler::applyPatches();
     ShadowHandler::applyPatches();
     YggdrasillPatcher::applyPatches();

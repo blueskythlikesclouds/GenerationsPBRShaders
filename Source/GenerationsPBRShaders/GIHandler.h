@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-class SGGIHandler
+class GIHandler
 {
     static bool enabled;
 

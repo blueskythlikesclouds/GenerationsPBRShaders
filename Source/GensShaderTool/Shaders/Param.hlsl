@@ -20,9 +20,6 @@ float4 g_MiddleGray_Scale_LuminanceLow_LuminanceHigh : register(c108);
 
 float4 g_DebugParam[2] : register(c222);
 
-bool g_IsUseCubicFilter : register(b6);
-bool g_IsEnableInverseToneMap : register(b7);
-
 #if defined(GLOBAL_PSPARAM_HLSL_INCLUDED) || defined(GLOBAL_VSPARAM_HLSL_INCLUDED)
 
 #include "Functions.hlsl"

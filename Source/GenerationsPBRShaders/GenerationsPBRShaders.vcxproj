@@ -105,7 +105,7 @@
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
-    <ClCompile Include="SGGIHandler.cpp" />
+    <ClCompile Include="GIHandler.cpp" />
     <ClCompile Include="DllMain.cpp" />
     <ClCompile Include="Mod.cpp" />
     <ClCompile Include="Pch.cpp">
@@ -129,7 +129,7 @@
     <ClInclude Include="PBROnVanillaFunsies.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />
-    <ClInclude Include="SGGIHandler.h" />
+    <ClInclude Include="GIHandler.h" />
     <ClInclude Include="Pch.h" />
     <ClInclude Include="ShaderHandler.h" />
     <ClInclude Include="ShadowHandler.h" />

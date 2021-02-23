@@ -478,7 +478,7 @@ float3 GetPositionFromDepth(float2 vPos, float depth, in float4x4 invProjection)
 
 float3 UnpackHDR(float4 color)
 {
-    return color.rgb * exp2((color.a * 16 - 4) * LOG2E);
+    return color.rgb * exp(color.a * 16 - 4);
 }
 
 float LinearizeDepth(float depth, in float4x4 invProjection)
