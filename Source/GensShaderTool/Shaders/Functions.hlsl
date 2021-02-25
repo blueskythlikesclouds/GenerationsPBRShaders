@@ -59,7 +59,7 @@ void ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 l
 
 	float3 kd = lerp(1 - F, 0, material.Metalness);
 
-	diffuseBRDF = kd * material.Albedo * lightColor;
+	diffuseBRDF = kd * material.Albedo * lightColor / PI;
 	specularBRDF = max(0, (F * D * G) / max(0.0001, 4 * cosLightDirection * cosViewDirection) * lightColor);
 }
 
