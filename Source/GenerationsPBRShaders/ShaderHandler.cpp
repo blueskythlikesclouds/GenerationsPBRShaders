@@ -280,7 +280,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_SKY, -1);
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Sky, -1);
 
     // Unlock render states we're done with.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
@@ -364,11 +364,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Render objects & player separately from terrain so it gets culled better.
     This->RenderScene(
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
+        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_Player,
+        Hedgehog::Yggdrasill::eRenderSlot_Opaque);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN,
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_OPAQUE);
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain,
+        Hedgehog::Yggdrasill::eRenderSlot_Opaque);
 
     // Done with D3DRS_ALPHATESTENABLE FALSE, unlock it.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
@@ -378,11 +378,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
     This->RenderScene(
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
+        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_Player,
+        Hedgehog::Yggdrasill::eRenderSlot_PunchThrough);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN,
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_PUNCH_THROUGH);
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain,
+        Hedgehog::Yggdrasill::eRenderSlot_PunchThrough);
 
     // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
@@ -477,7 +477,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
         {
-            if ((*it)->m_Type != Hedgehog::Mirage::HH_MR_LIGHT_TYPE_OMNI)
+            if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
                 continue;
 
             const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
@@ -890,14 +890,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     This->RenderScene(
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_OBJECT | Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_PLAYER,
-        Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_TRANSPARENT);
+        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_Player,
+        Hedgehog::Yggdrasill::eRenderSlot_Transparent);
 
     // Terrain
     pDevice->SetSampler(13, spShadowMapNoTerrain);
     pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_TRANSPARENT);
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain, Hedgehog::Yggdrasill::eRenderSlot_Transparent);
 
     // Done with transparency, revert render states.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
@@ -909,7 +909,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //*******//
 
     // Water doesn't need alpha blending so we keep it false.
-    This->RenderScene(Hedgehog::Yggdrasill::HH_YGG_RENDER_TYPE_TERRAIN, Hedgehog::Yggdrasill::HH_YGG_RENDER_SLOT_WATER);
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain, Hedgehog::Yggdrasill::eRenderSlot_Water);
 
     // Unlock render states that we're done with.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
