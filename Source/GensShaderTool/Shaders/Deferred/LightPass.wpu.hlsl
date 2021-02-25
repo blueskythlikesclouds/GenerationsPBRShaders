@@ -17,10 +17,10 @@ bool g_IsEnableSSAO : register(b8);
 void ComputeSHLightField(inout Material material, in float3 position)
 {
     float currentLength = -1;
-    uint currentIndex = 0;
+    int currentIndex = 0;
     float3 currentShCoords;
 
-    uint i;
+    int i;
 
     for (i = 0; i < 4; i++)
     {
@@ -55,7 +55,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
 
     float3 shlf[6];
 
-    switch (currentIndex)
+    switch (abs(currentIndex))
     {
     case 0:
     default:

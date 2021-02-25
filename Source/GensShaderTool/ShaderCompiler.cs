@@ -32,7 +32,7 @@ namespace GensShaderTool
         };
 
         public static void Compile( string hlslFilePath, ArchiveDatabase archiveDatabase,
-            IReadOnlyList<IShaderInfo> shaders, ShaderParameterSet globalParameterSet )
+            IReadOnlyList<IShaderInfo> shaders, ShaderParameterSet globalParameterSet, ShaderFlags flags = ShaderFlags.None )
         {
             var cache = new ShaderCompileIncludeCache();
 
@@ -207,7 +207,7 @@ namespace GensShaderTool
                 string name = nameBuilder.ToString();
 
                 var result = Compiler.Compile(hlslFileData, defines.ToArray(), new ShaderCompilerInclude(cache, hlslDirectoryPath), "main", hlslFilePath,
-                    $"{typeChar}s_3_0", ShaderFlags.PackMatrixRowMajor | ShaderFlags.OptimizationLevel3, out var blob, out var errorBlob);
+                    $"{typeChar}s_3_0", ShaderFlags.PackMatrixRowMajor | flags, out var blob, out var errorBlob);
 
                 if (result.Failure)
                     throw new Exception(errorBlob.ConvertToString());
@@ -330,9 +330,9 @@ namespace GensShaderTool
                 });
         }
 
-        public static byte[] Compile(string hlslData, ShaderType type)
+        public static byte[] Compile(string hlslData, ShaderType type, ShaderFlags flags = ShaderFlags.None)
         {
-            var result = Compiler.Compile(hlslData, "main", null, type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0",
+            var result = Compiler.Compile(hlslData, null, null, "main", null, type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0", flags,
                 out var blob, out var errorBlob);
 
             if (result.Failure)
@@ -341,14 +341,14 @@ namespace GensShaderTool
             return blob.GetBytes();
         }
 
-        public static byte[] CompileFromFile(string sourceFilePath, ShaderType type)
+        public static byte[] CompileFromFile(string sourceFilePath, ShaderType type, ShaderFlags flags = ShaderFlags.None)
         {
-            return Compile(File.ReadAllText(sourceFilePath), type);
+            return Compile(File.ReadAllText(sourceFilePath), type, flags);
         }
 
-        public static void Compile(string hlslData, ShaderType type, string destinationFilePath)
+        public static void Compile(string hlslData, ShaderType type, string destinationFilePath, ShaderFlags flags = ShaderFlags.None)
         {
-            var result = Compiler.Compile(hlslData, "main", null, type == ShaderType.Vertex ? "ps_3_0" : "vs_3_0",
+            var result = Compiler.Compile(hlslData, null, null, "main", null, type == ShaderType.Vertex ? "ps_3_0" : "vs_3_0", flags,
                 out var blob, out var errorBlob);
 
             if (result.Failure)
@@ -357,9 +357,9 @@ namespace GensShaderTool
             Compiler.WriteBlobToFile(blob, destinationFilePath, true);
         }
 
-        public static void CompileFromFile(string sourceFilePath, ShaderType type, string destinationFilePath)
+        public static void CompileFromFile(string sourceFilePath, ShaderType type, string destinationFilePath, ShaderFlags flags = ShaderFlags.None)
         {
-            Compile(File.ReadAllText(sourceFilePath), type, destinationFilePath);
+            Compile(File.ReadAllText(sourceFilePath), type, destinationFilePath, flags);
         }
 
         private class ShaderConverterPermutation
