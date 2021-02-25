@@ -85,13 +85,13 @@ void main(in DECLARATION_TYPE input,
     material.Albedo = diffuse.rgb;
     material.Alpha = diffuse.a;
 
-    material.FresnelFactor = specular.x;
+    material.Reflectance = specular.x;
     material.Roughness = max(0.01, 1 - specular.y);
     material.AmbientOcclusion = specular.z;
     material.Metalness = specular.w;
 
 #if !defined(HasMetalness) || !HasMetalness
-    material.Metalness = material.FresnelFactor > 0.225;
+    material.Metalness = material.Reflectance > 0.225;
 #endif
 
     material.ViewDirection = normalize(g_EyePosition.xyz - input.Position.xyz);
@@ -103,11 +103,11 @@ void main(in DECLARATION_TYPE input,
     PostProcessMaterial(input, material);
 
     if (g_DebugParam[0].x >= 0) material.Albedo = 1.0;
-    if (g_DebugParam[0].z >= 0) material.FresnelFactor = g_DebugParam[0].z;
+    if (g_DebugParam[0].z >= 0) material.Reflectance = g_DebugParam[0].z;
     if (g_DebugParam[0].w >= 0) material.Roughness = g_DebugParam[0].w;
     if (g_DebugParam[1].x >= 0) material.Metalness = g_DebugParam[1].x;
 
-    material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
+    material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
 
 #if defined(NoGI) && NoGI
     float sggiBlendFactor = 0.0;
@@ -258,6 +258,6 @@ void main(in DECLARATION_TYPE input,
     }
 
     outColor1 = float4(material.Albedo, material.Shadow);
-    outColor2 = float4(material.FresnelFactor, material.Roughness, material.AmbientOcclusion, material.Metalness);
+    outColor2 = float4(material.Reflectance, material.Roughness, material.AmbientOcclusion, material.Metalness);
     outColor3 = float4(material.Normal * 0.5 + 0.5, PackPrimitiveType(type));
 }

@@ -308,7 +308,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         SceneEffect::Debug.UseWhiteAlbedo || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY ? 1.0f : -1.0f,
         SceneEffect::Debug.UseFlatNormal ? 1.0f : -1.0f,
-        std::min<float>(1.0f, SceneEffect::Debug.FresnelFactorOverride),
+        std::min<float>(1.0f, SceneEffect::Debug.ReflectanceOverride),
         std::min<float>(1.0f, SceneEffect::Debug.RoughnessOverride),
         std::min<float>(1.0f, SceneEffect::Debug.MetalnessOverride),
         std::min<float>(1.0f, SceneEffect::Debug.GIShadowMapOverride),

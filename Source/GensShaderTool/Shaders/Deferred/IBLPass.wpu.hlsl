@@ -62,7 +62,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     material.Albedo = gBuffer1.rgb;
     material.Alpha = gBuffer0.a;
-    material.FresnelFactor = gBuffer2.x;
+    material.Reflectance = gBuffer2.x;
     material.Roughness = max(0.01, gBuffer2.y);
     material.AmbientOcclusion = gBuffer2.z;
     material.Metalness = gBuffer2.w;
@@ -78,7 +78,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
 
-    material.F0 = lerp(material.FresnelFactor, material.Albedo, material.Metalness);
+    material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
 
     float4 indirectSpecular = 0;
     if (g_IsEnableRLR)

@@ -12,7 +12,7 @@ void PBROnVanillaFunsies::onFrame()
     *(float*)0x1A489EC = 0;
     funD887D0();
 
-    SceneEffect::Debug.FresnelFactorOverride = 0.17f;
+    SceneEffect::Debug.ReflectanceOverride = 0.17f;
     SceneEffect::Debug.RoughnessOverride = 0.01f;
     SceneEffect::Debug.MetalnessOverride = 0;
     SceneEffect::RLR.Enable = true;

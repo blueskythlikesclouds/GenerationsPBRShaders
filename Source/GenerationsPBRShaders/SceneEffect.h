@@ -17,7 +17,7 @@ struct DebugParam
 {
     bool UseWhiteAlbedo;
     bool UseFlatNormal;
-    float FresnelFactorOverride;
+    float ReflectanceOverride;
     float RoughnessOverride;
     float MetalnessOverride;
     float GIShadowMapOverride;

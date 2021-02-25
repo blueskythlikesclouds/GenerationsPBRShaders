@@ -16,7 +16,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     Sonic::CParameterCategory* pDebugParamCategory = spParameterGroup->CreateParameterCategory("Debug", "Debug");
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.UseWhiteAlbedo, "UseWhiteAlbedo");
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.UseFlatNormal, "UseFlatNormal");
-    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.FresnelFactorOverride, "FresnelFactorOverride");
+    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.ReflectanceOverride, "ReflectanceOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.RoughnessOverride, "RoughnessOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.MetalnessOverride, "MetalnessOverride");
     pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.GIShadowMapOverride, "GIShadowMapOverride");

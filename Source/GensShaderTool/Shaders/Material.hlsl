@@ -6,7 +6,7 @@ struct Material
     float3 Albedo;
     float Alpha;
 
-    float FresnelFactor;
+    float Reflectance;
     float Roughness;
     float AmbientOcclusion;
     float Metalness;
@@ -33,7 +33,7 @@ Material NewMaterial()
     material.Albedo = 0;
     material.Alpha = 0;
 
-    material.FresnelFactor = 0;
+    material.Reflectance = 0;
     material.Roughness = 0;
     material.AmbientOcclusion = 0;
 
