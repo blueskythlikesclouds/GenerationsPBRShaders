@@ -107,9 +107,6 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     if (indirectSpecular.a < 1.0)
         indirectSpecular += float4(UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * mrgLodParam.x))), 1.0) * (1 - indirectSpecular.a);
 
-    float3 diffuseBRDF, specularBRDF;
-    ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb, diffuseBRDF, specularBRDF);
-
     float sggiBlendFactor = 0.0;
     float iblBlendFactor = 1.0;
 
@@ -119,7 +116,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
     }
 
-    material.IndirectSpecular = specularBRDF * sggiBlendFactor + indirectSpecular * iblBlendFactor;
+    material.IndirectSpecular = indirectSpecular * iblBlendFactor;
 
     float3 result = gBuffer0.rgb + ComputeIndirectLighting(material, g_EnvBRDFSampler);
     return float4(result * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y, material.Alpha);
