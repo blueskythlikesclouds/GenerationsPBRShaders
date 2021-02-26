@@ -29,7 +29,6 @@ extern "C" void __declspec(dllexport) Init()
     YggdrasillPatcher::applyPatches();
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();
-    ATI2Handler::applyPatches();
     CompressionHandler::applyPatches();
 
     // PBROnVanillaFunsies::applyPatches();

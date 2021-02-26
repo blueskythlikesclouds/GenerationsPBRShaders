@@ -101,7 +101,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ATI2Handler.cpp" />
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
@@ -122,7 +121,6 @@
     <ClCompile Include="YggdrasillPatcher.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ATI2Handler.h" />
     <ClInclude Include="CompressionHandler.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />

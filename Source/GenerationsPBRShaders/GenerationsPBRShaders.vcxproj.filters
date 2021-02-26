@@ -25,9 +25,6 @@
     <ClCompile Include="LUTHandler.cpp">
       <Filter>Patches\Shader\Filter</Filter>
     </ClCompile>
-    <ClCompile Include="ATI2Handler.cpp">
-      <Filter>Patches\Other</Filter>
-    </ClCompile>
     <ClCompile Include="PBROnVanillaFunsies.cpp">
       <Filter>Patches\Other</Filter>
     </ClCompile>
@@ -66,9 +63,6 @@
     </ClInclude>
     <ClInclude Include="LUTHandler.h">
       <Filter>Patches\Shader\Filter</Filter>
-    </ClInclude>
-    <ClInclude Include="ATI2Handler.h">
-      <Filter>Patches\Other</Filter>
     </ClInclude>
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="PBROnVanillaFunsies.h">
