@@ -97,7 +97,7 @@ void main(in DECLARATION_TYPE input,
     material.ViewDirection = normalize(g_EyePosition.xyz - input.Position.xyz);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 
-    material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
+    material.ReflectionDirection = ComputeReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
 
     PostProcessMaterial(input, material);

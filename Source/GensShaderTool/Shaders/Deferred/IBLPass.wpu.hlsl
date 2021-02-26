@@ -18,7 +18,8 @@ float4 ComputeIndirectIBLProbe(Material material, float3 position, samplerCUBE i
 {
     float3 localPos = mul(iblProbeMatrix, float4(position, 1)).xyz;
 
-    if (abs(localPos.x) >= 0.95 || abs(localPos.y) >= 0.95 || abs(localPos.z) >= 0.95)
+    float maxLocalPos = max(abs(localPos.x), max(abs(localPos.y), abs(localPos.z)));
+    if (maxLocalPos >= 0.95)
         return 0;
 
     float3 localDir = mul(iblProbeMatrix, float4(material.ReflectionDirection, 0)).xyz;
@@ -34,7 +35,7 @@ float4 ComputeIndirectIBLProbe(Material material, float3 position, samplerCUBE i
     float3 reflectionDirection = intersectPosition - iblProbePosition.xyz;
 
     float4 result = texCUBElod(iblProbeTex, float4(reflectionDirection * float3(1, 1, -1), material.Roughness * iblProbeLod));
-    return float4(result.rgb * result.a, result.a);
+    return float4(result.rgb * result.a, result.a) * saturate(ComputeIndirectIBLFade(material.Roughness) * (1 - maxLocalPos));
 }
 
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
@@ -75,7 +76,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.ViewDirection = normalize(g_EyePosition.xyz - position);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 
-    material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
+    material.ReflectionDirection = ComputeReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
 
     material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);

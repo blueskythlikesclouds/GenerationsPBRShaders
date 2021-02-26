@@ -293,7 +293,7 @@ float ComputeSggiSpecularFactor(Material material, out float4 r6)
 float3 ComputeSggiSpecular(Material material, float3 amplitude, float3 axis, float4 r6)
 {
     float4 r9 = material.Normal.yxzy;
-    float4 r12 = material.ReflectionDirection.xyzx;
+    float4 r12 = (2 * material.CosViewDirection * material.Normal - material.ViewDirection).xyzx;
     float4 r15, r10, r16, r11, r14;
 
     r14.yzw = amplitude;                    // mov r14.yzw, x1[0].xxyz
@@ -468,6 +468,46 @@ float3 ComputeCharaHighlight(Material material, float3 color, float threshold, f
     }
 
     return r12.xyz;
+}
+
+float3 ComputeReflectionDirection(float roughness, float3 normal, float3 viewDirection)
+{
+    float3 r11 = roughness;
+    float3 r12 = normal.yxz;
+    float3 r13 = viewDirection;
+
+    float3 r3, r19, r5;
+
+    r3.x = dot(r12.yxz, r13.xyz);
+    r3.x = max(0, r3.x);
+    r3.x = min(1, r3.x);
+    r3.y = 2;
+    r3.y = r3.y * r3.x;
+    r19.xyz = r3.yyy * r12.yxz;
+    r13.xyz = -r13.xyz;
+    r13.xyz = r19.xyz + r13.xyz;
+    r3.y = dot(r13.xyz, r13.xyz);
+    r3.y = rsqrt(r3.y);
+    r13.xyz = r13.xyz * r3.yyy;
+    r3.y = 1;
+    r5.x = -r11.x;
+    r3.y = r5.x + r3.y;
+    r3.y = max(0, r3.y);
+    r3.y = min(1, r3.y);
+    r5.x = sqrt(r3.y);
+    r5.x = r5.x + r11.x;
+    r3.y = r5.x * r3.y;
+    r19.xyz = -r12.yxz;
+    r13.xyz = r19.xyz + r13.xyz;
+    r13.xyz = r13.xyz * r3.yyy;
+    r12.xyz = r13.xyz + r12.yxz;
+
+    return r12;
+}
+
+float ComputeIndirectIBLFade(float roughness)
+{
+    return 1.0 / min(0.5, roughness);
 }
 
 float3 GetPositionFromDepth(float2 vPos, float depth, in float4x4 invProjection)

@@ -138,7 +138,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     material.ViewDirection = normalize(g_EyePosition.xyz - position);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 
-    material.ReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
+    material.ReflectionDirection = ComputeReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
     material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
 
     material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
