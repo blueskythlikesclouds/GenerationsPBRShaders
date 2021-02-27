@@ -293,7 +293,7 @@ float ComputeSggiSpecularFactor(Material material, out float4 r6)
 float3 ComputeSggiSpecular(Material material, float3 amplitude, float3 axis, float4 r6)
 {
     float4 r9 = material.Normal.yxzy;
-    float4 r12 = (2 * material.CosViewDirection * material.Normal - material.ViewDirection).xyzx;
+    float4 r12 = material.SmoothReflectionDirection.xyzx;
     float4 r15, r10, r16, r11, r14;
 
     r14.yzw = amplitude;                    // mov r14.yzw, x1[0].xxyz
@@ -470,7 +470,7 @@ float3 ComputeCharaHighlight(Material material, float3 color, float threshold, f
     return r12.xyz;
 }
 
-float3 ComputeReflectionDirection(float roughness, float3 normal, float3 viewDirection)
+float3 ComputeRoughReflectionDirection(float roughness, float3 normal, float3 viewDirection)
 {
     float3 r11 = roughness;
     float3 r12 = normal.yxz;

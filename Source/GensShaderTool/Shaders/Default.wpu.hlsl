@@ -97,8 +97,8 @@ void main(in DECLARATION_TYPE input,
     material.ViewDirection = normalize(g_EyePosition.xyz - input.Position.xyz);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 
-    material.ReflectionDirection = ComputeReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
-    material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
+    material.RoughReflectionDirection = ComputeRoughReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
+    material.SmoothReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
 
     PostProcessMaterial(input, material);
 
@@ -208,7 +208,7 @@ void main(in DECLARATION_TYPE input,
         material.Shadow *= g_aLightField[0].w;
 #endif
 
-        material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * iblBlendFactor;
+        material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.RoughReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * iblBlendFactor;
         material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapParams.xy, g_ShadowMapParams.z);
 
         float3 directLighting = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);

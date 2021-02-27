@@ -20,8 +20,8 @@ struct Material
     float3 ViewDirection;
     float CosViewDirection;
 
-    float3 ReflectionDirection;
-    float CosReflectionDirection;
+    float3 RoughReflectionDirection;
+    float3 SmoothReflectionDirection;
 
     float3 F0;
 };
@@ -46,8 +46,8 @@ Material NewMaterial()
     material.ViewDirection = 0;
     material.CosViewDirection = 0;
 
-    material.ReflectionDirection = 0;
-    material.CosReflectionDirection = 0;
+    material.RoughReflectionDirection = 0;
+    material.SmoothReflectionDirection = 0;
 
     material.F0 = 0;
 

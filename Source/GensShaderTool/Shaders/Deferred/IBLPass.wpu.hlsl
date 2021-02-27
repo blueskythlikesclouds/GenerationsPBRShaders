@@ -22,7 +22,7 @@ float4 ComputeIndirectIBLProbe(Material material, float3 position, samplerCUBE i
     if (maxLocalPos >= 0.95)
         return 0;
 
-    float3 localDir = mul(iblProbeMatrix, float4(material.ReflectionDirection, 0)).xyz;
+    float3 localDir = mul(iblProbeMatrix, float4(material.RoughReflectionDirection, 0)).xyz;
 
     float3 unitary = 1.0f;
     float3 firstPlaneIntersect = (unitary - localPos) / localDir;
@@ -31,7 +31,7 @@ float4 ComputeIndirectIBLProbe(Material material, float3 position, samplerCUBE i
     float3 furthestPlane = max(firstPlaneIntersect, secondPlaneIntersect);
     float distance = min(furthestPlane.x, min(furthestPlane.y, furthestPlane.z));
 
-    float3 intersectPosition = position.xyz + material.ReflectionDirection * distance;
+    float3 intersectPosition = position.xyz + material.RoughReflectionDirection * distance;
     float3 reflectionDirection = intersectPosition - iblProbePosition.xyz;
 
     float4 result = texCUBElod(iblProbeTex, float4(reflectionDirection * float3(1, 1, -1), material.Roughness * iblProbeLod));
@@ -76,8 +76,8 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
     material.ViewDirection = normalize(g_EyePosition.xyz - position);
     material.CosViewDirection = saturate(dot(material.ViewDirection, material.Normal));
 
-    material.ReflectionDirection = ComputeReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
-    material.CosReflectionDirection = saturate(dot(material.ReflectionDirection, material.Normal));
+    material.RoughReflectionDirection = ComputeRoughReflectionDirection(material.Roughness, material.Normal, material.ViewDirection);
+    material.SmoothReflectionDirection = 2 * material.CosViewDirection * material.Normal - material.ViewDirection;
 
     material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
 
@@ -106,7 +106,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 #undef COMPUTE_PROBE
 
     if (indirectSpecular.a < 1.0)
-        indirectSpecular += float4(UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.ReflectionDirection * float3(1, 1, -1), material.Roughness * mrgLodParam.x))), 1.0) * (1 - indirectSpecular.a);
+        indirectSpecular += float4(UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.RoughReflectionDirection * float3(1, 1, -1), material.Roughness * mrgLodParam.x))), 1.0) * (1 - indirectSpecular.a);
 
     float sggiBlendFactor = 0.0;
     float iblBlendFactor = 1.0;
