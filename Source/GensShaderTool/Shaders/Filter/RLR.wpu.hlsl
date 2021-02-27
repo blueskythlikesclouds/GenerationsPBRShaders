@@ -19,7 +19,7 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
     float depth = tex2Dlod(g_DepthSampler, float4(texCoord.xy, 0, 0)).x;
     float3 position = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
-    float3 dir = normalize(reflect(position, mul(float4(gBuffer3.xyz * 2 - 1, 0), g_MtxView).xyz));
+    float3 dir = normalize(ComputeReflectionDirection(gBuffer2.y, normalize(mul(float4(gBuffer3.xyz * 2 - 1, 0), g_MtxView).xyz), normalize(-position)));
 
     float4 color = 0;
 
