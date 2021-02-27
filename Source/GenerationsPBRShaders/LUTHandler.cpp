@@ -81,4 +81,7 @@ void LUTHandler::applyPatches()
 
     INSTALL_HOOK(CFxCrossFadeInitialize);
     INSTALL_HOOK(CFxCrossFadeExecute);
+
+    // Prevent gamma ramp from being set.
+    WRITE_MEMORY(0xD68183, uint8_t, 0x83, 0xC4, 0x08, 0x90, 0x90);
 }
