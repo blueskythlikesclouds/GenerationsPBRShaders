@@ -1,23 +1,42 @@
 ﻿#include "CompressionHandler.h"
 
-HOOK(void*, __fastcall, DecompressDatabase, 0x6A1080, void* This, void* Edx, void* a2, void* a3, const boost::shared_ptr<uint8_t[]>& data, uint32_t length, uint32_t length2, void* a7, void* a8)
+struct BSCHeader
 {
-    if (!data)
-        return originalDecompressDatabase(This, Edx, a2, a3, data, length, length2, a7, a8);
+    char Magic[3];
+    uint8_t Version;
+    uint32_t CompressionType;
+    uint32_t CompressedLength;
+    uint32_t UncompressedLength;
 
-    if (length > 16 && *(uint32_t*)data.get() == 0x435342)
+    bool IsValid() const
     {
-        const HlCompressType compressionType = *(HlCompressType*)(data.get() + 4);
-        const uint32_t compressedSize = *(uint32_t*)(data.get() + 8);
-        const uint32_t uncompressedSize  = *(uint32_t*)(data.get() + 12);
-
-        uint8_t* uncompressedData = nullptr;
-        hlDecompress(compressionType, data.get() + 16, compressedSize, uncompressedSize, (void**)&uncompressedData);
-
-        return originalDecompressDatabase(This, Edx, a2, a3, boost::shared_ptr<uint8_t[]>(uncompressedData, HlFreePtr), uncompressedSize, uncompressedSize, a7, a8);
+        return Magic[0] == 'B' && Magic[1] == 'S' && Magic[2] == 'C' && Version == 0;
     }
+};
 
-    return originalDecompressDatabase(This, Edx, a2, a3, data, length, length2, a7, a8);
+HOOK(uint32_t, __cdecl, DecompressCAB, 0xA92E54, void* a1, char* pBuffer, void* a3, void* a4, void* a5, void* a6, void* a7)
+{
+    uint8_t* pData = (uint8_t*)strtol(pBuffer, nullptr, 16);
+
+    const BSCHeader* pHeader = *(BSCHeader**)pData;
+    if (pHeader == nullptr || !pHeader->IsValid())
+        return originalDecompressCAB(a1, pBuffer, a3, a4, a5, a6, a7);
+
+    uint8_t* uncompressedData = nullptr;
+    hlDecompress((HlCompressType)pHeader->CompressionType, pHeader + 1, pHeader->CompressedLength, pHeader->UncompressedLength, (void**)&uncompressedData);
+
+    struct Output
+    {
+        boost::shared_ptr<uint8_t[]> spData;
+        size_t length;
+    };
+
+    Output* pOutput = (Output*)a7;
+
+    pOutput->spData = boost::shared_ptr<uint8_t[]>(uncompressedData, HlFreePtr);
+    pOutput->length = pHeader->UncompressedLength;
+
+    return true;
 }
 
 uint32_t compareMagicMidAsmHookReturnAddressOnTrue = 0x6A10AC;
@@ -43,5 +62,5 @@ void __declspec(naked) compareMagicMidAsmHook()
 void CompressionHandler::applyPatches()
 {
     WRITE_JUMP(0x6A10A4, compareMagicMidAsmHook);
-    INSTALL_HOOK(DecompressDatabase);
+    INSTALL_HOOK(DecompressCAB);
 }
