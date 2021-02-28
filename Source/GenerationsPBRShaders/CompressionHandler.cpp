@@ -22,18 +22,20 @@ HOOK(uint32_t, __cdecl, DecompressCAB, 0xA92E54, void* a1, char* pBuffer, void* 
     if (pHeader == nullptr || !pHeader->IsValid())
         return originalDecompressCAB(a1, pBuffer, a3, a4, a5, a6, a7);
 
-    uint8_t* uncompressedData = nullptr;
-    hlDecompress((HlCompressType)pHeader->CompressionType, pHeader + 1, pHeader->CompressedLength, pHeader->UncompressedLength, (void**)&uncompressedData);
+    uint8_t* uncompressedData = (uint8_t*)Hedgehog::Base::fpOperatorNew(pHeader->UncompressedLength);
+
+    hlDecompressNoAlloc((HlCompressType)pHeader->CompressionType, (uint8_t*)pHeader + sizeof(BSCHeader), 
+        pHeader->CompressedLength, pHeader->UncompressedLength, uncompressedData);
 
     struct Output
     {
-        boost::shared_ptr<uint8_t[]> spData;
+        boost::shared_ptr<uint8_t> spData;
         size_t length;
     };
 
     Output* pOutput = (Output*)a7;
 
-    pOutput->spData = boost::shared_ptr<uint8_t[]>(uncompressedData, HlFreePtr);
+    pOutput->spData = boost::shared_ptr<uint8_t>(uncompressedData, Hedgehog::Base::fpOperatorDelete);
     pOutput->length = pHeader->UncompressedLength;
 
     return true;

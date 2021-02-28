@@ -11,7 +11,7 @@ HOOK(void, __fastcall, CFxCrossFadeInitialize, Sonic::fpCFxCrossFadeInitialize, 
     originalCFxCrossFadeInitialize(This);
 
     This->m_pScheduler->GetShader(s_FxLUTShader, "FxFilterT", "FxLUT");
-    s_spLutPicture = nullptr;
+    s_spLutPicture.reset();
 }
 
 HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic::CFxCrossFade* This)
@@ -20,7 +20,7 @@ HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic:
         return originalCFxCrossFadeExecute(This);
 
     if (StageId::hasChanged())
-        s_spLutPicture = nullptr;
+        s_spLutPicture.reset();
 
     if (!s_spLutPicture)
         This->m_pScheduler->GetPicture(s_spLutPicture, (StageId::get() + "_rgb_table0").c_str());

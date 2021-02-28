@@ -139,8 +139,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spSSAOTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
-    s_spEnvBRDFPicture = nullptr;
-    s_spDefaultIBLPicture = nullptr;
+    s_spEnvBRDFPicture.reset();
+    s_spDefaultIBLPicture.reset();
 }
 
 HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
@@ -150,7 +150,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         s_SHLFs.clear();
         s_IBLProbes.clear();
-        s_spDefaultIBLPicture = nullptr;
+        s_spDefaultIBLPicture.reset();
     }
 
     if (!s_spEnvBRDFPicture)
@@ -392,9 +392,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
 
     // We're done rendering opaque/punch-through terrain and objects!
-    pDevice->SetRenderTarget(1, nullptr);
-    pDevice->SetRenderTarget(2, nullptr);
-    pDevice->SetRenderTarget(3, nullptr);
+    pDevice->UnsetRenderTarget(1);
+    pDevice->UnsetRenderTarget(2);
+    pDevice->UnsetRenderTarget(3);
 
     //***************//
     // Deferred pass //
@@ -605,7 +605,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->RenderQuad(nullptr, 0, 0);
 
     if (SceneEffect::SSAO.Enable)
-        pDevice->SetRenderTarget(1, nullptr);
+        pDevice->UnsetRenderTarget(1);
 
     //*****************************//
     // Real-time Local Reflections //
@@ -618,7 +618,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         pDevice->SetShader(s_FxRLRShader);
         pDevice->SetRenderTarget(0, spRLRSurface);
-        pDevice->SetDepthStencil(nullptr);
+        pDevice->UnsetDepthStencil();
         pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
         // Set parameters
@@ -918,8 +918,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ZFUNC);
 
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> colorTex = nullptr;
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> capturedColorTex = nullptr;
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> colorTex;
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> capturedColorTex;
 
     switch (SceneEffect::Debug.ViewMode)
     {
