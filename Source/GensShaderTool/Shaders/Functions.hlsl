@@ -24,16 +24,13 @@ float NdfGGX(float cosLh, float roughness)
 	return alphaSq / (PI * denom * denom);
 }
 
-float GaSchlickG1(float cosTheta, float k)
+float VisSchlick(float roughness, float cosLo, float cosLi)
 {
-	return cosTheta / (cosTheta * (1 - k) + k);
-}
-
-float GaSchlickGGX(float cosLi, float cosLo, float roughness)
-{
-	float r = roughness + 1;
-	float k = (r * r) / 8;
-	return GaSchlickG1(cosLi, k) * GaSchlickG1(cosLo, k);
+    float r = roughness + 1;
+    float k = (r * r) / 8;
+    float schlickV = cosLo * (1 - k) + k;
+    float schlickL = cosLi * (1 - k) + k;
+    return 0.25 / (schlickV * schlickL);
 }
 
 float2 ApproxEnvBRDF(float cosLo, float roughness)
@@ -49,18 +46,17 @@ void ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 l
 {
 	float3 halfwayDirection = normalize(material.ViewDirection + lightDirection);
 
-    float cosViewDirection = max(0.0001, material.CosViewDirection);
 	float cosLightDirection = saturate(dot(lightDirection, material.Normal));
 	float cosHalfwayDirection = saturate(dot(halfwayDirection, material.Normal));
 
 	float3 F = FresnelSchlick(material.F0, saturate(dot(halfwayDirection, material.ViewDirection)));
 	float D = NdfGGX(cosHalfwayDirection, material.Roughness);
-	float G = GaSchlickGGX(cosLightDirection, cosViewDirection, material.Roughness);
+	float Vis = VisSchlick(material.Roughness, material.CosViewDirection, cosLightDirection);
 
 	float3 kd = lerp(1 - F, 0, material.Metalness);
 
-	diffuseBRDF = kd * material.Albedo * lightColor / PI;
-	specularBRDF = max(0, (F * D * G) / max(0.0001, 4 * cosLightDirection * cosViewDirection) * lightColor);
+	diffuseBRDF = kd * (material.Albedo / PI) * lightColor;
+	specularBRDF = (D * Vis) * F * lightColor;
 }
 
 float3 ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 lightColor)
@@ -106,7 +102,7 @@ float3 ComputeIndirectLighting(Material material, float2 specularBRDF)
 
     float3 diffuseIBL = (kd * material.Albedo) * material.IndirectDiffuse;
 
-    float3 specularIBL = max(0, (material.F0 * specularBRDF.x + specularBRDF.y) * material.IndirectSpecular);
+    float3 specularIBL = (material.F0 * specularBRDF.x + specularBRDF.y) * material.IndirectSpecular;
 
     return (diffuseIBL + specularIBL) * material.AmbientOcclusion;
 }
