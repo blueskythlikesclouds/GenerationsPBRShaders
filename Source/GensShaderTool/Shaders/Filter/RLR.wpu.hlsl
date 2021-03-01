@@ -73,12 +73,12 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
             float step = (i + 0.5) * stepSize;
 
             float2 rayCoord = lerp(begin.xy, end.xy, step);
-            float depth = PerspectiveCorrectLerp(begin.z, end.z, step);
+            depth = PerspectiveCorrectLerp(begin.z, end.z, step);
 
-            float cmpDepth = tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x;
-            cmpDepth = LinearizeDepth(cmpDepth, g_MtxInvProjection);
+            float fbDepth = tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x;
+            float cmpDepth = LinearizeDepth(fbDepth, g_MtxInvProjection);
 
-            if (depth < cmpDepth)
+            if (fbDepth < 1 && depth < cmpDepth)
             {
                 // If we hit a pixel closer to the camera than the start point,
                 // then it's very likely that the hit point hides the actual reflection.
