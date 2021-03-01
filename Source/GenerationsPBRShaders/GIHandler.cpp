@@ -73,6 +73,16 @@ public:
         if (current == 0) delete this;
         return current;
     }
+
+    void* operator new(const size_t size)
+    {
+        return Hedgehog::Base::fpOperatorNew(size);
+    }
+
+    void operator delete(void* pData)
+    {
+        Hedgehog::Base::fpOperatorDelete(pData);
+    }
 };
 
 FUNCTION_PTR(NodeType*, __thiscall, fpFindAtlasSubTexture, 0x72AEE0, MapType* This, const FixedString& key);
@@ -116,14 +126,14 @@ void __stdcall fMovePictureDataSetupGIStore(char* pName, MapType* pMap,
     }
 
     // Crackheadedly create a stub for presenting the data to the game.
-    uint8_t* pStubData = (uint8_t*)malloc(sizeof(Hedgehog::Mirage::CPictureData));
+    uint8_t* pStubData = (uint8_t*)Hedgehog::Base::fpOperatorNew(sizeof(Hedgehog::Mirage::CPictureData));
 
     *(uint8_t*)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_Flags)) = spPictureData->m_Flags;
 
     *(GIStore**)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_pD3DTexture)) = 
         new GIStore(spPictureData->m_pD3DTexture, pOcclusionTex, occlusionRect, isSg);
 
-    spPictureData = boost::shared_ptr<Hedgehog::Mirage::CPictureData>((Hedgehog::Mirage::CPictureData*)pStubData, free);
+    spPictureData = boost::shared_ptr<Hedgehog::Mirage::CPictureData>((Hedgehog::Mirage::CPictureData*)pStubData, Hedgehog::Base::fpOperatorDelete);
 }
 
 void __declspec(naked) fMovePictureDataMidAsmHook()
