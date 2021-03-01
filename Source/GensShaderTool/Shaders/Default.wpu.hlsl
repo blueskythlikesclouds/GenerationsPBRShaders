@@ -194,6 +194,9 @@ void main(in DECLARATION_TYPE input,
         }
     }
 
+    material.IndirectDiffuse *= g_GI0Scale.rgb;
+    material.IndirectSpecular *= g_GI0Scale.rgb;
+
     if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
 #endif
 
