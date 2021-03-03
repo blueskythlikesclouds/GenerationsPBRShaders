@@ -27,8 +27,7 @@ void main(
     diffuse = float4(0, 0, 0, 1);
 #endif
 
-    diffuse.rgb *= g_MiddleGray_Scale_LuminanceLow_LuminanceHigh.x * 
-        g_MiddleGray_Scale_LuminanceLow_LuminanceHigh.w;
+    diffuse.rgb *= g_HDRParam_SGGIParam.x;
 
 #if defined(HasTransparency) && HasTransparency
     diffuse.a *= tex2D(transparencySampler, UV(2)).a;

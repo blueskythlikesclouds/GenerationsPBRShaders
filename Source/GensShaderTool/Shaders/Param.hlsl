@@ -14,10 +14,7 @@
 #define PRIMITIVE_TYPE_CDR          4
 #define PRIMITIVE_TYPE_MAX          4
 
-float4 g_GIParam : register(c106);
-float4 g_SGGIParam : register(c107);
-float4 g_MiddleGray_Scale_LuminanceLow_LuminanceHigh : register(c108);
-
+float4 g_HDRParam_SGGIParam : register(c106);
 float4 g_DebugParam[2] : register(c222);
 
 #if defined(GLOBAL_PSPARAM_HLSL_INCLUDED) || defined(GLOBAL_VSPARAM_HLSL_INCLUDED)

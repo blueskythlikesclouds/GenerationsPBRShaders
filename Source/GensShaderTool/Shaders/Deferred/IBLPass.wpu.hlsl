@@ -1,11 +1,10 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float3x4 mrgProbeMatrices[8] : register(c173);
-float4 mrgProbeParams[8] : register(c197);
-float4 mrgProbeLodParams[2] : register(c205);
-
-float4 mrgLodParam : register(c207);
+float3x4 mrgProbeMatrices[8] : register(c107);
+float4 mrgProbeParams[8] : register(c131);
+float4 mrgProbeLodParams[2] : register(c139);
+float4 mrgLodParam : register(c141);
 
 samplerCUBE g_IBLProbeSamplers[8] : register(s4);
 sampler2D g_RLRSampler : register(s13);
@@ -113,7 +112,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     if (type == PRIMITIVE_TYPE_GI)
     {
-        sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
+        sggiBlendFactor = saturate(material.Roughness * g_HDRParam_SGGIParam.w + g_HDRParam_SGGIParam.z);
         iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
     }
 

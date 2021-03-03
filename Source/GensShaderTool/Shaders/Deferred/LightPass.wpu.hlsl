@@ -1,15 +1,13 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float3x4 mrgSHLightFieldMatrices[4] : register(c173);
-float4 mrgSHLightFieldParams[4] : register(c185);
-
-float4 g_SSAOSize : register(c189);
+float4 mrgLocalLightData[64] : register(c107);
+float3x4 mrgSHLightFieldMatrices[4] : register(c171);
+float4 mrgSHLightFieldParams[4] : register(c183);
+float4 g_SSAOSize : register(c187);
 
 sampler3D g_SHLightFieldSamplers[4] : register(s4);
-
 sampler g_ShadowMapNoTerrainSampler : register(s9);
-
 sampler g_SSAOSampler : register(s10);
 
 bool g_IsEnableSSAO : register(b8);

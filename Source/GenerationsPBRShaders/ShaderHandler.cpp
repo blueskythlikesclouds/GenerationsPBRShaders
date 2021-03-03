@@ -291,17 +291,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pre-pass: Render opaque/punch-through objects and terrain. //
     //************************************************************//
 
-    // Set g_GIParam
-    float giParam[] = { SceneEffect::GI.InverseToneMapFactor, 0, 0, 0 };
-    pD3DDevice->SetPixelShaderConstantF(106, giParam, 1);
-
-    // Set g_SGGIParam
+    // Set g_HDRParam_SGGIParam
     float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::SGGI.StartSmoothness - SceneEffect::SGGI.EndSmoothness);
-    float sggiParam[] = { -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale, 0, 0 };
-    pD3DDevice->SetPixelShaderConstantF(107, sggiParam, 1);
-
-    // Set g_MiddleGray_Scale_LuminanceLow_LuminanceHigh
-    pD3DDevice->SetPixelShaderConstantF(108, (const float*)0x1A572D0, 1);
+    float hdrParam_sggiParam[] = { SceneEffect::HDR.Luminance, 1.0f, -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale };
+    pD3DDevice->SetPixelShaderConstantF(106, hdrParam_sggiParam, 1);
 
     // Set g_DebugParam
     float debugParam[] =
@@ -317,12 +310,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     };
 
     pD3DDevice->SetPixelShaderConstantF(222, debugParam, 2);
-
-    // Set g_IsUseCubicFilter
-    pD3DDevice->SetPixelShaderConstantB(6, (const BOOL*)&SceneEffect::GI.EnableCubicFilter, 1);
-
-    // Set g_IsEnableInverseToneMap
-    pD3DDevice->SetPixelShaderConstantB(7, (const BOOL*)&SceneEffect::GI.EnableInverseToneMap, 1);
 
     // Enable mrgIsUseDeferred so shaders output data to GBuffer render targets.
     BOOL isUseDeferred[] = { true };
@@ -509,7 +496,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         }
 
         if (localLightCount > 0)
-            pD3DDevice->SetPixelShaderConstantF(109, (const float*)localLightData, 2 * localLightCount);
+            pD3DDevice->SetPixelShaderConstantF(107, (const float*)localLightData, 2 * localLightCount);
     }
 
     if (SceneEffect::Debug.DisableOmniLight || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
@@ -562,10 +549,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        pD3DDevice->SetPixelShaderConstantF(173 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(171 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
-        pD3DDevice->SetPixelShaderConstantF(185 + i, shlfParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(183 + i, shlfParam, 1);
 
         if (SceneEffect::Debug.DisableSHLightField)
             pDevice->UnsetSampler(4 + i);
@@ -585,7 +572,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             1.0f / (float)s_spSSAOTex->m_CreationParams.Height,
         };
 
-        pD3DDevice->SetPixelShaderConstantF(189, ssaoSize, 1);
+        pD3DDevice->SetPixelShaderConstantF(187, ssaoSize, 1);
 
         pDevice->SetSampler(10, s_spSSAOTex);
         pDevice->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -734,7 +721,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         const IBLProbeCache* cache = *probeIterator++;
 
-        pD3DDevice->SetPixelShaderConstantF(173 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(107 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         probeParams[i * 4 + 0] = cache->m_Position.x();
         probeParams[i * 4 + 1] = cache->m_Position.y();
@@ -753,8 +740,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     if (iblCount > 0)
     {
-        pD3DDevice->SetPixelShaderConstantF(197, probeParams, iblCount);
-        pD3DDevice->SetPixelShaderConstantF(205, probeLodParams, 2);
+        pD3DDevice->SetPixelShaderConstantF(131, probeParams, iblCount);
+        pD3DDevice->SetPixelShaderConstantF(139, probeLodParams, 2);
     }
 
     // Set RLR, Default IBL and Env BRDF
@@ -788,7 +775,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             0
         };
 
-        pD3DDevice->SetPixelShaderConstantF(207, iblLodParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(141, iblLodParam, 1);
     }
 
     if (SceneEffect::Debug.DisableDefaultIBL)
@@ -918,6 +905,21 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
     pRenderingDevice->UnlockRenderState(D3DRS_ZFUNC);
 
+    //***********//
+    // Particles //
+    //***********//
+    pRenderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+    pRenderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+    pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+    pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+
+    // Set HDR param to scale particles by luminance.
+    hdrParam_sggiParam[1] = hdrParam_sggiParam[0];
+    pD3DDevice->SetPixelShaderConstantF(106, hdrParam_sggiParam, 1);
+    
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Effect | Hedgehog::Yggdrasill::eRenderType_SparkleObject | Hedgehog::Yggdrasill::eRenderType_SparkleFramebuffer,
+        Hedgehog::Yggdrasill::eRenderSlot_Opaque | Hedgehog::Yggdrasill::eRenderSlot_PunchThrough | Hedgehog::Yggdrasill::eRenderSlot_Transparent);
+
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> colorTex;
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> capturedColorTex;
 
@@ -986,6 +988,8 @@ void ShaderHandler::applyPatches()
 
     INSTALL_HOOK(CFxRenderGameSceneInitialize);
     INSTALL_HOOK(CFxRenderGameSceneExecute);
-
     INSTALL_HOOK(CRenderingDeviceSetViewMatrix);
+
+    // Don't render anything in CFxRenderParticle
+    WRITE_MEMORY(0x10C8273, uint8_t, 0x83, 0xC4, 0x08, 0x90, 0x90);
 }

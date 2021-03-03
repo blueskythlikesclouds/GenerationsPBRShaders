@@ -206,29 +206,50 @@ namespace GensShaderTool
         {
             string translated = ShaderTranslator.Translate(bytes);
 
-            bool isParticleShader = debugName.Contains("Particle");
+            int index = translated.IndexOf("void main(", StringComparison.Ordinal);
 
-            if (isParticleShader)
+            string preCode = translated.Substring(0, index);
+            string code = translated.Substring(index);
+
+            // Remove the 0-4 color clamp.
+            // TODO: Make this smarter lol.
+            code = code.Replace("(4,", "(65504,");
+            code = code.Replace(", 4,", ", 65504,");
+            code = code.Replace(", 4)", ", 65504)");
+
+            // Divide light color by PI.
+            code = code.Replace("mrgGlobalLight_Diffuse",
+                "(mrgGlobalLight_Diffuse / " + MathF.PI.ToString(CultureInfo.InvariantCulture) + ")");
+
+            // Convert diffuse to linear space.
+            preCode += "float4 g_HDRParam_SGGIParam : register(c106);" +
+                       "float4 texSRGB(sampler2D s, float4 texCoord) { return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); }";
+
+            code = code.Replace("tex(sampDif", "texSRGB(sampDif");
+            code = code.Replace("tex(s0,", "texSRGB(s0,");
+
+            // Scale ForceAlphaColor/SmokeColor by luminance.
+            code = code.Replace("g_ForceAlphaColor", "(g_ForceAlphaColor * float4(g_HDRParam_SGGIParam.yyy, 1))");
+
+            if (debugName.Contains("SmokeTest", StringComparison.Ordinal))
             {
-                translated = translated.Replace("void main(",
-                    "float4 texSRGB(sampler2D s, float4 texCoord) { return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); }" +
-                    " void main(");
-
-                translated = translated.Replace("tex(sampDif", "texSRGB(sampDif");
+                // Scale smoke color by luminance.
+                code = code.Replace("g_SmokeColor", "(g_SmokeColor * float4(g_HDRParam_SGGIParam.yyy, 1))");
+                
+                // Prevent the smoke color saturation.
+                code = code.Replace("oC0.xyz = saturate", "oC0.xyz =");
             }
-            else
-            {
-                // Don't sample shadow maps (for now)
-                translated = translated.Replace("texProj(g_VerticalShadowMap", "1; //");
-                translated = translated.Replace("texProj(g_ShadowMap", "1; //");
+            
+            // Ignore shadowmaps for the time being.
+            code = code.Replace("texProj(g_VerticalShadowMap", "1; //");
+            code = code.Replace("texProj(g_ShadowMap", "1; //");
 
-                // Pass proper data to GBuffer
-                translated = translated[..^3] + "oC0.rgb = pow(oC0.rgb, 2.2); oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0; }";
-            }
+            // Pass correct data to GBuffer.
+            code = code[..^3] + "oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0; }";
 
             try
             {
-                return ShaderCompiler.Compile(translated, ShaderType.Pixel, cShaderFlags);
+                return ShaderCompiler.Compile(preCode + code, ShaderType.Pixel, cShaderFlags);
             }
             catch (Exception e)
             {

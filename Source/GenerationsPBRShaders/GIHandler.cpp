@@ -230,7 +230,7 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, Hedgehog::Mirage::
     if (hasOcclusion)
     {
         This->m_pD3DDevice->SetTexture(9, pGIStore->pOcclusionTex);
-        This->m_pD3DDevice->SetPixelShaderConstantF(110, (const float*)&pGIStore->occlusionRect, 1);
+        This->m_pD3DDevice->SetPixelShaderConstantF(108, (const float*)&pGIStore->occlusionRect, 1);
     }
 
     This->m_pD3DDevice->SetTexture(10, pGIStore->pGITex);
@@ -244,10 +244,10 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, Hedgehog::Mirage::
     }
 
     This->m_pD3DDevice->SetVertexShaderConstantF(186, giParam, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantF(109, giParam, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantF(107, giParam, 1);
 
     if (!hasOcclusion)
-        This->m_pD3DDevice->SetPixelShaderConstantF(110, pData, 1);
+        This->m_pD3DDevice->SetPixelShaderConstantF(108, pData, 1);
 
     This->m_pD3DDevice->SetPixelShaderConstantB(9, &isSg, 1);
     This->m_pD3DDevice->SetPixelShaderConstantB(10, &hasOcclusion, 1);

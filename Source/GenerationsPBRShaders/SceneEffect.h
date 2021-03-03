@@ -30,11 +30,9 @@ struct DebugParam
     bool DisableLUT;
 };
 
-struct GIParam
+struct HDRParam
 {
-    bool EnableCubicFilter;
-    bool EnableInverseToneMap;
-    float InverseToneMapFactor;
+    float Luminance;
 };
 
 struct SGGIParam
@@ -85,7 +83,7 @@ class SceneEffect
 {
 public:
     static DebugParam Debug;
-    static GIParam GI;
+    static HDRParam HDR;
     static SGGIParam SGGI;
     static ESMParam ESM;
     static RLRParam RLR;

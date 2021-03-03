@@ -117,7 +117,7 @@ void main(in DECLARATION_TYPE input,
     material.IndirectSpecular = 0;
     material.Shadow = 1;
 #else
-    float sggiBlendFactor = saturate(material.Roughness * g_SGGIParam.y + g_SGGIParam.x);
+    float sggiBlendFactor = saturate(material.Roughness * g_HDRParam_SGGIParam.w + g_HDRParam_SGGIParam.z);
     float iblBlendFactor = lerp(1 - sggiBlendFactor, 1, material.Metalness);
 
     const float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;

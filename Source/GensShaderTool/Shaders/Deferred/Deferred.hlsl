@@ -5,8 +5,6 @@
 #include "../Material.hlsl"
 #include "../Param.hlsl"
 
-float4 mrgLocalLightData[64] : register(c109);
-
 sampler2D g_GBuffer0Sampler : register(s0);
 sampler2D g_GBuffer1Sampler : register(s1);
 sampler2D g_GBuffer2Sampler : register(s2);
