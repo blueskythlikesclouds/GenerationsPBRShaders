@@ -221,9 +221,29 @@ namespace GensShaderTool
             code = code.Replace("mrgGlobalLight_Diffuse",
                 "(mrgGlobalLight_Diffuse / " + MathF.PI.ToString(CultureInfo.InvariantCulture) + ")");
 
+            // Nullify omni lights for the time being.
+            for (int i = 0; i < 4; i++) 
+                code = code.Replace($"mrgLocalLight{i}_Color", "float4(0, 0, 0, 0)");
+
+            // Scale light field by luminance.
+            for (int i = 0; i < 6; i++)
+                code = code.Replace($"g_aLightField[{i}]",
+                    $"(g_aLightField[{i}] * float4(g_HDRParam_SGGIParam.xxx, 1))");
+
+            // Scale eye highlight color by luminance.
+            code = code.Replace("g_SonicEyeHighLightColor",
+                "(g_SonicEyeHighLightColor * float4(g_HDRParam_SGGIParam.xxx, 1))");           
+            
+            // Scale mrgLuminanceRange by luminance.
+            code = code.Replace("mrgLuminanceRange",
+                "(mrgLuminanceRange * float4(g_HDRParam_SGGIParam.xxx, 1))");
+
             // Convert diffuse to linear space.
             preCode += "float4 g_HDRParam_SGGIParam : register(c106);" +
-                       "float4 texSRGB(sampler2D s, float4 texCoord) { return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); }";
+                       "float4 texSRGB(sampler2D s, float4 texCoord)" +
+                       "{ " +
+                       "    return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); " +
+                       "}";
 
             code = code.Replace("tex(sampDif", "texSRGB(sampDif");
             code = code.Replace("tex(s0,", "texSRGB(s0,");
