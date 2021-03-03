@@ -27,6 +27,7 @@ struct DebugParam
     bool DisableSHLightField;
     bool DisableDefaultIBL;
     bool DisableIBLProbe;
+    bool DisableLUT;
 };
 
 struct GIParam

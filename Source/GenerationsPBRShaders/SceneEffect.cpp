@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false };
+DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false };
 GIParam SceneEffect::GI = { true, false, 1 };
 SGGIParam SceneEffect::SGGI = { 0.7f, 0.35f };
 ESMParam SceneEffect::ESM = { 4096 };
@@ -37,6 +37,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableSHLightField, "DisableSHLightField");
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableDefaultIBL, "DisableDefaultIBL");
     pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableIBLProbe, "DisableIBLProbe");
+    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableLUT, "DisableLUT");
 
     spParameterGroup->Flush();
 
