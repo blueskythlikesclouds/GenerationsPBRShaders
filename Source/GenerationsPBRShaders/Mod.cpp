@@ -3,6 +3,7 @@
 #include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
 #include "GIHandler.h"
+#include "LightShaftHandler.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
 #include "StageId.h"
@@ -29,6 +30,7 @@ extern "C" void __declspec(dllexport) Init()
     VertexBufferHandler::applyPatches();
     SceneEffect::applyPatches();
     CompressionHandler::applyPatches();
+    LightShaftHandler::applyPatches();
 
     // PBROnVanillaFunsies::applyPatches();
 }

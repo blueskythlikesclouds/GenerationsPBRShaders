@@ -34,6 +34,9 @@
     <ClCompile Include="GIHandler.cpp">
       <Filter>Patches\GI</Filter>
     </ClCompile>
+    <ClCompile Include="LightShaftHandler.cpp">
+      <Filter>Patches\Other</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -73,6 +76,9 @@
     </ClInclude>
     <ClInclude Include="GIHandler.h">
       <Filter>Patches\GI</Filter>
+    </ClInclude>
+    <ClInclude Include="LightShaftHandler.h">
+      <Filter>Patches\Other</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

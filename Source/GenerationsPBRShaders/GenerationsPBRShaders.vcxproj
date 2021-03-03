@@ -102,6 +102,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CompressionHandler.cpp" />
+    <ClCompile Include="LightShaftHandler.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="GIHandler.cpp" />
@@ -124,6 +125,7 @@
     <ClInclude Include="CompressionHandler.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />
+    <ClInclude Include="LightShaftHandler.h" />
     <ClInclude Include="PBROnVanillaFunsies.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />
