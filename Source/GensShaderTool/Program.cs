@@ -202,29 +202,29 @@ namespace GensShaderTool
             return shaderRegular;
         }
 
-        private static readonly string[] sSRGBTokens =
-        {
-            "sampDif"
-        };
-
         private static byte[] ConvertShaderToPBRCompatible(byte[] bytes, string debugName)
         {
             string translated = ShaderTranslator.Translate(bytes);
-            
-            translated = translated.Replace("void main(",
-                "float4 texSRGB(sampler2D s, float4 texCoord) { return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); }" +
-                "float4 texSRGB(samplerCUBE s, float4 texCoord) { return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); }" +
-                " void main(");
 
-            foreach (string token in sSRGBTokens) 
-                translated = translated.Replace($"tex({token}", $"texSRGB({token}");
+            bool isParticleShader = debugName.Contains("Particle");
 
-            // Don't sample shadow maps (for now)
-            translated = translated.Replace("texProj(g_VerticalShadowMap", "1; //");
-            translated = translated.Replace("texProj(g_ShadowMap", "1; //");
+            if (isParticleShader)
+            {
+                translated = translated.Replace("void main(",
+                    "float4 texSRGB(sampler2D s, float4 texCoord) { return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); }" +
+                    " void main(");
 
-            // Pass proper data to GBuffer
-            translated = translated[..^3] + "oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0; }";
+                translated = translated.Replace("tex(sampDif", "texSRGB(sampDif");
+            }
+            else
+            {
+                // Don't sample shadow maps (for now)
+                translated = translated.Replace("texProj(g_VerticalShadowMap", "1; //");
+                translated = translated.Replace("texProj(g_ShadowMap", "1; //");
+
+                // Pass proper data to GBuffer
+                translated = translated[..^3] + "oC0.rgb = pow(oC0.rgb, 2.2); oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0; }";
+            }
 
             try
             {
