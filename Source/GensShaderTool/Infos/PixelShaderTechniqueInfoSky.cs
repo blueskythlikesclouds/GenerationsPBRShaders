@@ -4,7 +4,7 @@
     {
         private static readonly VertexShaderPermutation[] sVertexShaderPermutations =
         {
-            new VertexShaderPermutation( 3, "none", "Sky_@@" )
+            new VertexShaderPermutation( VertexShaderSubPermutations.All, "none", "Sky_@@" )
         };
 
         public static PixelShaderTechniqueInfoSky Instance { get; } =

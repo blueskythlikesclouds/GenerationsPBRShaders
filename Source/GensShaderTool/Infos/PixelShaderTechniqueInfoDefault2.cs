@@ -4,7 +4,7 @@
     {
         private static readonly VertexShaderPermutation[] sVertexShaderPermutations =
         {
-            new VertexShaderPermutation( 3, "none", "Default2" )
+            new VertexShaderPermutation( VertexShaderSubPermutations.All, "none", "Default2" )
         };
 
         public static PixelShaderTechniqueInfoDefault2 Instance { get; } =

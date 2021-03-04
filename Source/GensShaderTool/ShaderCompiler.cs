@@ -282,7 +282,7 @@ namespace GensShaderTool
 
                 var pixelShaderPermutation = new PixelShaderPermutation
                 {
-                    Flags = 0xFF,
+                    SubPermutations = PixelShaderSubPermutations.All,
                     ShaderName = name,
                     Technique = permutation.Technique.Name
                 };

@@ -4,7 +4,7 @@
     {
         private static readonly VertexShaderPermutation[] sVertexShaderPermutations =
         {
-            new VertexShaderPermutation( 3, "none", "Eye2" )
+            new VertexShaderPermutation( VertexShaderSubPermutations.All, "none", "Eye2" )
         };
 
         public static PixelShaderTechniqueInfoEye2 Instance { get; } =
