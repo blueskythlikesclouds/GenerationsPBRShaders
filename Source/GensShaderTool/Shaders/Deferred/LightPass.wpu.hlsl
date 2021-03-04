@@ -1,16 +1,21 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float4 mrgLocalLightData[64] : register(c107);
-float3x4 mrgSHLightFieldMatrices[4] : register(c171);
-float4 mrgSHLightFieldParams[4] : register(c183);
-float4 g_SSAOSize : register(c187);
+float4 mrgLocalLightData[80] : register(c107);
+float3x4 mrgSHLightFieldMatrices[4] : register(c187);
+float4 mrgSHLightFieldParams[4] : register(c199);
+float4 g_SSAOSize : register(c203);
 
 sampler3D g_SHLightFieldSamplers[4] : register(s4);
 sampler g_ShadowMapNoTerrainSampler : register(s9);
 sampler g_SSAOSampler : register(s10);
 
 bool g_IsEnableSSAO : register(b8);
+
+float GetLocalLightData(int index)
+{
+    return mrgLocalLightData[index / 4][index % 4];
+}
 
 void ComputeSHLightField(inout Material material, in float3 position)
 {
@@ -174,18 +179,29 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
 
     direct *= material.Shadow;
 
+
     [unroll] for (int i = 0; i < IterationIndex; i++)
     {
-        float4 item0 = mrgLocalLightData[i * 2 + 0];
-        float4 item1 = mrgLocalLightData[i * 2 + 1];
+        float3 lightPosition = float3(
+            GetLocalLightData(i * 10 + 0),
+            GetLocalLightData(i * 10 + 1),
+            GetLocalLightData(i * 10 + 2)
+        );
 
-        float3 lightPosition = item0.xyz;
-        float3 lightColor = item1.xyz;
+        float3 lightColor = float3(
+            GetLocalLightData(i * 10 + 3),
+            GetLocalLightData(i * 10 + 4),
+            GetLocalLightData(i * 10 + 5)
+        );
 
-        float innerRange = item0.w;
-        float outerRange = item1.w;
-
-        direct += ComputeLocalLight(position, material, lightPosition, lightColor, float4(0, innerRange, outerRange, outerRange));
+        float4 lightRange = float4(
+            GetLocalLightData(i * 10 + 6),
+            GetLocalLightData(i * 10 + 7),
+            GetLocalLightData(i * 10 + 8),
+            GetLocalLightData(i * 10 + 9)
+        );
+        
+        direct += ComputeLocalLight(position, material, lightPosition, lightColor, lightRange);
     } 
 
     return float4(direct + indirect, material.Alpha);

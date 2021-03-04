@@ -88,10 +88,14 @@ float3 ComputeLocalLight(float3 position, Material material, float3 lightPositio
     float distance = length(delta);
     float3 direction = delta / distance;
 
-    float attenuation = -0.002 + lightRange.y + lightRange.z * distance + lightRange.w * distance * distance;
+    float attenuation = 1.0f / (lightRange.y + lightRange.z * distance + lightRange.w * distance * distance);
+
+    // Apply cutoff
+    const float cutoff = 0.0002f;
+    attenuation = saturate((attenuation - cutoff) / (1 - cutoff));
 
     if (attenuation > 0)
-        return ComputeDirectLighting(material, direction, lightColor) / attenuation;
+        return ComputeDirectLighting(material, direction, lightColor) * attenuation;
 
     return 0;
 }
