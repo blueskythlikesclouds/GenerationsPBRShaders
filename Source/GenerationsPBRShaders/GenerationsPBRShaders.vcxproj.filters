@@ -37,6 +37,9 @@
     <ClCompile Include="LightShaftHandler.cpp">
       <Filter>Patches\Other</Filter>
     </ClCompile>
+    <ClCompile Include="RenderDataManager.cpp">
+      <Filter>Database</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -79,6 +82,9 @@
     </ClInclude>
     <ClInclude Include="LightShaftHandler.h">
       <Filter>Patches\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderDataManager.h">
+      <Filter>Database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

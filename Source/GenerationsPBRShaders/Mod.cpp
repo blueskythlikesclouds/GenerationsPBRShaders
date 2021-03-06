@@ -1,4 +1,5 @@
 #include "CompressionHandler.h"
+#include "RenderDataManager.h"
 #include "LUTHandler.h"
 #include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
@@ -31,6 +32,7 @@ extern "C" void __declspec(dllexport) Init()
     SceneEffect::applyPatches();
     CompressionHandler::applyPatches();
     LightShaftHandler::applyPatches();
+    RenderDataManager::applyPatches();
 
     // PBROnVanillaFunsies::applyPatches();
 }

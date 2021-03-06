@@ -1,29 +1,21 @@
 ﻿#include "LUTHandler.h"
-#include "StageId.h"
+#include "RenderDataManager.h"
 
 bool LUTHandler::enabled = false;
 
 Hedgehog::Mirage::SShaderPair s_FxLUTShader;
-boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> s_spLutPicture;
 
 HOOK(void, __fastcall, CFxCrossFadeInitialize, Sonic::fpCFxCrossFadeInitialize, Sonic::CFxCrossFade* This)
 {
     originalCFxCrossFadeInitialize(This);
 
     This->m_pScheduler->GetShader(s_FxLUTShader, "FxFilterT", "FxLUT");
-    s_spLutPicture.reset();
 }
 
 HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic::CFxCrossFade* This)
 {
     if (!s_FxLUTShader.m_spVertexShader || !s_FxLUTShader.m_spPixelShader)
         return originalCFxCrossFadeExecute(This);
-
-    if (StageId::hasChanged())
-        s_spLutPicture.reset();
-
-    if (!s_spLutPicture)
-        This->m_pScheduler->GetPicture(s_spLutPicture, (StageId::get() + "_rgb_table0").c_str());
 
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spDefaultTex;
     This->GetDefaultTexture(spDefaultTex);
@@ -38,11 +30,13 @@ HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic:
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(1, s_spLutPicture);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(1, RenderDataManager::ms_spRgbTablePicture);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(1, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
-    const BOOL isEnableLUT[] = { s_spLutPicture != nullptr && SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_NONE && !SceneEffect::Debug.DisableLUT };
+    const BOOL isEnableLUT[] = { RenderDataManager::ms_spRgbTablePicture != nullptr && 
+        SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_NONE && !SceneEffect::Debug.DisableLUT };
+
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantB(8, isEnableLUT, 1);
 
     This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);

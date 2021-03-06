@@ -104,6 +104,7 @@
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="LightShaftHandler.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
+    <ClCompile Include="RenderDataManager.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="GIHandler.cpp" />
     <ClCompile Include="DllMain.cpp" />
@@ -127,6 +128,7 @@
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="LightShaftHandler.h" />
     <ClInclude Include="PBROnVanillaFunsies.h" />
+    <ClInclude Include="RenderDataManager.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />
     <ClInclude Include="GIHandler.h" />
