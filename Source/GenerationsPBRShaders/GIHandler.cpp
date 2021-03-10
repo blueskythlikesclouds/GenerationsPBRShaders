@@ -270,8 +270,14 @@ void GIHandler::applyPatches()
     WRITE_JUMP(0x728E95, fFindAtlasSubTextureMidAsmHook);
 
     // Don't set GI texture, we are going to do it ourselves.
-    WRITE_MEMORY(0x715F4C, uint8_t, 0xEB);
-    WRITE_MEMORY(0x715BC4, uint8_t, 0xEB);
+    WRITE_MEMORY(0x7145CB, uint8_t, 0xEB);
+    WRITE_MEMORY(0x714C07, uint8_t, 0xEB);
+    WRITE_MEMORY(0x714E45, uint8_t, 0xEB);
+    WRITE_MEMORY(0x715422, uint8_t, 0xEB);
+    WRITE_MEMORY(0x71563E, uint8_t, 0xEB);
+    WRITE_MEMORY(0x715A47, uint8_t, 0xEB);
+    WRITE_MEMORY(0x715BCA, uint8_t, 0xEB);
+    WRITE_MEMORY(0x715F52, uint8_t, 0xEB);
 
     INSTALL_HOOK(FindAtlasSubTexture);
 
