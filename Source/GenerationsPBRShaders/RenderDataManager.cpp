@@ -229,6 +229,10 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
                         color.y() *= colorScale;
                         color.z() *= colorScale;
 
+                        // If the animation made the color almost black, we have no reason to process this local light in the shader.
+                        if (color.maxCoeff() < 0.001f)
+                            continue;
+
                         range.x() = pMotionData->m_ValueData.m_Data[0x14];
                         range.y() = pMotionData->m_ValueData.m_Data[0x15];
                         range.z() = pMotionData->m_ValueData.m_Data[0x16];
