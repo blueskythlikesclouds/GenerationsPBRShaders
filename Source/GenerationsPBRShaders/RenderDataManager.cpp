@@ -157,28 +157,19 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     }
 }
 
-HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Sonic::CRenderDirectorFxPipeline* This)
+HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRenderDirectorFxPipeline* This, void* Edx, uint8_t* A2)
 {
-    Sonic::CFxSceneRenderer* pSceneRenderer = (Sonic::CFxSceneRenderer*)This->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
+    char* pUpdateCommand = *(char**)(A2 + 8);
 
-    RenderDataManager::ms_LocalLightsInFrustum.clear();
-    RenderDataManager::ms_SHLFsInFrustum.clear();
-    RenderDataManager::ms_IBLProbesInFrustum.clear();
+    Sonic::CRenderDirectorFxPipeline* pRenderDirector = (Sonic::CRenderDirectorFxPipeline*)((uint32_t)This - 4); // shifted ptr
+    Sonic::CFxSceneRenderer* pSceneRenderer = (Sonic::CFxSceneRenderer*)pRenderDirector->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
 
     if (!pSceneRenderer->m_pCamera)
-    {
-        originalCRenderDirectorFxPipelineUpdateForRender(This);
-        return;
-    }
+        return originalCRenderDirectorFxPipelineUpdate(This, Edx, A2);
 
-    static double s_LightMotionTime = 0.0f;
-
-    const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
-
-    if (pSceneRenderer->m_pLightManager->m_pStaticLightContext != nullptr)
-    {
-        Hedgehog::Mirage::CLightListData* pLightListData =
-            pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
+    if (strcmp(pUpdateCommand, "0") == 0)
+    {            
+        static double s_LightMotionTime = 0.0f;
 
         for (auto& upMotionData : RenderDataManager::ms_LightMotions)
         {
@@ -190,69 +181,86 @@ HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Soni
             upMotionData->m_spData->Step(0, (float)currentFrame, upMotionData->m_ValueData);
         }
 
-        for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
+        s_LightMotionTime += *(float*)A2;
+    }
+
+    else if (strcmp(pUpdateCommand, "b") == 0)
+    {
+        const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
+
+        if (pSceneRenderer->m_pLightManager->m_pStaticLightContext != nullptr)
         {
-            if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
+            RenderDataManager::ms_LocalLightsInFrustum.clear();
+
+            Hedgehog::Mirage::CLightListData* pLightListData =
+                pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
+
+            for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
+            {
+                if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
+                    continue;
+
+                const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
+
+                if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
+                {
+                    LightMotionData* pMotionData = nullptr;
+
+                    for (auto& upMotionData : RenderDataManager::ms_LightMotions)
+                    {
+                        if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
+                            continue;
+
+                        pMotionData = upMotionData.get();
+                        break;
+                    }
+
+                    Eigen::Vector3f position = (*it)->m_Position;
+                    Eigen::Vector3f color = (*it)->m_Color.head<3>();
+                    Eigen::Vector4f range = (*it)->m_Range;
+
+                    if (pMotionData != nullptr)
+                    {
+                        // I have no idea if this is correct at all.
+                        // Simply passing the data as color does not work right.
+                        const float colorScale = pMotionData->m_ValueData.m_Data[0x10] / color.dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
+
+                        color.x() *= colorScale;
+                        color.y() *= colorScale;
+                        color.z() *= colorScale;
+
+                        range.x() = pMotionData->m_ValueData.m_Data[0x14];
+                        range.y() = pMotionData->m_ValueData.m_Data[0x15];
+                        range.z() = pMotionData->m_ValueData.m_Data[0x16];
+                        range.w() = pMotionData->m_ValueData.m_Data[0x17];
+                    }
+
+                    RenderDataManager::ms_LocalLightsInFrustum.insert({ position, color, range, distance });
+                }
+            }
+        }
+
+        RenderDataManager::ms_SHLFsInFrustum.clear();
+
+        for (auto& shlf : RenderDataManager::ms_SHLFs)
+        {
+            shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm();
+            RenderDataManager::ms_SHLFsInFrustum.insert(shlf.get());
+        }
+
+        RenderDataManager::ms_IBLProbesInFrustum.clear();
+
+        for (auto& probe : RenderDataManager::ms_IBLProbes)
+        {
+            if (!frustum.intersects(probe->m_Position, probe->m_Radius))
                 continue;
 
-            const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
-
-            if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
-            {
-                LightMotionData* pMotionData = nullptr;
-
-                for (auto& upMotionData : RenderDataManager::ms_LightMotions)
-                {
-                    if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
-                        continue;
-
-                    pMotionData = upMotionData.get();
-                    break;
-                }
-
-                Eigen::Vector3f position = (*it)->m_Position;
-                Eigen::Vector3f color = (*it)->m_Color.head<3>();
-                Eigen::Vector4f range = (*it)->m_Range;
-
-                if (pMotionData != nullptr)
-                {
-                    // I have no idea if this is correct at all.
-                    // Simply passing the data as color does not work right.
-                    const float colorScale = pMotionData->m_ValueData.m_Data[0x10] / color.dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
-
-                    color.x() *= colorScale;
-                    color.y() *= colorScale;
-                    color.z() *= colorScale;
-
-                    range.x() = pMotionData->m_ValueData.m_Data[0x14];
-                    range.y() = pMotionData->m_ValueData.m_Data[0x15];
-                    range.z() = pMotionData->m_ValueData.m_Data[0x16];
-                    range.w() = pMotionData->m_ValueData.m_Data[0x17];
-                }
-
-                RenderDataManager::ms_LocalLightsInFrustum.insert({ position, color, range, distance });
-            }
+            probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm();
+            RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
         }
     }
 
-    for (auto& shlf : RenderDataManager::ms_SHLFs)
-    {
-        shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm();
-        RenderDataManager::ms_SHLFsInFrustum.insert(shlf.get());
-    }
-
-    for (auto& probe : RenderDataManager::ms_IBLProbes)
-    {
-        if (!frustum.intersects(probe->m_Position, probe->m_Radius))
-            continue;
-
-        probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm();
-        RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
-    }
-
-    s_LightMotionTime += This->m_pScheduler->m_ElapsedTime;
-
-    originalCRenderDirectorFxPipelineUpdateForRender(This);
+    return originalCRenderDirectorFxPipelineUpdate(This, Edx, A2);
 }
 
 bool RenderDataManager::enabled = false;
@@ -265,5 +273,5 @@ void RenderDataManager::applyPatches()
     enabled = true;
 
     INSTALL_HOOK(CTerrainDirectorInitializeRenderData);
-    INSTALL_HOOK(CRenderDirectorFxPipelineUpdateForRender);
+    INSTALL_HOOK(CRenderDirectorFxPipelineUpdate);
 }
