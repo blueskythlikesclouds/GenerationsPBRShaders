@@ -52,6 +52,12 @@ struct LocalLightData
     float m_Distance;
 };
 
+template<typename T>
+using RenderDataPtrSet = std::set<const T*, DistanceComparePointer<const T*>, boost::fast_pool_allocator<const T*>>;
+
+template<typename T>
+using RenderDataSet = std::set<T, DistanceCompareReference<T>, boost::fast_pool_allocator<T>>;
+
 class RenderDataManager
 {
     static bool enabled;
@@ -64,9 +70,9 @@ public:
     static std::vector<std::unique_ptr<IBLProbeData>> ms_IBLProbes;
     static std::vector<std::unique_ptr<LightMotionData>> ms_LightMotions;
 
-    static std::set<const SHLightFieldData*, DistanceComparePointer<const SHLightFieldData*>> ms_SHLFsInFrustum;
-    static std::set<const IBLProbeData*, DistanceComparePointer<const IBLProbeData*>> ms_IBLProbesInFrustum;
-    static std::set<LocalLightData, DistanceCompareReference<LocalLightData>> ms_LocalLightsInFrustum;
+    static RenderDataPtrSet<SHLightFieldData> ms_SHLFsInFrustum;
+    static RenderDataPtrSet<IBLProbeData> ms_IBLProbesInFrustum;
+    static RenderDataSet<LocalLightData> ms_LocalLightsInFrustum;
 
     static void applyPatches();
 };

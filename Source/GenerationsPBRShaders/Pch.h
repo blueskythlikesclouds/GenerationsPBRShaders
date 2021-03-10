@@ -24,3 +24,6 @@
 
 #include "Frustum.h"
 #include "SceneEffect.h"
+
+// boost
+#include <boost/pool/pool_alloc.hpp>

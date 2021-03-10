@@ -10,9 +10,9 @@ std::vector<std::unique_ptr<SHLightFieldData>> RenderDataManager::ms_SHLFs;
 std::vector<std::unique_ptr<IBLProbeData>> RenderDataManager::ms_IBLProbes;
 std::vector<std::unique_ptr<LightMotionData>> RenderDataManager::ms_LightMotions;
 
-std::set<const SHLightFieldData*, DistanceComparePointer<const SHLightFieldData*>> RenderDataManager::ms_SHLFsInFrustum;
-std::set<const IBLProbeData*, DistanceComparePointer<const IBLProbeData*>> RenderDataManager::ms_IBLProbesInFrustum;
-std::set<LocalLightData, DistanceCompareReference<LocalLightData>> RenderDataManager::ms_LocalLightsInFrustum;
+RenderDataPtrSet<SHLightFieldData> RenderDataManager::ms_SHLFsInFrustum;
+RenderDataPtrSet<IBLProbeData> RenderDataManager::ms_IBLProbesInFrustum;
+RenderDataSet<LocalLightData> RenderDataManager::ms_LocalLightsInFrustum;
 
 HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* This)
 {
