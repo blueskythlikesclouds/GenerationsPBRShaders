@@ -39,26 +39,19 @@ class GIStore : public DX_PATCH::IUnknown9
     ULONG refCount;
 
 public:
-    DX_PATCH::IDirect3DBaseTexture9* pGITex;
-    DX_PATCH::IDirect3DBaseTexture9* pOcclusionTex;
+    boost::shared_ptr<Hedgehog::Mirage::CPictureData> spGITex;
+    boost::shared_ptr<Hedgehog::Mirage::CPictureData> spOcclusionTex;
     Rect occlusionRect;
     bool isSg;
 
-    explicit GIStore(DX_PATCH::IDirect3DBaseTexture9* pGITex, DX_PATCH::IDirect3DBaseTexture9* pOcclusionTex, const Rect& occlusionRect, const bool isSg)
-        : refCount(1), pGITex(pGITex), pOcclusionTex(pOcclusionTex), occlusionRect(occlusionRect), isSg(isSg)
+    explicit GIStore(const boost::shared_ptr<Hedgehog::Mirage::CPictureData>& spGITex, const boost::shared_ptr<Hedgehog::Mirage::CPictureData>& spOcclusionTex, const Rect& occlusionRect, const bool isSg)
+        : refCount(1), spGITex(spGITex), spOcclusionTex(spOcclusionTex), occlusionRect(occlusionRect), isSg(isSg)
     {
-        if (pGITex) pGITex->AddRef();
-        if (pOcclusionTex) pOcclusionTex->AddRef();
-    }
-
-    ~GIStore()
-    {
-        if (pGITex) pGITex->Release();
-        if (pOcclusionTex) pOcclusionTex->Release();
     }
 
     HRESULT QueryInterface(const IID& riid, void** ppvObj) override
     {
+        (*ppvObj) = this; // specific to the hook below
         return S_OK;
     }
 
@@ -73,6 +66,8 @@ public:
         if (current == 0) delete this;
         return current;
     }
+
+    virtual ~GIStore() = default;
 
     void* operator new(const size_t size)
     {
@@ -92,6 +87,8 @@ uint32_t pMovePictureDataMidAsmHookReturnAddress = 0x728F78;
 void __stdcall fMovePictureDataSetupGIStore(char* pName, MapType* pMap,
     Hedgehog::Mirage::CMirageDatabaseWrapper* pDatabaseWrapper, boost::shared_ptr<Hedgehog::Mirage::CPictureData>& spPictureData)
 {
+    spPictureData->Validate();
+
     // Create the name of the corresponding occlusion texture.
     char* pSrcSuffix = strstr(pName, "-level");
     char* pDstSuffix = strstr(pName, "_sg-level");
@@ -106,7 +103,7 @@ void __stdcall fMovePictureDataSetupGIStore(char* pName, MapType* pMap,
     pDstSuffix[17] = '\0';
 
     // Try to find it in the map.
-    DX_PATCH::IDirect3DBaseTexture9* pOcclusionTex = nullptr;
+    boost::shared_ptr<Hedgehog::Mirage::CPictureData> spOcclusionTex;
     Rect occlusionRect { 1, 1, 0, 0 };
 
     NodeType* pOcclusionNode = fpFindAtlasSubTexture(pMap, { pName, strlen(pName) });
@@ -115,12 +112,11 @@ void __stdcall fMovePictureDataSetupGIStore(char* pName, MapType* pMap,
         char atlasName[256];
         pOcclusionNode->m_Value.m_Value.atlasName.CopyTo(atlasName);
 
-        boost::shared_ptr<Hedgehog::Mirage::CPictureData> spAtlasPictureData;
-        pDatabaseWrapper->GetPictureData(spAtlasPictureData, atlasName, 0);
+        pDatabaseWrapper->GetPictureData(spOcclusionTex, atlasName, 0);
 
-        if (spAtlasPictureData != nullptr)
+        if (spOcclusionTex != nullptr)
         {
-            pOcclusionTex = spAtlasPictureData->m_pD3DTexture;
+            spOcclusionTex->Validate();
             occlusionRect = pOcclusionNode->m_Value.m_Value.rect;
         }
     }
@@ -131,9 +127,14 @@ void __stdcall fMovePictureDataSetupGIStore(char* pName, MapType* pMap,
     *(uint8_t*)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_Flags)) = spPictureData->m_Flags;
 
     *(GIStore**)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_pD3DTexture)) = 
-        new GIStore(spPictureData->m_pD3DTexture, pOcclusionTex, occlusionRect, isSg);
+        new GIStore(spPictureData, spOcclusionTex, occlusionRect, isSg);
 
-    spPictureData = boost::shared_ptr<Hedgehog::Mirage::CPictureData>((Hedgehog::Mirage::CPictureData*)pStubData, Hedgehog::Base::fpOperatorDelete);
+    spPictureData = boost::shared_ptr<Hedgehog::Mirage::CPictureData>((Hedgehog::Mirage::CPictureData*)pStubData, 
+        [](Hedgehog::Mirage::CPictureData* pMem)
+        {
+            pMem->m_pD3DTexture->Release();
+            Hedgehog::Base::fpOperatorDelete(pMem);
+        });
 }
 
 void __declspec(naked) fMovePictureDataMidAsmHook()
@@ -222,18 +223,21 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, Hedgehog::Mirage::
         return;
     }
 
-    GIStore* pGIStore = *(GIStore**)((uint32_t)pData + 16);
+    DX_PATCH::IDirect3DTexture9* pDxpTex = *(DX_PATCH::IDirect3DTexture9**)((uint32_t)pData + 16);
 
-    const BOOL isSg = pGIStore->isSg;
-    const BOOL hasOcclusion = pGIStore->pOcclusionTex != nullptr;
+    GIStore* pGIStore = nullptr;
+    pDxpTex->QueryInterface(IID(), (void**)&pGIStore);
+
+    const BOOL isSg = pGIStore != nullptr && pGIStore->isSg;
+    const BOOL hasOcclusion = pGIStore != nullptr && pGIStore->spOcclusionTex != nullptr;
 
     if (hasOcclusion)
     {
-        This->m_pD3DDevice->SetTexture(9, pGIStore->pOcclusionTex);
+        This->m_pD3DDevice->SetTexture(9, pGIStore->spOcclusionTex->m_pD3DTexture);
         This->m_pD3DDevice->SetPixelShaderConstantF(108, (const float*)&pGIStore->occlusionRect, 1);
     }
 
-    This->m_pD3DDevice->SetTexture(10, pGIStore->pGITex);
+    This->m_pD3DDevice->SetTexture(10, pGIStore != nullptr ? pGIStore->spGITex->m_pD3DTexture : nullptr);
 
     float giParam[] = { pData[0], pData[1], pData[2], pData[3] };
 
@@ -263,8 +267,6 @@ void GIHandler::applyPatches()
     enabled = true;
 
     WRITE_JUMP(0x728F73, fMovePictureDataMidAsmHook);
-    WRITE_MEMORY(0x728FBD, uint8_t, 0xEB); // Skip the checks that crash the game (it will always evaluate to true regardless)
-
     WRITE_JUMP(0x728E95, fFindAtlasSubTextureMidAsmHook);
 
     // Don't set GI texture, we are going to do it ourselves.
