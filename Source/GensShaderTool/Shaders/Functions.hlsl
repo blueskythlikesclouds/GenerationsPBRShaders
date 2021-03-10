@@ -94,7 +94,7 @@ float3 ComputeLocalLight(float3 position, Material material, float3 lightPositio
     const float cutoff = 0.0002f;
     attenuation = saturate((attenuation - cutoff) / (1 - cutoff));
 
-    if (attenuation > 0)
+    [branch] if (attenuation > 0)
         return ComputeDirectLighting(material, direction, lightColor) * attenuation;
 
     return 0;

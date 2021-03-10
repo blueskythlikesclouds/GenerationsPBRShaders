@@ -86,21 +86,21 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
     // imagine not being able to unroll loops that access samplers with indexers smh my head 
 
-#define COMPUTE_PROBE(index, paramIndex, paramSwizzle) \
-    if (index < IterationIndex && indirectSpecular.a < 1.0) \
+#define COMPUTE_PROBE(index) \
+    [branch] if (index < IterationIndex && indirectSpecular.a < 1.0) \
     { \
         indirectSpecular += ComputeIndirectIBLProbe(material, position, \
-            g_IBLProbeSamplers[index], mrgProbeMatrices[index], mrgProbeParams[index].xyz, mrgProbeParams[index].w, mrgProbeLodParams[paramIndex].paramSwizzle) * (1 - indirectSpecular.a); \
+            g_IBLProbeSamplers[index], mrgProbeMatrices[index], mrgProbeParams[index].xyz, mrgProbeParams[index].w, mrgProbeLodParams[index / 4][index % 4]) * (1 - indirectSpecular.a); \
     }
 
-    COMPUTE_PROBE(0, 0, x)
-    COMPUTE_PROBE(1, 0, y)
-    COMPUTE_PROBE(2, 0, z)
-    COMPUTE_PROBE(3, 0, w)
-    COMPUTE_PROBE(4, 1, x)
-    COMPUTE_PROBE(5, 1, y)
-    COMPUTE_PROBE(6, 1, z)
-    COMPUTE_PROBE(7, 1, w)
+    COMPUTE_PROBE(0)
+    COMPUTE_PROBE(1)
+    COMPUTE_PROBE(2)
+    COMPUTE_PROBE(3)
+    COMPUTE_PROBE(4)
+    COMPUTE_PROBE(5)
+    COMPUTE_PROBE(6)
+    COMPUTE_PROBE(7)
 
 #undef COMPUTE_PROBE
 
