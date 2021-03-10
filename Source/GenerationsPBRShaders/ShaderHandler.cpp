@@ -314,18 +314,18 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     
     for (size_t i = 0; i < localLightCount; i++)
     {
-        Hedgehog::Mirage::CLightData* pLightData = (*lightIterator++).m_spLightData.get();
+        const LocalLightData& data = *lightIterator++;
     
-        localLightData[i * 10 + 0] = pLightData->m_Position.x();
-        localLightData[i * 10 + 1] = pLightData->m_Position.y();
-        localLightData[i * 10 + 2] = pLightData->m_Position.z();
-        localLightData[i * 10 + 3] = pLightData->m_Color.x();
-        localLightData[i * 10 + 4] = pLightData->m_Color.y();
-        localLightData[i * 10 + 5] = pLightData->m_Color.z();
-        localLightData[i * 10 + 6] = pLightData->m_Range.x();
-        localLightData[i * 10 + 7] = pLightData->m_Range.y();
-        localLightData[i * 10 + 8] = pLightData->m_Range.z();
-        localLightData[i * 10 + 9] = pLightData->m_Range.w();
+        localLightData[i * 10 + 0] = data.m_Position.x();
+        localLightData[i * 10 + 1] = data.m_Position.y();
+        localLightData[i * 10 + 2] = data.m_Position.z();
+        localLightData[i * 10 + 3] = data.m_Color.x();
+        localLightData[i * 10 + 4] = data.m_Color.y();
+        localLightData[i * 10 + 5] = data.m_Color.z();
+        localLightData[i * 10 + 6] = data.m_Range.x();
+        localLightData[i * 10 + 7] = data.m_Range.y();
+        localLightData[i * 10 + 8] = data.m_Range.z();
+        localLightData[i * 10 + 9] = data.m_Range.w();
     }
     
     if (localLightCount > 0)

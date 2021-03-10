@@ -8,6 +8,7 @@ boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> RenderDataManager::ms_spRgb
 
 std::vector<std::unique_ptr<SHLightFieldData>> RenderDataManager::ms_SHLFs;
 std::vector<std::unique_ptr<IBLProbeData>> RenderDataManager::ms_IBLProbes;
+std::vector<std::unique_ptr<LightMotionData>> RenderDataManager::ms_LightMotions;
 
 std::set<const SHLightFieldData*, DistanceComparePointer<const SHLightFieldData*>> RenderDataManager::ms_SHLFsInFrustum;
 std::set<const IBLProbeData*, DistanceComparePointer<const IBLProbeData*>> RenderDataManager::ms_IBLProbesInFrustum;
@@ -24,17 +25,20 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     RenderDataManager::ms_spRgbTablePicture.reset();
     RenderDataManager::ms_SHLFs.clear();
     RenderDataManager::ms_IBLProbes.clear();
+    RenderDataManager::ms_LightMotions.clear();
 
     Sonic::CFxScheduler* pScheduler = ((Sonic::CRenderDirectorFxPipeline*)(*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spRenderDirector.get())->m_pScheduler;
 
     pScheduler->GetPicture(RenderDataManager::ms_spDefaultIBLPicture, (StageId::get() + "_defaultibl").c_str());
     pScheduler->GetPicture(RenderDataManager::ms_spRgbTablePicture, (StageId::get() + "_rgb_table0").c_str());
 
+    Hedgehog::Database::CDatabase* pDatabase = (*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spDatabase.get();
+
     boost::shared_ptr<Hedgehog::Database::CRawData> spShlfData;
-    (*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spDatabase->GetRawData(spShlfData, (StageId::get() + ".shlf").c_str(), 0);
+    pDatabase->GetRawData(spShlfData, (StageId::get() + ".shlf").c_str(), 0);
 
     boost::shared_ptr<Hedgehog::Database::CRawData> spProbeData;
-    (*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spDatabase->GetRawData(spProbeData, (StageId::get() + ".probe").c_str(), 0);
+    pDatabase->GetRawData(spProbeData, (StageId::get() + ".probe").c_str(), 0);
 
     if (spShlfData && spShlfData->m_spData)
     {
@@ -102,12 +106,59 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             RenderDataManager::ms_IBLProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
         }
     }
+
+    Hedgehog::Motion::CMotionDatabaseWrapper wrapper(pDatabase);
+
+    boost::shared_ptr<Hedgehog::Database::CRawData> spRawData;
+    pDatabase->GetRawData(spRawData, "Autodraw.txt", 0);
+
+    if (spRawData == nullptr || spRawData->m_spData == nullptr)
+        return;
+
+    char* pAutodraw = (char*)spRawData->m_spData.get();
+
+    for (size_t i = 0; i < spRawData->m_DataSize;)
+    {
+        if (pAutodraw[i] == '\n' || pAutodraw[i] == '\r')
+        {
+            i++;
+            continue;
+        }
+
+        size_t j;
+        for (j = i; j < spRawData->m_DataSize; j++)
+        {
+            if (pAutodraw[j] == '\n' || pAutodraw[j] == '\r')
+                break;
+        }
+
+        char line[256];
+        strncpy(line, pAutodraw + i, j - i);
+
+        i = j + 1;
+
+        char* pExtension = strstr(line, ".lit-anim");
+        if (pExtension == nullptr)
+            continue;
+
+        *pExtension = '\0';
+
+        boost::shared_ptr<Hedgehog::Motion::CLightMotionData> spLightMotionData;
+        wrapper.GetLightMotionData(spLightMotionData, line, 0);
+
+        if (!spLightMotionData)
+            continue;
+
+        LightMotionData data;
+        data.m_spData = spLightMotionData;
+        data.m_Name = line;
+
+        RenderDataManager::ms_LightMotions.push_back(std::make_unique<LightMotionData>(std::move(data)));
+    }
 }
 
 HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Sonic::CRenderDirectorFxPipeline* This)
 {
-    originalCRenderDirectorFxPipelineUpdateForRender(This);
-
     Sonic::CFxSceneRenderer* pSceneRenderer = (Sonic::CFxSceneRenderer*)This->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
 
     RenderDataManager::ms_LocalLightsInFrustum.clear();
@@ -115,7 +166,12 @@ HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Soni
     RenderDataManager::ms_IBLProbesInFrustum.clear();
 
     if (!pSceneRenderer->m_pCamera)
+    {
+        originalCRenderDirectorFxPipelineUpdateForRender(This);
         return;
+    }
+
+    static double s_LightMotionTime = 0.0f;
 
     const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
 
@@ -123,6 +179,16 @@ HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Soni
     {
         Hedgehog::Mirage::CLightListData* pLightListData =
             pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
+
+        for (auto& upMotionData : RenderDataManager::ms_LightMotions)
+        {
+            const Hedgehog::Motion::CLightSubMotionData& subMotionData = upMotionData->m_spData->m_SubMotions[0];
+
+            const double subMotionFrameCount = subMotionData.m_EndFrame - subMotionData.m_StartFrame;
+            const double currentFrame = fmod(s_LightMotionTime * subMotionData.m_FrameRate, subMotionFrameCount);
+
+            upMotionData->m_spData->Step(0, (float)currentFrame, upMotionData->m_ValueData);
+        }
 
         for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
         {
@@ -132,7 +198,40 @@ HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Soni
             const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
 
             if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
-                RenderDataManager::ms_LocalLightsInFrustum.insert({ *it, distance });
+            {
+                LightMotionData* pMotionData = nullptr;
+
+                for (auto& upMotionData : RenderDataManager::ms_LightMotions)
+                {
+                    if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
+                        continue;
+
+                    pMotionData = upMotionData.get();
+                    break;
+                }
+
+                Eigen::Vector3f position = (*it)->m_Position;
+                Eigen::Vector3f color = (*it)->m_Color.head<3>();
+                Eigen::Vector4f range = (*it)->m_Range;
+
+                if (pMotionData != nullptr)
+                {
+                    // I have no idea if this is correct at all.
+                    // Simply passing the data as color does not work right.
+                    const float colorScale = pMotionData->m_ValueData.m_Data[0x10] / color.dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
+
+                    color.x() *= colorScale;
+                    color.y() *= colorScale;
+                    color.z() *= colorScale;
+
+                    range.x() = pMotionData->m_ValueData.m_Data[0x14];
+                    range.y() = pMotionData->m_ValueData.m_Data[0x15];
+                    range.z() = pMotionData->m_ValueData.m_Data[0x16];
+                    range.w() = pMotionData->m_ValueData.m_Data[0x17];
+                }
+
+                RenderDataManager::ms_LocalLightsInFrustum.insert({ position, color, range, distance });
+            }
         }
     }
 
@@ -150,6 +249,10 @@ HOOK(void, __fastcall, CRenderDirectorFxPipelineUpdateForRender, 0x1105F40, Soni
         probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm();
         RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
     }
+
+    s_LightMotionTime += This->m_pScheduler->m_ElapsedTime;
+
+    originalCRenderDirectorFxPipelineUpdateForRender(This);
 }
 
 bool RenderDataManager::enabled = false;
