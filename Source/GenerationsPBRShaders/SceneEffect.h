@@ -28,6 +28,7 @@ struct DebugParam
     bool DisableDefaultIBL;
     bool DisableIBLProbe;
     bool DisableLUT;
+    unsigned long MaxProbeCount;
 };
 
 struct HDRParam

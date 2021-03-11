@@ -108,9 +108,13 @@ namespace GensShaderTool
             //===============================//
             // Deferred Specular Pass Shader //
             //===============================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLPass.wpu.hlsl"),
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLProbePass.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoDeferredPassIBL() }, pixelShaderGlobalParameterSet, cShaderFlags);
+                new[] { new PixelShaderInfoDeferredPassIBLProbe() }, pixelShaderGlobalParameterSet, cShaderFlags);           
+
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLCombinePass.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoDeferredPassIBLCombine() }, pixelShaderGlobalParameterSet, cShaderFlags);
             
             //=============//
             // SSAO Shader //

@@ -3,19 +3,13 @@ using System.Collections.Generic;
 
 namespace GensShaderTool.Infos
 {
-    public class PixelShaderInfoDeferredPassIBL : IPixelShaderInfo
+    public class PixelShaderInfoDeferredPassIBLCombine : IPixelShaderInfo
     {
-        public string Name { get; } = "FxDeferredPassIBL";
+        public string Name { get; } = "FxDeferredPassIBLCombine";
 
         public IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = Array.Empty<PixelShaderTechniqueInfo>();
 
-        public IReadOnlyList<SamplerInfo> Samplers { get; } = new[]
-        {
-            new SamplerInfo( "g_GBuffer0Sampler", "GBuffer0", "" ),
-            new SamplerInfo( "g_GBuffer1Sampler", "GBuffer1", "" ),
-            new SamplerInfo( "g_GBuffer2Sampler", "GBuffer2", "" ),
-            new SamplerInfo( "g_GBuffer3Sampler", "GBuffer3", "" ),
-        };
+        public IReadOnlyList<SamplerInfo> Samplers { get; } = Array.Empty<SamplerInfo>();
 
         public IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 

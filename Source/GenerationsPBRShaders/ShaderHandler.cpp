@@ -7,7 +7,8 @@
 
 std::array<Hedgehog::Mirage::SShaderPair, 1 + 32> s_FxDeferredPassLightShaders;
 Hedgehog::Mirage::SShaderPair s_FxRLRShader;
-std::array<Hedgehog::Mirage::SShaderPair, 1 + 8> s_FxDeferredPassIBLShaders;
+std::array<Hedgehog::Mirage::SShaderPair, 1 + 8> s_FxDeferredPassIBLCombineShaders;
+Hedgehog::Mirage::SShaderPair s_FxDeferredPassIBLProbeShader;
 Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
 
 Hedgehog::Mirage::SShaderPair s_FxCopyColorDepthShader;
@@ -20,6 +21,8 @@ boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer3Tex;
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spRLRTempTex;
+
+boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spPrevIBLTex;
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spSSAOTex;
 
@@ -60,10 +63,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     for (size_t i = 0; i < 1 + 8; i++)
     {
         char name[32];
-        sprintf(name, "FxDeferredPassIBL_%d", i);
+        sprintf(name, "FxDeferredPassIBLCombine_%d", i);
 
-        This->m_pScheduler->GetShader(s_FxDeferredPassIBLShaders[i], "FxFilterPT", name);
+        This->m_pScheduler->GetShader(s_FxDeferredPassIBLCombineShaders[i], "FxFilterPT", name);
     }
+
+    This->m_pScheduler->GetShader(s_FxDeferredPassIBLProbeShader, "FxFilterPT", "FxDeferredPassIBLProbe");
 
     This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
 
@@ -80,6 +85,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spRLRTempTex, RLR_WIDTH, RLR_HEIGHT, CalculateMipCount(RLR_WIDTH, RLR_HEIGHT), D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spPrevIBLTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
     const uint32_t SSAO_WIDTH = This->m_spColorTex->m_CreationParams.Width >> 1;
     const uint32_t SSAO_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> 1;
@@ -234,6 +241,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->UnsetRenderTarget(1);
     pDevice->UnsetRenderTarget(2);
     pDevice->UnsetRenderTarget(3);
+    pDevice->UnsetDepthStencil();
 
     //***************//
     // Deferred pass //
@@ -384,7 +392,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
 
     // Set SSAO.
-    pD3DDevice->SetPixelShaderConstantB(8, (const BOOL*)&SceneEffect::SSAO.Enable, 1);
+    BOOL enableSSAO[] = { SceneEffect::SSAO.Enable };
+    pD3DDevice->SetPixelShaderConstantB(8, enableSSAO, 1);
 
     if (SceneEffect::SSAO.Enable)
     {
@@ -430,7 +439,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         pDevice->SetShader(s_FxRLRShader);
         pDevice->SetRenderTarget(0, spRLRSurface);
-        pDevice->UnsetDepthStencil();
         pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
         // Set parameters
@@ -507,7 +515,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         // Revert render targets/textures.
         pDevice->SetRenderTarget(0, This->m_spColorSurface);
-        pDevice->SetDepthStencil(This->m_spDepthSurface);
         pDevice->SetSampler(0, This->m_spColorTex);
         pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     }
@@ -518,59 +525,19 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //****************************************************//
 
     // Set probes in the frustum.
-
-    float probeParams[32];
-    float probeLodParams[8];
+    // Process every 8 probes in a shader where no indirect lighting computation is applied.
+    // Process remaining probes and raw IBL framebuffer in the main shader.
 
     auto probeIterator = RenderDataManager::ms_IBLProbesInFrustum.begin();
 
-    size_t iblCount = std::min<size_t>(RenderDataManager::ms_IBLProbesInFrustum.size(), 8);
+    size_t iblCountInFrustum = std::min<size_t>(RenderDataManager::ms_IBLProbesInFrustum.size(), SceneEffect::Debug.MaxProbeCount);
 
     if (SceneEffect::Debug.DisableIBLProbe)
-        iblCount = 0;
+        iblCountInFrustum = 0;
 
-    // Set the corresponding shader.
-    pDevice->SetShader(s_FxDeferredPassIBLShaders[iblCount]);
+    const int32_t iblProbePassCount = std::max<int32_t>(0, ((int32_t)iblCountInFrustum - 1) / 8);
 
-    for (size_t i = 0; i < iblCount; i++)
-    {
-        const IBLProbeData* cache = *probeIterator++;
-
-        pD3DDevice->SetPixelShaderConstantF(107 + i * 3, cache->m_InverseMatrix.data(), 3);
-
-        probeParams[i * 4 + 0] = cache->m_Position.x();
-        probeParams[i * 4 + 1] = cache->m_Position.y();
-        probeParams[i * 4 + 2] = cache->m_Position.z();
-        probeParams[i * 4 + 3] = cache->m_Bias;
-
-        if (cache->m_spPicture && cache->m_spPicture->m_spPictureData && cache->m_spPicture->m_spPictureData->m_pD3DTexture)
-            probeLodParams[i] = std::min<float>(3.0f, (float)cache->m_spPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
-        else
-            probeLodParams[i] = 0.0f;
-
-        pDevice->SetSampler(4 + i, cache->m_spPicture);
-        pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-        pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
-    }
-
-    if (iblCount > 0)
-    {
-        pD3DDevice->SetPixelShaderConstantF(131, probeParams, iblCount);
-        pD3DDevice->SetPixelShaderConstantF(139, probeLodParams, 2);
-    }
-
-    // Set RLR, Default IBL and Env BRDF
-    if (SceneEffect::RLR.Enable)
-    {
-        pDevice->SetSampler(13, s_spRLRTex);
-        pDevice->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-        pDevice->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
-    }
-    else
-    {
-        pDevice->UnsetSampler(13);
-    }
-
+    // Set Default IBL and Env BRDF
     pDevice->SetSampler(14, RenderDataManager::ms_spDefaultIBLPicture);
     pDevice->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
     pDevice->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
@@ -579,33 +546,99 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
 
-    // Set IBL parameter.
-    if (RenderDataManager::ms_spDefaultIBLPicture && 
-        RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData && 
-        RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
-    {
-        float iblLodParam[] =
-        {
-            std::min<float>(3, (float)RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount()),
-            (float)(SceneEffect::RLR.MaxLod >= 0 ? std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels),
-            0,
-            0
-        };
-
-        pD3DDevice->SetPixelShaderConstantF(141, iblLodParam, 1);
-    }
-
     if (SceneEffect::Debug.DisableDefaultIBL)
         pDevice->UnsetSampler(14);
 
     if (SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
         pDevice->UnsetSampler(15);
 
-    // Set g_IsEnableRLR
-    // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
-    pD3DDevice->SetPixelShaderConstantB(8, (const BOOL*)&SceneEffect::RLR.Enable, 1);
+    // Initialize IBL parameter.
+    float iblLodParam[] = { 0, 0, 0, 0 };
 
-    pDevice->RenderQuad(nullptr, 0, 0);
+    if (RenderDataManager::ms_spDefaultIBLPicture &&
+        RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData &&
+        RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
+    {
+        iblLodParam[0] = std::min<float>(3, (float)RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
+    }
+
+    iblLodParam[1] = (float)(SceneEffect::RLR.MaxLod >= 0 ?
+        std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels);
+
+    pD3DDevice->SetPixelShaderConstantF(141, iblLodParam, 1);
+
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spPrevIBLSurface;
+    s_spPrevIBLTex->GetSurface(spPrevIBLSurface, 0, 0);
+
+    for (int32_t i = 0; i < iblProbePassCount + 1; i++)
+    {
+        const bool isCombinePass = i == iblProbePassCount;
+        const size_t iblCount = isCombinePass ? iblCountInFrustum - iblProbePassCount * 8 : 8;
+
+        float probeParams[32];
+        float probeLodParams[8];
+
+        for (size_t j = 0; j < iblCount; j++)
+        {
+            const IBLProbeData* cache = *probeIterator++;
+
+            pD3DDevice->SetPixelShaderConstantF(107 + j * 3, cache->m_InverseMatrix.data(), 3);
+
+            probeParams[j * 4 + 0] = cache->m_Position.x();
+            probeParams[j * 4 + 1] = cache->m_Position.y();
+            probeParams[j * 4 + 2] = cache->m_Position.z();
+            probeParams[j * 4 + 3] = cache->m_Bias;
+
+            if (cache->m_spPicture && cache->m_spPicture->m_spPictureData && cache->m_spPicture->m_spPictureData->m_pD3DTexture)
+                probeLodParams[j] = std::min<float>(3.0f, (float)cache->m_spPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
+            else
+                probeLodParams[j] = 0.0f;
+
+            pDevice->SetSampler(4 + j, cache->m_spPicture);
+            pDevice->SetSamplerFilter(4 + j, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+            pDevice->SetSamplerAddressMode(4 + j, D3DTADDRESS_CLAMP);
+        }
+
+        // Set the corresponding shader.
+        pDevice->SetShader(isCombinePass ? s_FxDeferredPassIBLCombineShaders[iblCount] : s_FxDeferredPassIBLProbeShader);
+
+        if (iblCount > 0)
+        {
+            pD3DDevice->SetPixelShaderConstantF(131, probeParams, iblCount);
+            pD3DDevice->SetPixelShaderConstantF(139, probeLodParams, (iblCount + 3) / 4);
+        }
+
+        BOOL isEnablePrevIBL[] = { true };
+
+        if (i == 0)
+        {
+            if (SceneEffect::RLR.Enable)
+            {
+                pDevice->SetSampler(13, s_spRLRTex);
+                pDevice->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
+                pDevice->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
+            }
+            else
+            {
+                isEnablePrevIBL[0] = false;
+            }
+        }
+
+        else
+        {
+            pDevice->SetSampler(13, s_spPrevIBLTex);
+            pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+            pDevice->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
+        }
+
+        // Set g_IsEnablePrevIBL
+        // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
+        pD3DDevice->SetPixelShaderConstantB(8, isEnablePrevIBL, 1);
+
+        // Set render target.
+        pDevice->SetRenderTarget(0, isCombinePass ? This->m_spColorSurface : spPrevIBLSurface);
+        pDevice->RenderQuad(nullptr, 0, 0);
+    }
 
     //*********//
     // Capture //

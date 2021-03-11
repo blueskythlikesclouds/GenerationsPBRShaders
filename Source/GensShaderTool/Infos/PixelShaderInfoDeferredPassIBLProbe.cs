@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace GensShaderTool.Infos
 {
-    public class PixelShaderInfoDeferredPassLight : IPixelShaderInfo
+    public class PixelShaderInfoDeferredPassIBLProbe : IPixelShaderInfo
     {
-        public string Name { get; } = "FxDeferredPassLight";
+        public string Name { get; } = "FxDeferredPassIBLProbe";
 
         public IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = Array.Empty<PixelShaderTechniqueInfo>();
 
@@ -13,7 +13,7 @@ namespace GensShaderTool.Infos
 
         public IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
-        public virtual int IterationCount { get; } = 1 + 32;
+        public virtual int IterationCount { get; } = 1;
 
         public bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {
