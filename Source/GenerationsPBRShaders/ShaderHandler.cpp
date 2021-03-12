@@ -441,6 +441,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetRenderTarget(0, spRLRSurface);
         pDevice->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
+        pDevice->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+
         // Set parameters
         float framebufferSize[] = {
             (float)This->m_spColorTex->m_CreationParams.Width,
@@ -517,6 +519,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetRenderTarget(0, This->m_spColorSurface);
         pDevice->SetSampler(0, This->m_spColorTex);
         pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+        pDevice->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     }
 
     //****************************************************//

@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 64 };
+DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
 HDRParam SceneEffect::HDR = { 1.0f };
 SGGIParam SceneEffect::SGGI = { 0.7f, 0.35f };
 ESMParam SceneEffect::ESM = { 4096 };
