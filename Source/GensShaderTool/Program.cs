@@ -41,7 +41,11 @@ namespace GensShaderTool
 
             var (vertexShaderGlobalParameterSet, pixelShaderGlobalParameterSet) = ProcessGlobalShaderParameterSets();
 
+            string pbrShaderArPath = Path.Combine(sOutputDirectory, "shader_pbr.ar.00");
+
             var pbrShaderDatabase = new ArchiveDatabase();
+            if (File.Exists(pbrShaderArPath))
+                pbrShaderDatabase.Load(pbrShaderArPath);
 
             //========================//
             // Default Vertex Shader //
@@ -49,7 +53,8 @@ namespace GensShaderTool
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Default.wvu.hlsl"),
                 pbrShaderDatabase, new IShaderInfo[]
                 {
-                    new VertexShaderInfoDefault2(), new VertexShaderInfoDefault2Normal(), new VertexShaderInfoEye2(), new VertexShaderInfoWater2()
+                    new VertexShaderInfoDefault2(), new VertexShaderInfoDefault2Normal(), new VertexShaderInfoEye2(),
+                    new VertexShaderInfoWater2()
                 }, vertexShaderGlobalParameterSet, cShaderFlags);
 
             //======================//
@@ -58,9 +63,12 @@ namespace GensShaderTool
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Default.wpu.hlsl"),
                 pbrShaderDatabase, new IShaderInfo[]
                 {
-                    new PixelShaderInfoCommon2(), new PixelShaderInfoBlend2(), new PixelShaderInfoChrEyeCDRF(), new PixelShaderInfoChrSkinCDRF(),
-                    new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(), new PixelShaderInfoWater05(), new PixelShaderInfoRing2(), 
-                    new PixelShaderInfoEmission(), new PixelShaderInfoGlass2(), new PixelShaderInfoMEmission(), new PixelShaderInfoChrGlass(), new PixelShaderInfoDry()
+                    new PixelShaderInfoCommon2(), new PixelShaderInfoBlend2(), new PixelShaderInfoChrEyeCDRF(),
+                    new PixelShaderInfoChrSkinCDRF(),
+                    new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(),
+                    new PixelShaderInfoWater05(), new PixelShaderInfoRing2(),
+                    new PixelShaderInfoEmission(), new PixelShaderInfoGlass2(), new PixelShaderInfoMEmission(),
+                    new PixelShaderInfoChrGlass(), new PixelShaderInfoDry()
                 }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             //===========================//
@@ -89,33 +97,33 @@ namespace GensShaderTool
             //===========================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "ConvolutionFilter.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoConvolutionFilter() }, pixelShaderGlobalParameterSet, cShaderFlags);     
-            
+                new[] { new PixelShaderInfoConvolutionFilter() }, pixelShaderGlobalParameterSet, cShaderFlags);
+
             //============================//
             // Deferred Light Pass Shader //
             //============================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "LightPass.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoDeferredPassLight() }, pixelShaderGlobalParameterSet, cShaderFlags);          
-            
+                new[] { new PixelShaderInfoDeferredPassLight() }, pixelShaderGlobalParameterSet, cShaderFlags);
+
             //============//
             // RLR Shader //
             //============//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "RLR.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoRLR() }, pixelShaderGlobalParameterSet, cShaderFlags);      
+                new[] { new PixelShaderInfoRLR() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             //===============================//
             // Deferred Specular Pass Shader //
             //===============================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLProbePass.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoDeferredPassIBLProbe() }, pixelShaderGlobalParameterSet, cShaderFlags);           
+                new[] { new PixelShaderInfoDeferredPassIBLProbe() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Deferred", "IBLCombinePass.wpu.hlsl"),
                 pbrShaderDatabase,
                 new[] { new PixelShaderInfoDeferredPassIBLCombine() }, pixelShaderGlobalParameterSet, cShaderFlags);
-            
+
             //=============//
             // SSAO Shader //
             //=============//
@@ -124,9 +132,9 @@ namespace GensShaderTool
                 new[] { new PixelShaderInfoSSAO() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             pbrShaderDatabase.Sort();
-            pbrShaderDatabase.Save(Path.Combine(sOutputDirectory, "shader_pbr.ar.00"), cShaderArPadding, cShaderArMaxSplitSize);
+            pbrShaderDatabase.Save(pbrShaderArPath, cShaderArPadding, cShaderArMaxSplitSize);
         }
-        
+
         private static (ShaderParameterSet vertexShaderParameterSet, ShaderParameterSet pixelShaderParameterSet)
             ProcessGlobalShaderParameterSets()
         {

@@ -10,6 +10,13 @@ using Amicitia.IO.Binary;
 
 namespace GensShaderTool
 {
+    public enum ConflictPolicy
+    {
+        RaiseError,
+        Replace,
+        Ignore
+    }
+
     public class DatabaseData
     {
         public string Name { get; set; }
@@ -131,10 +138,29 @@ namespace GensShaderTool
             writer.Dispose();
         }
 
-        public void LockedAdd(DatabaseData databaseData)
+        public void Add(DatabaseData databaseData, ConflictPolicy conflictPolicy = ConflictPolicy.RaiseError)
         {
             lock (((ICollection)Contents).SyncRoot)
+            {
+                var data = Contents.FirstOrDefault(x => x.Name.Equals(databaseData.Name));
+                if (data != null)
+                {
+                    switch (conflictPolicy)
+                    {
+                        case ConflictPolicy.RaiseError:
+                            throw new ArgumentException("Data with same name already exists", nameof(databaseData));
+
+                        case ConflictPolicy.Replace:
+                            Contents.Remove(data);
+                            break;
+
+                        case ConflictPolicy.Ignore:
+                            return;
+                    }
+                }
+
                 Contents.Add(databaseData);
+            }
         }
 
         public void Sort()

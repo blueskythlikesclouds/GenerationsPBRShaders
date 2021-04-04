@@ -212,8 +212,8 @@ namespace GensShaderTool
                 if (result.Failure)
                     throw new Exception(errorBlob.ConvertToString());
 
-                archiveDatabase.LockedAdd(
-                    new DatabaseData { Name = $"{name}.w{typeChar}u", Data = blob.GetBytes() });
+                archiveDatabase.Add(
+                    new DatabaseData { Name = $"{name}.w{typeChar}u", Data = blob.GetBytes() }, ConflictPolicy.Replace);
 
                 bool anyLocal = false;
                 bool anyGlobal = false;
@@ -267,12 +267,12 @@ namespace GensShaderTool
                 if (anyLocal)
                     shader.ParameterFileNames.Add(permutation.Shader.Name);
 
-                archiveDatabase.LockedAdd(
+                archiveDatabase.Add(
                     new DatabaseData
                     {
                         Name = $"{name}.{(permutation.Shader.Type == ShaderType.Vertex ? "vertex" : "pixel")}shader",
                         Data = shader.Save()
-                    });
+                    }, ConflictPolicy.Replace);
 
                 Console.WriteLine("({0}/{1}): {2}", Interlocked.Increment(ref currentPermutationIndex), permutations.Count, name);
 
@@ -315,19 +315,19 @@ namespace GensShaderTool
                 if ( distinctParameterSet.IsEmpty() )
                     continue;
 
-                archiveDatabase.Contents.Add(new DatabaseData
+                archiveDatabase.Add(new DatabaseData
                 {
                     Name = $"{info.Name}.{( info.Type == ShaderType.Vertex ? 'v' : 'p' )}sparam",
                     Data = distinctParameterSet.Save()
-                });
+                }, ConflictPolicy.Replace);
             }
 
             foreach (var shaderList in shaderLists)
-                archiveDatabase.Contents.Add(new DatabaseData
+                archiveDatabase.Add(new DatabaseData
                 {
                     Name = shaderList.Name + ".shader-list",
                     Data = shaderList.Save()
-                });
+                }, ConflictPolicy.Replace);
         }
 
         public static byte[] Compile(string hlslData, ShaderType type, ShaderFlags flags = ShaderFlags.None)
