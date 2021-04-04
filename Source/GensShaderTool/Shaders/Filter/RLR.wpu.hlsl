@@ -80,16 +80,16 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 
             if (fbDepth < 1 && depth < cmpDepth)
             {
-                // If we hit a pixel closer to the camera than the start point,
-                // then it's very likely that the hit point hides the actual reflection.
-                // We should discard the loop immediately in this case.
-                // The gaps should be filled with parallax corrected cubemaps instead.
+                // If we hit a pixel closer to the camera than
+                // the start point, skip it. It'll likely be incorrect.
                 if (begin.z < cmpDepth)
-                    return 0;
+                    continue;
 
-                step -= stepSize;
-                stepSize *= 0.5f;
-                step += stepSize;
+                float tmpStepSize = stepSize;
+
+                step -= tmpStepSize;
+                tmpStepSize *= 0.5f;
+                step += tmpStepSize;
 
                 [loop] for (int j = 0; j < 4; j++)
                 {
@@ -99,24 +99,24 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
                     cmpDepth = tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x;
                     cmpDepth = LinearizeDepth(cmpDepth, g_MtxInvProjection);
 
-                    stepSize *= 0.5f;
+                    tmpStepSize *= 0.5f;
 
                     if (depth < cmpDepth)
-                        step -= stepSize;
+                        step -= tmpStepSize;
                     else
-                        step += stepSize;
+                        step += tmpStepSize;
                 }
 
                 rayCoord = lerp(begin.xy, end.xy, step);
 
-                // Check the accuracy of the hit position and discard the pixel if necessary.
+                // Check the accuracy of the hit position and skip as necessary.
                 float3 cmpPos = GetPositionFromDepth(rayCoord * float2(2, -2) + float2(-1, 1),
                     tex2Dlod(g_DepthSampler, float4(rayCoord.xy, 0, 0)).x, g_MtxInvProjection);
 
                 float3 d = abs(cmpPos - (position + dir * distance(cmpPos, position)));
 
                 if (max(d.x, max(d.y, d.z)) > g_AccuracyThreshold_Saturation_Brightness.x * -cmpPos.z)
-                    return 0;
+                    continue;
 
                 factor *= saturate(rayCoord.x * g_StepCount_MaxRoughness_RayLength_Fade.w);
                 factor *= saturate(rayCoord.y * g_StepCount_MaxRoughness_RayLength_Fade.w);
