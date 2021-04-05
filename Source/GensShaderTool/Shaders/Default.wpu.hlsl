@@ -28,6 +28,8 @@
 #include "Material/ChrGlass.hlsl"
 #elif defined(IsDry) && IsDry
 #include "Material/Dry.hlsl"
+#elif (defined(IsFalloff2) && IsFalloff2) || (defined(IsMFalloff) && IsMFalloff)
+#include "Material/Falloff.hlsl"
 #endif
 
 float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
