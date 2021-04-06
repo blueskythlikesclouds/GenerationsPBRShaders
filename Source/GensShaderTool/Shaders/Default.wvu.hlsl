@@ -78,11 +78,11 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
     output.TexCoord0.xy = input.TexCoord0.xy;
     output.TexCoord0.zw = input.TexCoord1.xy;
-    output.TexCoord1.xy = input.TexCoord2.xy;
-    output.TexCoord1.zw = input.TexCoord3.xy;
+    output.TexCoord0 += mrgTexcoordOffset[0];
 
 #if !defined(ConstTexCoord) || !ConstTexCoord
-    output.TexCoord0 += mrgTexcoordOffset[0];
+    output.TexCoord1.xy = input.TexCoord2.xy;
+    output.TexCoord1.zw = input.TexCoord3.xy;
     output.TexCoord1 += mrgTexcoordOffset[1];
 #endif
 
