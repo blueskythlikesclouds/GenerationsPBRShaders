@@ -118,7 +118,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     float ambientOcclusionEx = 1.0;
     if (g_IsEnableSSAO)
     {
-        ambientOcclusionEx = tex2DlodFastBicubic(g_SSAOSampler, texCoord.x * g_SSAOSize.x, texCoord.y * g_SSAOSize.y, g_SSAOSize.zw, 0).x;
+        ambientOcclusionEx = tex2Dlod(g_SSAOSampler, float4(texCoord.xy, 0, 0)).x;
         oGBuffer2 = float4(gBuffer2.x, gBuffer2.y, gBuffer2.z * ambientOcclusionEx, gBuffer2.w);
     }
 

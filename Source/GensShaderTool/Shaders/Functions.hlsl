@@ -121,7 +121,7 @@ float3 ComputeIndirectLighting(Material material, sampler2D envBRDF)
     return ComputeIndirectLighting(material, tex2Dlod(envBRDF, float4(material.CosViewDirection, material.Roughness, 0, 0)).xy);
 }
 
-float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSize, float esmFactor)
+float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 texSize, float esmFactor)
 {
     if (abs(shadowMapCoord.x) > shadowMapCoord.w || 
         abs(shadowMapCoord.y) > shadowMapCoord.w || 
@@ -129,39 +129,40 @@ float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSi
         return 1.0;
 
     float3 shadowPos = shadowMapCoord.xyz / shadowMapCoord.w;
-
     shadowPos.xy = shadowPos.xy * float2(0.5, -0.5) + 0.5;
 
-    float2 uv = shadowPos.xy * shadowMapSize.x;
-
-    float2 base;
-    base.x = floor(uv.x + 0.5);
-    base.y = floor(uv.y + 0.5);
-
-    float s = (uv.x + 0.5 - base.x);
-    float t = (uv.y + 0.5 - base.y);
-
-    base -= float2(0.5, 0.5);
-    base *= shadowMapSize.y;
-
     float sum = 0;
+    {
+        float2 position = shadowPos.xy * texSize.x;
 
-    float uw0 = (3 - 2 * s);
-    float uw1 = (1 + 2 * s);
+        float2 center;
+        center.x = floor(position.x + 0.5);
+        center.y = floor(position.y + 0.5);
 
-    float u0 = (2 - s) / uw0 - 1;
-    float u1 = s / uw1 + 1;
+        float s = (position.x + 0.5 - center.x);
+        float t = (position.y + 0.5 - center.y);
 
-    float vw0 = (3 - 2 * t);
-    float vw1 = (1 + 2 * t);
+        center = (center - 0.5) * texSize.y;
 
-    float v0 = (2 - t) / vw0 - 1;
-    float v1 = t / vw1 + 1;
+        float uw0 = (3 - 2 * s);
+        float uw1 = (1 + 2 * s);
+        float vw0 = (3 - 2 * t);
+        float vw1 = (1 + 2 * t);
 
-    sum += uw0 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u0, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
-    sum += uw1 * vw0 * tex2DBilinearESM(shadowTex, base + float2(u1, v0) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
-    sum += uw0 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u0, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
-    sum += uw1 * vw1 * tex2DBilinearESM(shadowTex, base + float2(u1, v1) * shadowMapSize.y, shadowMapSize.x, shadowMapSize.y, shadowPos.z, esmFactor);
+        float4 offsets;
+
+        offsets.x = (2 - s) / uw0 - 1;
+        offsets.y = s / uw1 + 1;
+        offsets.z = (2 - t) / vw0 - 1;
+        offsets.w = t / vw1 + 1;
+
+        offsets *= texSize.y;
+
+        sum += uw0 * vw0 * texESM(shadowTex, texSize, center + offsets.xz, shadowPos.z, esmFactor);
+        sum += uw1 * vw0 * texESM(shadowTex, texSize, center + offsets.yz, shadowPos.z, esmFactor);
+        sum += uw0 * vw1 * texESM(shadowTex, texSize, center + offsets.xw, shadowPos.z, esmFactor);
+        sum += uw1 * vw1 * texESM(shadowTex, texSize, center + offsets.yw, shadowPos.z, esmFactor);
+    }
 
     float fade;
 
@@ -172,7 +173,7 @@ float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 shadowMapSi
     fade *= saturate((1 - shadowPos.y) / 0.01);
     fade *= saturate((1 - shadowPos.z) / 0.01);
 
-    return lerp(1, sum * 1.0f / 16, fade);
+    return lerp(1, sum / 16, fade);
 }
 
 // Welcome to Sonic Forces PC....
