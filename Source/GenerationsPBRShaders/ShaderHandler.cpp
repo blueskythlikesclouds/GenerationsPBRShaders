@@ -210,7 +210,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Render objects & player separately from terrain so it gets culled better.
     This->RenderScene(
-        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_Player,
+        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_ObjectOverlay |
+        Hedgehog::Yggdrasill::eRenderType_Player | Hedgehog::Yggdrasill::eRenderType_Effect,
         Hedgehog::Yggdrasill::eRenderSlot_Opaque);
 
     This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain,
@@ -224,7 +225,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
     This->RenderScene(
-        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_Player,
+        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_ObjectOverlay |
+        Hedgehog::Yggdrasill::eRenderType_Player | Hedgehog::Yggdrasill::eRenderType_Effect,
         Hedgehog::Yggdrasill::eRenderSlot_PunchThrough);
 
     This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain,
@@ -723,6 +725,13 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
     pRenderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
+    // Terrain
+    pDevice->SetSampler(13, spShadowMapNoTerrain);
+    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
+
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain, 
+        Hedgehog::Yggdrasill::eRenderSlot_Transparent);
+
     // Objects
     pDevice->SetSampler(13, spShadowMap);
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
@@ -730,14 +739,22 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     This->RenderScene(
-        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_Player,
+        Hedgehog::Yggdrasill::eRenderType_Object | Hedgehog::Yggdrasill::eRenderType_ObjectOverlay |
+        Hedgehog::Yggdrasill::eRenderType_Player | Hedgehog::Yggdrasill::eRenderType_Effect,
         Hedgehog::Yggdrasill::eRenderSlot_Transparent);
 
-    // Terrain
-    pDevice->SetSampler(13, spShadowMapNoTerrain);
-    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
+    // XLU Object
+    pRenderingDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_SRCALPHA);
+    pRenderingDevice->SetRenderState(D3DRS_DESTBLENDALPHA, D3DBLEND_INVSRCALPHA);
 
-    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain, Hedgehog::Yggdrasill::eRenderSlot_Transparent);
+    pRenderingDevice->LockRenderState(D3DRS_SRCBLENDALPHA);
+    pRenderingDevice->LockRenderState(D3DRS_DESTBLENDALPHA);
+
+    This->RenderScene(Hedgehog::Yggdrasill::eRenderType_ObjectXlu,
+        Hedgehog::Yggdrasill::eRenderSlot_Opaque | Hedgehog::Yggdrasill::eRenderSlot_PunchThrough | Hedgehog::Yggdrasill::eRenderSlot_Transparent);
+
+    pRenderingDevice->UnlockRenderState(D3DRS_SRCBLENDALPHA);
+    pRenderingDevice->UnlockRenderState(D3DRS_DESTBLENDALPHA);
 
     // Done with transparency, revert render states.
     pRenderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
