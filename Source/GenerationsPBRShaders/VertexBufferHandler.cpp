@@ -113,15 +113,27 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
         const uint32_t vertexCount = it->meshData[4];
         const uint32_t stride = it->meshData[5];
 
+        bool swapStates[0x100]{};
+
         HlHHVertexElement* element = it->elementData;
 
         while (_byteswap_ushort(element->stream) != 0xFF)
         {
+            const HlU16 offset = _byteswap_ushort(element->offset);
+
+            if (swapStates[offset])
+            {
+                element++;
+                continue;
+            }
+
+            swapStates[offset] = true;
+
             const D3DDECLTYPE declType = declTypeMap[_byteswap_ulong(element->format)];
 
             for (size_t i = 0; i < vertexCount; i++)
             {
-                uint8_t* data = it->vertexData + i * stride + _byteswap_ushort(element->offset);
+                uint8_t* data = it->vertexData + i * stride + offset;
 
                 switch (declType)
                 {
@@ -160,12 +172,7 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
                 }
             }
 
-            const HlU16 offset = element->offset;
-
             element++;
-
-            if (element->offset <= offset)
-                break;
         }
 
         // Swap again so it becomes valid in the original code.
