@@ -27,7 +27,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
 
     for (i = 0; i < 4; i++)
     {
-        float3 shCoords = mul(mrgSHLightFieldMatrices[i], float4(position, 1)).xyz;
+        float3 shCoords = mul(mrgSHLightFieldMatrices[i], float4(position * 10.0f, 1)).xyz;
 
         if (IsInSHCoordRange(shCoords))
         {
@@ -38,7 +38,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
 
         float length = dot(shCoords, shCoords);
 
-        if (length < currentLength)
+        if (i == 0 || length < currentLength)
         {
             currentLength = length;
             currentIndex = i;
