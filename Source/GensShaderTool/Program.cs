@@ -213,6 +213,14 @@ namespace GensShaderTool
                     x.Data = FixMeasureLuminanceShader(x.Data, x.Name);
                 });
 
+            byte[] bloom = ShaderCompiler.CompileFromFile(
+                Path.Combine(sProjectDirectory, "Shaders", "Bloom.wpu.hlsl"), ShaderType.Pixel, cShaderFlags);
+
+            foreach (var data in shaderRegular.Contents.Where(x =>
+                x.Name.Contains("BrightPassHDR", StringComparison.OrdinalIgnoreCase) &&
+                x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)))
+                data.Data = bloom;
+
             Parallel.ForEach(
                 shaderRegularAdd.Contents.Where(x => x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
                 x =>
