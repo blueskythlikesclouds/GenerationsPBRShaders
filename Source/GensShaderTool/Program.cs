@@ -205,6 +205,15 @@ namespace GensShaderTool
             shaderRegular.Contents.RemoveAll(x => x.Name.StartsWith(misplacedShaderName));
 
             Parallel.ForEach(
+                shaderRegular.Contents.Where(x =>
+                    x.Name.Contains("MeasureLuminance", StringComparison.OrdinalIgnoreCase) &&
+                    x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
+                x =>
+                {
+                    x.Data = FixMeasureLuminanceShader(x.Data, x.Name);
+                });
+
+            Parallel.ForEach(
                 shaderRegularAdd.Contents.Where(x => x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
                 x =>
                 {
@@ -213,6 +222,24 @@ namespace GensShaderTool
 
             shaderRegular.Contents.AddRange(shaderRegularAdd.Contents);
             return shaderRegular;
+        }
+
+        private static byte[] FixMeasureLuminanceShader(byte[] bytes, string debugName)
+        {
+            string translated = ShaderTranslator.Translate(bytes);
+
+            // Why does ST clamp the colors??? First regular shaders now the tonemapping shader...
+            translated = translated.Replace("saturate", "");
+
+            try
+            {
+                return ShaderCompiler.Compile(translated, ShaderType.Pixel, cShaderFlags);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to compile shader {0}: {1}", debugName, e.Message);
+                return bytes;
+            }
         }
 
         private static byte[] ConvertShaderToPBRCompatible(byte[] bytes, string debugName)
