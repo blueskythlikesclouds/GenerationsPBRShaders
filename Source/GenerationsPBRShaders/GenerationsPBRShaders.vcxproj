@@ -103,6 +103,7 @@
   <ItemGroup>
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="LightShaftHandler.cpp" />
+    <ClCompile Include="ObjectVisualPatcher.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="RenderDataManager.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
@@ -127,6 +128,7 @@
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="LightShaftHandler.h" />
+    <ClInclude Include="ObjectVisualPatcher.h" />
     <ClInclude Include="PBROnVanillaFunsies.h" />
     <ClInclude Include="RenderDataManager.h" />
     <ClInclude Include="SceneEffect.h" />

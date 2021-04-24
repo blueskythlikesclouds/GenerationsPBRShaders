@@ -99,7 +99,11 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
         output.ExtraParams.xy = ComputeLightScattering(input.Position, viewPosition.xyz);
     }
 
+#if defined(NoVertexColor) && NoVertexColor
+    output.Color = 1;
+#else
     output.Color = input.Color;
+#endif
 
 #if defined(IsEye2) && IsEye2
     output.EyeNormal = mul(mul(float4(output.EyeNormal, 0), g_MtxWorld), g_MtxView).xyz;

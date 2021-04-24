@@ -5,6 +5,7 @@
 #include "SceneEffect.h"
 #include "GIHandler.h"
 #include "LightShaftHandler.h"
+#include "ObjectVisualPatcher.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
 #include "StageId.h"
@@ -33,6 +34,7 @@ extern "C" void __declspec(dllexport) Init()
     CompressionHandler::applyPatches();
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
+    ObjectVisualPatcher::applyPatches();
 
     // PBROnVanillaFunsies::applyPatches();
 }

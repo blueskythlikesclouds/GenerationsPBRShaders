@@ -55,6 +55,7 @@ namespace GensShaderTool
                 {
                     new VertexShaderInfoDefault2(), new VertexShaderInfoDefault2Normal(), new VertexShaderInfoEye2(),
                     new VertexShaderInfoWater2()
+                    new VertexShaderInfoWater2(), new VertexShaderInfoDefault2NoV() 
                 }, vertexShaderGlobalParameterSet, cShaderFlags);
 
             //======================//

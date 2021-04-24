@@ -40,6 +40,9 @@
     <ClCompile Include="RenderDataManager.cpp">
       <Filter>Database</Filter>
     </ClCompile>
+    <ClCompile Include="ObjectVisualPatcher.cpp">
+      <Filter>Patches\Other</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -85,6 +88,9 @@
     </ClInclude>
     <ClInclude Include="RenderDataManager.h">
       <Filter>Database</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectVisualPatcher.h">
+      <Filter>Patches\Other</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
