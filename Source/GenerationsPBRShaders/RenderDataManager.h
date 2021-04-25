@@ -23,6 +23,7 @@ struct SHLightFieldData
     Eigen::Matrix4f m_InverseMatrix;
     Eigen::Vector3f m_Position;
     uint32_t m_ProbeCounts[3];
+    float m_Radius;
     float m_Distance;
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
 };

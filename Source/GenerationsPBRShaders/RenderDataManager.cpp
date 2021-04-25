@@ -14,6 +14,22 @@ RenderDataPtrSet<SHLightFieldData> RenderDataManager::ms_SHLFsInFrustum;
 RenderDataPtrSet<IBLProbeData> RenderDataManager::ms_IBLProbesInFrustum;
 RenderDataSet<LocalLightData> RenderDataManager::ms_LocalLightsInFrustum;
 
+float GetRadius(const Eigen::Matrix4f& matrix, const float relativeBounds)
+{
+    const Eigen::Vector4f min = { -relativeBounds, -relativeBounds, -relativeBounds, 1.0f };
+    const Eigen::Vector4f max = { +relativeBounds, +relativeBounds, +relativeBounds, 1.0f };
+
+    Box aabb;
+    aabb.extend((matrix * min).head<3>());
+    aabb.extend((matrix * max).head<3>());
+
+    float radius = 0.0f;
+    for (size_t i = 0; i < 8; i++)
+        radius = std::max<float>(radius, (aabb.center() - aabb.corner((Box::CornerType)i)).norm());
+
+    return radius;
+}
+
 HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* This)
 {
     originalCTerrainDirectorInitializeRenderData(This);
@@ -63,6 +79,8 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_ProbeCounts[1] = shlf.ProbeCounts[1];
             data.m_ProbeCounts[2] = shlf.ProbeCounts[2];
 
+            data.m_Radius = GetRadius(affine.matrix(), 0.5f) / 10.0f;
+
             data.m_InverseMatrix = affine.inverse().matrix();
             data.m_Position = Eigen::Vector3f(shlf.Position[0], shlf.Position[1], shlf.Position[2]) / 10.0f;
 
@@ -93,13 +111,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_InverseMatrix = matrix.inverse();
             data.m_Position = Eigen::Vector3f(iblProbe.Position[0], iblProbe.Position[1], iblProbe.Position[2]) / 10.0f;
             data.m_Bias = iblProbe.Bias;
-
-            // help how do I cull OBBs 
-            const float scaleX = matrix.col(0).head<3>().norm();
-            const float scaleY = matrix.col(1).head<3>().norm();
-            const float scaleZ = matrix.col(2).head<3>().norm();
-
-            data.m_Radius = std::max<float>(std::max<float>(scaleX, scaleY), scaleZ) / 2.0f * sqrtf(2.0f);
+            data.m_Radius = GetRadius(matrix, 1);
 
             pScheduler->GetPicture(data.m_spPicture, iblProbe.Name);
 
@@ -248,7 +260,7 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
 
         for (auto& shlf : RenderDataManager::ms_SHLFs)
         {
-            shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm();
+            shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm() / (shlf->m_Radius * shlf->m_Radius);
             RenderDataManager::ms_SHLFsInFrustum.insert(shlf.get());
         }
 
@@ -259,7 +271,7 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
             if (!frustum.intersects(probe->m_Position, probe->m_Radius))
                 continue;
 
-            probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm();
+            probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm() / (probe->m_Radius * probe->m_Radius);
             RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
         }
     }
