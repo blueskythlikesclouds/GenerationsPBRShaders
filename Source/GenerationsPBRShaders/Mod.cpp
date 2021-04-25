@@ -1,3 +1,4 @@
+#include "ArchiveTreePatcher.h"
 #include "CompressionHandler.h"
 #include "RenderDataManager.h"
 #include "LUTHandler.h"
@@ -35,6 +36,7 @@ extern "C" void __declspec(dllexport) Init()
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
+    ArchiveTreePatcher::applyPatches();
 
     // PBROnVanillaFunsies::applyPatches();
 }

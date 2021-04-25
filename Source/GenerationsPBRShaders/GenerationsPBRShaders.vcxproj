@@ -101,6 +101,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ArchiveTreePatcher.cpp" />
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="LightShaftHandler.cpp" />
     <ClCompile Include="ObjectVisualPatcher.cpp" />
@@ -124,6 +125,7 @@
     <ClCompile Include="YggdrasillPatcher.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ArchiveTreePatcher.h" />
     <ClInclude Include="CompressionHandler.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="IBLProbe.h" />

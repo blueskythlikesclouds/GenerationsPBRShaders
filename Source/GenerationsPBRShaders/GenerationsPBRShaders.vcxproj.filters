@@ -43,6 +43,9 @@
     <ClCompile Include="ObjectVisualPatcher.cpp">
       <Filter>Patches\Other</Filter>
     </ClCompile>
+    <ClCompile Include="ArchiveTreePatcher.cpp">
+      <Filter>Database</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -91,6 +94,9 @@
     </ClInclude>
     <ClInclude Include="ObjectVisualPatcher.h">
       <Filter>Patches\Other</Filter>
+    </ClInclude>
+    <ClInclude Include="ArchiveTreePatcher.h">
+      <Filter>Database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
