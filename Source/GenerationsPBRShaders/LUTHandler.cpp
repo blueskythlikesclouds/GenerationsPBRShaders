@@ -5,28 +5,26 @@ bool LUTHandler::enabled = false;
 
 Hedgehog::Mirage::SShaderPair s_FxLUTShader;
 
-HOOK(void, __fastcall, CFxCrossFadeInitialize, Sonic::fpCFxCrossFadeInitialize, Sonic::CFxCrossFade* This)
+HOOK(void, __fastcall, CFxRenderParticleInitialize, 0x10C7170, Sonic::CFxJob* This)
 {
-    originalCFxCrossFadeInitialize(This);
-
     This->m_pScheduler->GetShader(s_FxLUTShader, "FxFilterT", "FxLUT");
 }
 
-HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic::CFxCrossFade* This)
+HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
 {
     if (!s_FxLUTShader.m_spVertexShader || !s_FxLUTShader.m_spPixelShader)
-        return originalCFxCrossFadeExecute(This);
+        return;
 
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spDefaultTex;
-    This->GetDefaultTexture(spDefaultTex);
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spColorTex;
+    This->GetTexture(spColorTex, "colortex");
 
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSurface;
-    spDefaultTex->GetSurface(spSurface, 0, 0);
+    spColorTex->GetSurface(spSurface, 0, 0);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, spSurface);
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(s_FxLUTShader.m_spVertexShader, s_FxLUTShader.m_spPixelShader);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, spDefaultTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, spColorTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
@@ -41,9 +39,7 @@ HOOK(void, __fastcall, CFxCrossFadeExecute, Sonic::fpCFxCrossFadeExecute, Sonic:
 
     This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
 
-    This->SetDefaultTexture(spDefaultTex);
-
-    originalCFxCrossFadeExecute(This);
+    This->SetDefaultTexture(spColorTex);
 }
 
 void LUTHandler::applyPatches()
@@ -73,8 +69,8 @@ void LUTHandler::applyPatches()
     WRITE_MEMORY(0x10C3754, uint8_t, 36);
     WRITE_MEMORY(0x10C21C4, uint8_t, 36);
 
-    INSTALL_HOOK(CFxCrossFadeInitialize);
-    INSTALL_HOOK(CFxCrossFadeExecute);
+    INSTALL_HOOK(CFxRenderParticleInitialize);
+    INSTALL_HOOK(CFxRenderParticleExecute);
 
     // Prevent gamma ramp from being set.
     WRITE_MEMORY(0xD68183, uint8_t, 0x83, 0xC4, 0x08, 0x90, 0x90);
