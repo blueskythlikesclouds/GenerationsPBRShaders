@@ -121,7 +121,18 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetRenderTarget(2, spGBuffer2Surface);
     pDevice->SetRenderTarget(3, spGBuffer3Surface);
     pDevice->SetDepthStencil(This->m_spDepthSurface);
-    pDevice->Clear({ D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER, 0, 1.0f, 0 });
+
+    pDevice->Clear({
+        D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
+        D3DCOLOR_ARGB(
+            pSceneRenderer->m_BackgroundColor[0], 
+            pSceneRenderer->m_BackgroundColor[1],
+            pSceneRenderer->m_BackgroundColor[2],
+            pSceneRenderer->m_BackgroundColor[3]
+        ),
+        1.0f,
+        0
+    });
 
     //***********************//
     // Pre-pass: Render sky. //
