@@ -32,6 +32,8 @@
 #include "Material/Falloff.hlsl"
 #elif (defined(IsChrEmission) && IsChrEmission) || (defined(IsMChrEmission) && IsMChrEmission)
 #include "Material/ChrEmission.hlsl"
+#elif (defined(IsPointMarker) && IsPointMarker)
+#include "Material/Object/PointMarker.hlsl"
 #endif
 
 float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
