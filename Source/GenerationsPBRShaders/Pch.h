@@ -16,6 +16,9 @@
 #include <hedgelib/hl_compression.h>
 #include <hedgelib/io/hl_bina.h>
 
+// LostCodeLoader
+#include <LostCodeLoader.h>
+
 // BlueBlur
 #include <BlueBlur.h>
 

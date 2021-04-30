@@ -1,5 +1,6 @@
 #include "ArchiveTreePatcher.h"
 #include "CompressionHandler.h"
+#include "CpkBinder.h"
 #include "RenderDataManager.h"
 #include "LUTHandler.h"
 #include "PBROnVanillaFunsies.h"
@@ -19,7 +20,7 @@ extern "C" void __declspec(dllexport) OnFrame()
     PBROnVanillaFunsies::onFrame();
 }
 
-extern "C" void __declspec(dllexport) Init()
+extern "C" void __declspec(dllexport) Init(ModInfo* info)
 {
 #if _DEBUG
     AllocConsole();
@@ -37,6 +38,7 @@ extern "C" void __declspec(dllexport) Init()
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
     ArchiveTreePatcher::applyPatches();
+    //CpkBinder::applyPatches(info);
 
     // PBROnVanillaFunsies::applyPatches();
 }

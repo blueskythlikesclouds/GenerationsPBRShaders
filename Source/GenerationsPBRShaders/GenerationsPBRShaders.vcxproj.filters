@@ -46,6 +46,9 @@
     <ClCompile Include="ArchiveTreePatcher.cpp">
       <Filter>Database</Filter>
     </ClCompile>
+    <ClCompile Include="CpkBinder.cpp">
+      <Filter>Database</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -96,6 +99,9 @@
       <Filter>Patches\Other</Filter>
     </ClInclude>
     <ClInclude Include="ArchiveTreePatcher.h">
+      <Filter>Database</Filter>
+    </ClInclude>
+    <ClInclude Include="CpkBinder.h">
       <Filter>Database</Filter>
     </ClInclude>
   </ItemGroup>

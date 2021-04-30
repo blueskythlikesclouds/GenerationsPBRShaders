@@ -5,8 +5,9 @@ const std::vector<std::pair<const char*, const std::vector<const char*>>> NODES 
     { "PBRSystemCommon", { "SystemCommon" } },
     { "PBRCmn100", { "cmn100" }},
     { "PBRCmn200", { "cmn200" }},
-    { "PBRSonic", {"Sonic"}},
-    { "PBRSonicClassic", {"SonicClassic"}},
+    { "PBRActionCommon", {"ActionCommon"}},
+    { "PBRSonic", {"Sonic", "Title"}},
+    { "PBRSonicClassic", {"SonicClassic", "Title"}},
     { "PBREnemyBeeton", {"EnemyBeeton"}},
     { "PBREnemyEFighter", {"EnemyEFighter"}},
 };
