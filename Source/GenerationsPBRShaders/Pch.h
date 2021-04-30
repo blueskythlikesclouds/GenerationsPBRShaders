@@ -25,8 +25,12 @@
 #include <Sonic.h>
 #include <Hedgehog.h>
 
+#include "Configuration.h"
 #include "Frustum.h"
 #include "SceneEffect.h"
 
 // boost
 #include <boost/pool/pool_alloc.hpp>
+
+// Other
+#include <INIReader.h>

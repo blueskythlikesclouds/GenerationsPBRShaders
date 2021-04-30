@@ -1,0 +1,47 @@
+{
+   "Groups":[
+      {
+         "Name":"SSR",
+         "DisplayName":"Screen Space Reflections",
+         "Elements":[
+            {
+               "Name":"Resolution",
+               "Description":[
+                  "Resolution of screen space reflections."
+               ],
+               "DisplayName":"Resolution",
+               "Type":"Resolution",
+               "MinValue":null,
+               "MaxValue":null,
+               "DefaultValue":"0"
+            }
+         ]
+      }
+   ],
+   "Enums":{
+      "Resolution":[
+         {
+            "DisplayName":"Full",
+            "Description":[
+               "Full resolution."
+            ],
+            "Value":"0"
+         },
+         {
+            "DisplayName":"Half",
+            "Description":[
+               "Half resolution."
+            ],
+            "Value":"1"
+         },
+         {
+            "DisplayName":"Quarter",
+            "Description":[
+               "Quarter resolution."
+            ],
+            "Value":"2"
+         }
+      ]
+   },
+   "IniFile":"GenerationsPBRShaders.ini"
+}

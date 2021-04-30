@@ -25,7 +25,16 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
 #if _DEBUG
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
-#endif 
+#endif
+
+    std::string dir = info->CurrentMod->Path;
+
+    size_t pos = dir.find_last_of("\\/");
+    if (pos != std::string::npos)
+        dir.erase(pos + 1);
+
+    if (!Configuration::load(dir + "GenerationsPBRShaders.ini"))
+        MessageBox(NULL, L"Failed to parse GenerationsPBRShaders.ini", NULL, MB_ICONERROR);
 
     GIHandler::applyPatches();
     ShaderHandler::applyPatches();
@@ -38,9 +47,6 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
     ArchiveTreePatcher::applyPatches();
-    //CpkBinder::applyPatches(info);
-
-    // PBROnVanillaFunsies::applyPatches();
 }
 
 extern "C" void __declspec(dllexport) PostInit()

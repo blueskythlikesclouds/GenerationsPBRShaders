@@ -102,6 +102,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ArchiveTreePatcher.cpp" />
+    <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="CpkBinder.cpp" />
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="LightShaftHandler.cpp" />
@@ -127,6 +128,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ArchiveTreePatcher.h" />
+    <ClInclude Include="Configuration.h" />
     <ClInclude Include="CpkBinder.h" />
     <ClInclude Include="CompressionHandler.h" />
     <ClInclude Include="Frustum.h" />
