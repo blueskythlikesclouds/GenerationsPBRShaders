@@ -27,7 +27,7 @@ void main(
     diffuse = float4(0, 0, 0, 1);
 #endif
 
-    diffuse.rgb *= g_HDRParam_SGGIParam.x;
+    diffuse.rgb *= GetToneMapLuminance();
 
 #if defined(HasTransparency) && HasTransparency
     diffuse.a *= tex2D(transparencySampler, UV(2)).a;

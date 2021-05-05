@@ -11,9 +11,12 @@ std::array<Hedgehog::Mirage::SShaderPair, 1 + 8> s_FxDeferredPassIBLCombineShade
 Hedgehog::Mirage::SShaderPair s_FxDeferredPassIBLProbeShader;
 Hedgehog::Mirage::SShaderPair s_FxConvolutionFilterShader;
 
+Hedgehog::Mirage::SShaderPair s_FxCopyColorShader;
 Hedgehog::Mirage::SShaderPair s_FxCopyColorDepthShader;
 
 Hedgehog::Mirage::SShaderPair s_FxSSAOShader;
+
+boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spLuAvgTex;
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer1Tex;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> s_spGBuffer2Tex;
@@ -72,9 +75,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->GetShader(s_FxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
 
+    This->m_pScheduler->GetShader(s_FxCopyColorShader, "FxFilterT", "FxCopyColor");
     This->m_pScheduler->GetShader(s_FxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
     This->m_pScheduler->GetShader(s_FxSSAOShader, "FxFilterPT", "FxSSAO");
+
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spLuAvgTex, 1u, 1u, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R16F, D3DPOOL_DEFAULT, NULL);
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spGBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
@@ -93,6 +99,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(s_spSSAOTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
+    s_spLuAvgTex->m_AutoReset = false;
     s_spEnvBRDFPicture.reset();
 }
 
@@ -163,8 +170,13 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set g_HDRParam_SGGIParam
     float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::SGGI.StartSmoothness - SceneEffect::SGGI.EndSmoothness);
-    float hdrParam_sggiParam[] = { SceneEffect::HDR.Luminance, 1.0f, -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale };
+    float hdrParam_sggiParam[] = { 1.0f / (*(float*)0x1A572D0 + 0.001f), 0, -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale };
     pD3DDevice->SetPixelShaderConstantF(106, hdrParam_sggiParam, 1);
+
+    // Set g_LuminanceSampler
+    pDevice->SetSampler(8, s_spLuAvgTex);
+    pDevice->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
     // Set g_DebugParam
     float debugParam[] =
@@ -704,6 +716,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
     pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
+    // Set g_LuminanceSampler
+    pDevice->SetSampler(8, s_spLuAvgTex);
+    pDevice->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
+
     // Setup GI & occlusion flags.
     pDevice->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(9, D3DTADDRESS_CLAMP);
@@ -794,10 +811,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
     pRenderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
-    // Set HDR param to scale particles by luminance.
-    hdrParam_sggiParam[1] = hdrParam_sggiParam[0];
-    pD3DDevice->SetPixelShaderConstantF(106, hdrParam_sggiParam, 1);
-    
     This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Effect | Hedgehog::Yggdrasill::eRenderType_SparkleObject | Hedgehog::Yggdrasill::eRenderType_SparkleFramebuffer,
         Hedgehog::Yggdrasill::eRenderSlot_Opaque | Hedgehog::Yggdrasill::eRenderSlot_PunchThrough | Hedgehog::Yggdrasill::eRenderSlot_Transparent);
 
@@ -858,6 +871,22 @@ HOOK(void, __fastcall, CRenderingDeviceSetViewMatrix, Hedgehog::Mirage::fpCRende
     originalCRenderingDeviceSetViewMatrix(This, Edx, viewMatrix);
 }
 
+HOOK(void, __fastcall, CFxToneMappingExecute, Sonic::fpCFxToneMappingExecute, Sonic::CFxToneMapping* This)
+{
+    originalCFxToneMappingExecute(This);
+
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSurface;
+    s_spLuAvgTex->GetSurface(spSurface, 0, 0);
+
+    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, spSurface);
+    This->m_pScheduler->m_pMisc->m_pDevice->UnsetDepthStencil();
+    This->m_pScheduler->m_pMisc->m_pDevice->SetShader(s_FxCopyColorShader.m_spVertexShader, s_FxCopyColorShader.m_spPixelShader);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, This->m_spLuAvgTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
+    This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+}
+
 bool ShaderHandler::enabled = false;
 
 void ShaderHandler::applyPatches()
@@ -870,6 +899,7 @@ void ShaderHandler::applyPatches()
     INSTALL_HOOK(CFxRenderGameSceneInitialize);
     INSTALL_HOOK(CFxRenderGameSceneExecute);
     INSTALL_HOOK(CRenderingDeviceSetViewMatrix);
+    INSTALL_HOOK(CFxToneMappingExecute);
 
     // Don't render anything in CFxRenderParticle
     WRITE_MEMORY(0x10C8273, uint8_t, 0x83, 0xC4, 0x08, 0x90, 0x90);

@@ -65,7 +65,7 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
     if (isDeferred)
         return;
 
-    finalColor.rgb += g_Emissive.rgb * g_Ambient.rgb * g_HDRParam_SGGIParam.x;
+    finalColor.rgb += g_Emissive.rgb * g_Ambient.rgb * GetToneMapLuminance();
 }
 
 #endif

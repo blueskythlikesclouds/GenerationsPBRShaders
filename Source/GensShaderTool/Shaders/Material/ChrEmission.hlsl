@@ -62,7 +62,7 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
     emission *= tex2D(transparencySampler, UV(5)).a;
 #endif
 
-    finalColor.rgb += emission * g_HDRParam_SGGIParam.x;
+    finalColor.rgb += emission * GetToneMapLuminance();
 }
 
 #endif

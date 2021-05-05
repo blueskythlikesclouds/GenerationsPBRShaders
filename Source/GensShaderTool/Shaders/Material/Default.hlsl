@@ -29,8 +29,14 @@ bool mrgIsUseDeferred : register(b8);
 bool mrgIsSG : register(b9);
 bool mrgHasOcclusion : register(b10);
 
+sampler2D g_LuminanceSampler : register(s8);
 sampler2D g_OcclusionSampler : register(s9);
 samplerCUBE g_DefaultIBLSampler : register(s14);
 sampler2D g_EnvBRDFSampler : register(s15);
+
+float GetToneMapLuminance()
+{
+    return tex2Dlod(g_LuminanceSampler, 0).x * g_HDRParam_SGGIParam.x;
+}
 
 #endif

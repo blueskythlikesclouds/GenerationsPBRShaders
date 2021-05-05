@@ -31,11 +31,6 @@ struct DebugParam
     unsigned long MaxProbeCount;
 };
 
-struct HDRParam
-{
-    float Luminance;
-};
-
 struct SGGIParam
 {
     float StartSmoothness;
@@ -84,7 +79,6 @@ class SceneEffect
 {
 public:
     static DebugParam Debug;
-    static HDRParam HDR;
     static SGGIParam SGGI;
     static ESMParam ESM;
     static RLRParam RLR;

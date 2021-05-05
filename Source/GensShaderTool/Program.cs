@@ -277,18 +277,23 @@ namespace GensShaderTool
             // Scale light field by luminance.
             for (int i = 0; i < 6; i++)
                 code = code.Replace($"g_aLightField[{i}]",
-                    $"(g_aLightField[{i}] * float4(g_HDRParam_SGGIParam.xxx, 1))");
+                    $"(g_aLightField[{i}] * float4(GetToneMapLuminance().xxx, 1))");
 
             // Scale eye highlight color by luminance.
             code = code.Replace("g_SonicEyeHighLightColor",
-                "(g_SonicEyeHighLightColor * float4(g_HDRParam_SGGIParam.xxx, 1))");           
+                "(g_SonicEyeHighLightColor * float4(GetToneMapLuminance().xxx, 1))");           
             
             // Scale mrgLuminanceRange by luminance.
             code = code.Replace("mrgLuminanceRange",
-                "(mrgLuminanceRange * float4(g_HDRParam_SGGIParam.xxx, 1))");
+                "(mrgLuminanceRange * float4(GetToneMapLuminance().xxx, 1))");
 
             // Convert diffuse to linear space.
             preCode += "float4 g_HDRParam_SGGIParam : register(c106);" +
+                       "sampler2D g_LuminanceSampler : register(s8);" +
+                       "float GetToneMapLuminance()" +
+                       "{" +
+                       "    return tex2Dlod(g_LuminanceSampler, 0).x * g_HDRParam_SGGIParam.x;" +
+                       "}" +
                        "float4 texSRGB(sampler2D s, float4 texCoord)" +
                        "{ " +
                        "    return pow(tex(s, texCoord), float4(2.2, 2.2, 2.2, 1.0)); " +
@@ -298,12 +303,13 @@ namespace GensShaderTool
             code = code.Replace("tex(s0,", "texSRGB(s0,");
 
             // Scale ForceAlphaColor/SmokeColor by luminance.
-            code = code.Replace("g_ForceAlphaColor", "(g_ForceAlphaColor * float4(g_HDRParam_SGGIParam.yyy, 1))");
+            if (debugName.Contains("Spark", StringComparison.Ordinal) || debugName.Contains("Particle", StringComparison.Ordinal))
+                code = code.Replace("g_ForceAlphaColor", "(g_ForceAlphaColor * float4(GetToneMapLuminance().xxx, 1))");
 
             if (debugName.Contains("SmokeTest", StringComparison.Ordinal))
             {
                 // Scale smoke color by luminance.
-                code = code.Replace("g_SmokeColor", "(g_SmokeColor * float4(g_HDRParam_SGGIParam.yyy, 1))");
+                code = code.Replace("g_SmokeColor", "(g_SmokeColor * float4(GetToneMapLuminance().xxx, 1))");
                 
                 // Prevent the smoke color saturation.
                 code = code.Replace("oC0.xyz = saturate", "oC0.xyz =");

@@ -51,7 +51,7 @@ void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDef
     float3 viewNormal = normalize(mul(float4(material.Normal, 0), g_MtxView).xyz);
     float3 emission = pow(tex2D(emissionSampler, viewNormal * float2(0.5, -0.5) + 0.5), GAMMA).rgb * input.Color.xyz;
 
-    finalColor.rgb += emission * (1 - Blend.x) * g_HDRParam_SGGIParam.x;
+    finalColor.rgb += emission * (1 - Blend.x) * GetToneMapLuminance();
 }
 
 #endif
