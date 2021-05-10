@@ -225,8 +225,15 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, Hedgehog::Mirage::
 
     DX_PATCH::IDirect3DTexture9* pDxpTex = *(DX_PATCH::IDirect3DTexture9**)((uint32_t)pData + 16);
 
+    static GIStore* pPrevGIStore = nullptr;
+
     GIStore* pGIStore = nullptr;
     pDxpTex->QueryInterface(IID(), (void**)&pGIStore);
+
+    if (pPrevGIStore != nullptr && pGIStore == pPrevGIStore)
+        return;
+
+    pPrevGIStore = pGIStore;
 
     const BOOL isSg = pGIStore != nullptr && pGIStore->isSg;
     const BOOL hasOcclusion = pGIStore != nullptr && pGIStore->spOcclusionTex != nullptr;
