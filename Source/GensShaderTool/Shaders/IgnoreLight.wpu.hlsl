@@ -17,12 +17,16 @@ void main(
     out float4 outColor2 : COLOR2,
     out float4 outColor3 : COLOR3)
 {
-    // TODO: Figure what the reflection sampler is for
+    float2 offset = 0;
+
+#if defined(HasReflection) && HasReflection
+    offset = Offset.xy * (tex2D(reflectionSampler, UV(3)).xy * 2 - 1);
+#endif
 
     float4 diffuse;
 
 #if defined(HasDiffuse) && HasDiffuse
-    diffuse = pow(tex2D(diffuseSampler, UV(0)), GAMMA) * float4(g_Diffuse.rgb, 1.0) * input.Color;
+    diffuse = pow(tex2D(diffuseSampler, offset + UV(0)), GAMMA) * float4(g_Diffuse.rgb, 1.0) * input.Color;
 #else
     diffuse = float4(0, 0, 0, 1);
 #endif
@@ -30,7 +34,7 @@ void main(
     diffuse.rgb *= GetToneMapLuminance();
 
 #if defined(HasTransparency) && HasTransparency
-    diffuse.a *= tex2D(transparencySampler, UV(2)).a;
+    diffuse.a *= tex2D(transparencySampler, offset + UV(2)).a;
 #endif
 
     float3 emission;
@@ -39,7 +43,7 @@ void main(
     float3 viewNormal = normalize(mul(float4(input.Normal.xyz, 0), g_MtxView).xyz);
     emission = tex2D(emissionSampler, viewNormal.xy * float2(0.5, -0.5) + 0.5).rgb;
 #elif defined(HasEmission) && HasEmission
-    emission = tex2D(emissionSampler, UV(1)).rgb;
+    emission = tex2D(emissionSampler, offset + UV(1)).rgb;
 #else
     emission = g_Emissive.rgb;
 #endif
