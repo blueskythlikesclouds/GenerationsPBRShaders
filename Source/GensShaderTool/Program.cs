@@ -30,6 +30,26 @@ namespace GensShaderTool
 
         private static void Main(string[] args)
         {
+            if (args.Length > 0)
+            {
+                if (args[0].EndsWith(".wpu", StringComparison.OrdinalIgnoreCase) ||
+                    args[0].EndsWith(".wvu", StringComparison.OrdinalIgnoreCase))
+                {
+                    ShaderTranslator.Translate(args[0], args[0] + ".hlsl");
+                    return;
+                }
+
+                if (args[0].EndsWith(".hlsl", StringComparison.OrdinalIgnoreCase))
+                {
+                    ShaderCompiler.CompileFromFile(args[0],
+                        args[0].EndsWith(".wvu.hlsl", StringComparison.OrdinalIgnoreCase)
+                            ? ShaderType.Vertex
+                            : ShaderType.Pixel, args[0].Substring(0, args[0].Length - 5), cShaderFlags);
+
+                    return;
+                }
+            }
+
             string vanillaShaderArPath = Path.Combine(sOutputDirectory, "shader_vanilla.ar.00");
             if (!File.Exists(vanillaShaderArPath))
             {

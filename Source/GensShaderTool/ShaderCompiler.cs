@@ -348,7 +348,7 @@ namespace GensShaderTool
 
         public static void Compile(string hlslData, ShaderType type, string destinationFilePath, ShaderFlags flags = ShaderFlags.None)
         {
-            var result = Compiler.Compile(hlslData, null, null, "main", null, type == ShaderType.Vertex ? "ps_3_0" : "vs_3_0", flags,
+            var result = Compiler.Compile(hlslData, null, null, "main", null, type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0", flags,
                 out var blob, out var errorBlob);
 
             if (result.Failure)

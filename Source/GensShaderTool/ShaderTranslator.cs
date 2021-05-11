@@ -62,6 +62,7 @@ namespace GensShaderTool
         public static void Translate(byte[] bytes, TextWriter writer)
         {
             string[] lines;
+            var shaderType = ShaderType.Pixel;
 
             unsafe
             {
@@ -83,10 +84,20 @@ namespace GensShaderTool
             {
                 string line = lines[i];
 
-                if (line.StartsWith("//") || line.StartsWith("vs_") || line.StartsWith("ps_"))
+                if (line.StartsWith("//"))
                     continue;
 
-                if (line.StartsWith("def"))
+                if (line.StartsWith("vs_"))
+                {
+                    shaderType = ShaderType.Vertex;
+                }
+
+                else if (line.StartsWith("ps_"))
+                {
+                    shaderType = ShaderType.Pixel;
+                }
+
+                else if (line.StartsWith("def"))
                 {
                     var split = line.Split(',');
                     constants.Add(split[0].Substring(split[0].IndexOf(' ') + 1),
@@ -110,43 +121,47 @@ namespace GensShaderTool
             ProcessParameterMap(writer, paramSet.IntParameters, paramMap, 'i', "int");
             ProcessParameterMap(writer, paramSet.BoolParameters, paramMap, 'b', "bool");
 
-            foreach ((string type, string register) in semantics.Where(x => sTextureSemantics.Contains(x.Item1)))
+            if (shaderType == ShaderType.Pixel)
             {
-                int index = int.Parse(register.AsSpan().Slice(1));
-                var param = paramSet.SamplerParameters.FirstOrDefault(x =>
-                    index >= (x.Index & 0xF) && index < (x.Index & 0xF) + x.Size);
-
-                string name = register;
-
-                if (param != null)
+                foreach ((string type, string register) in semantics.Where(x => sTextureSemantics.Contains(x.Item1)))
                 {
-                    name = param.Size > 1 ? $"{param.Name}{index - param.Index}" : param.Name;
-                    paramMap[register] = name;
+                    int index = int.Parse(register.AsSpan().Slice(1));
+                    var param = paramSet.SamplerParameters.FirstOrDefault(x =>
+                        index >= (x.Index & 0xF) && index < (x.Index & 0xF) + x.Size);
+
+                    string name = register;
+
+                    if (param != null)
+                    {
+                        name = param.Size > 1 ? $"{param.Name}{index - param.Index}" : param.Name;
+                        paramMap[register] = name;
+                    }
+
+                    writer.WriteLine("sampler{0} {1} : register({2});", type, name, register);
                 }
 
-                writer.WriteLine("sampler{0} {1} : register({2});", type, name, register);
-            }
+                writer.WriteLine();
 
-            writer.WriteLine();
-
-            foreach (string texSemantic in sTextureSemantics)
-            {
-                writer.WriteLine("float4 tex(sampler{0} s, float4 texCoord) {{ return tex{0}(s, texCoord.{1}); }}",
-                    texSemantic, sTextureSwizzleMap[texSemantic]);
-                writer.WriteLine("float4 texBias(sampler{0} s, float4 texCoord) {{ return tex{0}bias(s, texCoord); }}",
-                    texSemantic);
-                writer.WriteLine("float4 texLod(sampler{0} s, float4 texCoord) {{ return tex{0}lod(s, texCoord); }}",
-                    texSemantic);
-                writer.WriteLine("float4 texProj(sampler{0} s, float4 texCoord) {{ return tex{0}proj(s, texCoord); }}",
-                    texSemantic);
+                foreach (string texSemantic in sTextureSemantics)
+                {
+                    writer.WriteLine("float4 tex(sampler{0} s, float4 texCoord) {{ return tex{0}(s, texCoord.{1}); }}", texSemantic, sTextureSwizzleMap[texSemantic]);
+                    writer.WriteLine("float4 texBias(sampler{0} s, float4 texCoord) {{ return tex{0}bias(s, texCoord); }}", texSemantic);
+                    writer.WriteLine("float4 texLod(sampler{0} s, float4 texCoord) {{ return tex{0}lod(s, texCoord); }}", texSemantic);
+                    writer.WriteLine("float4 texProj(sampler{0} s, float4 texCoord) {{ return tex{0}proj(s, texCoord); }}", texSemantic);
+                }
             }
 
             writer.WriteLine("\nfloat4 normalize(float4 value) { return value / sqrt(dot(value.xyz, value.xyz)); }\n");
 
-            writer.WriteLine("void main(\n{0}\n\tout float4 oC0 : COLOR0,\n\tout float4 oC1 : COLOR1,\n\tout float4 oC2 : COLOR2,\n\tout float4 oC3 : COLOR3,\n\tout float oDepth : DEPTH)\n{{",
-                string.Join(" \n",
+            string mainArguments = string.Join(" \n",
                     semantics.Where(x => !sTextureSemantics.Contains(x.Item1)).Select(x =>
-                        $"\t{(x.Item2[0] == 'o' ? "out" : "in")} float4 {x.Item2.Split('.')[0]} : {x.Item1},")));
+                        $"\t{(x.Item2[0] == 'o' ? "out" : "in")} float4 {x.Item2.Split('.')[0]} : {x.Item1},"));
+
+            writer.WriteLine(
+                shaderType == ShaderType.Vertex
+                    ? "void main(\n{0})\n{{"
+                    : "void main(\n{0}\n\tout float4 oC0 : COLOR0,\n\tout float4 oC1 : COLOR1,\n\tout float4 oC2 : COLOR2,\n\tout float4 oC3 : COLOR3,\n\tout float oDepth : DEPTH)\n{{",
+                shaderType == ShaderType.Vertex ? mainArguments.TrimEnd('\n', ',') : mainArguments);
 
             foreach (var constant in constants)
                 writer.WriteLine("\tfloat4 {0} = float4{1};", constant.Key, string.Join(", ", constant.Value));
@@ -157,7 +172,11 @@ namespace GensShaderTool
             for (int j = 0; j < 32; j++)
                 writer.WriteLine("\tfloat4 r{0} = float4(0, 0, 0, 0);", j);
 
+            writer.WriteLine("\tint4 a0 = int4(0, 0, 0, 0);");
+
             writer.WriteLine();
+
+            int indent = 1;
 
             for (; i < lines.Length; i++)
             {
@@ -176,7 +195,19 @@ namespace GensShaderTool
                     }
                 }
 
-                writer.WriteLine("\t{0}", instruction);
+                string instrLine = instruction.ToString();
+
+                // Stupid hack to make g_MtxPalette work
+                instrLine = instrLine.Replace("][", " + ");
+
+                if (instrLine.Contains('}')) indent--;
+
+                for (int j = 0; j < indent; j++)
+                    writer.Write("\t");
+
+                writer.WriteLine("{0}", instrLine);
+
+                if (instrLine.Contains('{')) indent++;
             }
 
             writer.WriteLine("}");
@@ -430,14 +461,19 @@ namespace GensShaderTool
 
     public class Argument
     {
+        public bool Not { get; set; }
         public bool Sign { get; set; }
         public string Token { get; set; }
         public SwizzleSet Swizzle { get; set; }
         public bool Abs { get; set; }
+        public Argument Index { get; set; }
 
         public override string ToString()
         {
             var stringBuilder = new StringBuilder();
+
+            if (Not)
+                stringBuilder.Append('!');
 
             if (Sign)
                 stringBuilder.Append('-');
@@ -446,6 +482,10 @@ namespace GensShaderTool
                 stringBuilder.Append("abs(");
 
             stringBuilder.Append(Token);
+
+            if (Index != null)
+                stringBuilder.AppendFormat("[{0}]", Index);
+
             stringBuilder.Append(Swizzle);
 
             if (Abs)
@@ -454,9 +494,15 @@ namespace GensShaderTool
             return stringBuilder.ToString();
         }
 
-        public Argument(string argument)
+        public Argument(ReadOnlySpan<char> span)
         {
-            var span = argument.AsSpan().Trim();
+            span = span.Trim();
+
+            if (span.StartsWith("!"))
+            {
+                span = span.Slice(1);
+                Not = true;
+            }
 
             if (span.StartsWith("-"))
             {
@@ -464,28 +510,55 @@ namespace GensShaderTool
                 Sign = true;
             }
 
-            int absIndex = span.IndexOf("_abs");
-            int periodIndex = span.IndexOf(".");
+            int absIndex = span.LastIndexOf("_abs");
+            int periodIndex = span.LastIndexOf(".");
+            int indexPos = span.IndexOf(']');
 
-            if (absIndex != -1)
+            var token = span;
+
+            if (absIndex != -1 && absIndex > indexPos)
             {
                 Abs = true;
-                Token = span.Slice(0, absIndex).ToString();
+                token = span.Slice(0, absIndex);
             }
 
-            if (periodIndex != -1)
+            if (periodIndex != -1 && periodIndex > indexPos)
             {
                 Swizzle = new SwizzleSet(span.Slice(periodIndex + 1));
 
                 if (absIndex == -1)
-                    Token = span.Slice(0, periodIndex).ToString();
+                    token = span.Slice(0, periodIndex);
             }
             else
             {
                 Swizzle = SwizzleSet.Empty;
-                Token = span.ToString();
             }
+
+            indexPos = token.IndexOf('[');
+            if (indexPos != -1)
+            {
+                Index = new Argument(token.Slice(indexPos + 1, token.IndexOf(']') - indexPos - 1));
+                token = token.Slice(0, indexPos);
+            }
+
+            Token = token.ToString();
         }
+
+        public Argument(string argument) : this(argument.AsSpan())
+        {
+
+        }
+    }
+
+    public enum ComparisonType
+    {
+        None,
+        GreaterThan,
+        LessThan,
+        GreaterThanOrEqual,
+        LessThanOrEqual,
+        Equal,
+        NotEqual
     }
 
     public class Instruction
@@ -493,6 +566,7 @@ namespace GensShaderTool
         public string OpCode { get; set; }
         public Argument[] Arguments { get; set; }
         public bool Saturate { get; set; }
+        public ComparisonType ComparisonType { get; set; }
 
         public override string ToString()
         {
@@ -590,6 +664,7 @@ namespace GensShaderTool
                     break;         
                 
                 case "mov":
+                case "mova":
                     Arguments[1].Swizzle.Convert(Arguments[0].Swizzle);
 
                     stringBuilder.AppendFormat("{0} = {1};", Arguments[0], Arguments[1]);
@@ -664,6 +739,45 @@ namespace GensShaderTool
                     stringBuilder.AppendFormat("{0} = texProj({1}, {2});", Arguments[0], Arguments[2], Arguments[1]);
                     break;
 
+                case "if":
+                    stringBuilder.Append("if (");
+
+                    switch (ComparisonType)
+                    {
+                        case ComparisonType.GreaterThan:
+                            stringBuilder.AppendFormat("{0} > {1}", Arguments[0], Arguments[1]);
+                            break;
+                        case ComparisonType.LessThan:
+                            stringBuilder.AppendFormat("{0} < {1}", Arguments[0], Arguments[1]);
+                            break;
+                        case ComparisonType.GreaterThanOrEqual:
+                            stringBuilder.AppendFormat("{0} >= {1}", Arguments[0], Arguments[1]);
+                            break;
+                        case ComparisonType.LessThanOrEqual:
+                            stringBuilder.AppendFormat("{0} <= {1}", Arguments[0], Arguments[1]);
+                            break;
+                        case ComparisonType.Equal:
+                            stringBuilder.AppendFormat("{0} == {1}", Arguments[0], Arguments[1]);
+                            break;
+                        case ComparisonType.NotEqual:
+                            stringBuilder.AppendFormat("{0} != {1}", Arguments[0], Arguments[1]);
+                            break;
+                        default:
+                            stringBuilder.Append(Arguments[0]);
+                            break;
+                    }
+
+                    stringBuilder.Append(") {");
+                    break;
+
+                case "else":
+                    stringBuilder.Append("} else {");
+                    break;
+
+                case "endif":
+                    stringBuilder.Append("}");
+                    break;
+
                 default:
                     stringBuilder.AppendFormat("// Unimplemented instruction: {0}", OpCode);
 
@@ -703,7 +817,40 @@ namespace GensShaderTool
             var opCodeSplit = opArgsSplit[0].Split('_');
 
             OpCode = opCodeSplit[0];
-            Saturate = opCodeSplit.Contains("sat");
+
+            foreach (string token in opCodeSplit)
+            {
+                switch (token)
+                {
+                    case "sat":
+                        Saturate = true;
+                        break;
+
+                    case "gt":
+                        ComparisonType = ComparisonType.GreaterThan;
+                        break;                 
+                    
+                    case "lt":
+                        ComparisonType = ComparisonType.LessThan;
+                        break;                 
+                    
+                    case "ge":
+                        ComparisonType = ComparisonType.GreaterThanOrEqual;
+                        break;                   
+                    
+                    case "le":
+                        ComparisonType = ComparisonType.LessThanOrEqual;
+                        break;               
+                    
+                    case "eq":
+                        ComparisonType = ComparisonType.Equal;
+                        break;     
+                    
+                    case "ne":
+                        ComparisonType = ComparisonType.NotEqual;
+                        break;
+                }
+            }
 
             if (args != null)
                 Arguments = args.Select(x => new Argument(x)).ToArray();
