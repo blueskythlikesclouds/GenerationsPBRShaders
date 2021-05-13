@@ -206,81 +206,93 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
 
     else if (strcmp(pUpdateCommand, "b") == 0)
     {
-        const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
+        static float s_ProbeUpdateTime = 0.0f;
 
-        if (pSceneRenderer->m_pLightManager->m_pStaticLightContext != nullptr)
+        if (s_ProbeUpdateTime > 0.035f)
         {
-            RenderDataManager::ms_LocalLightsInFrustum.clear();
+            const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
 
-            Hedgehog::Mirage::CLightListData* pLightListData =
-                pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
-
-            for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
+            if (pSceneRenderer->m_pLightManager->m_pStaticLightContext != nullptr)
             {
-                if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
-                    continue;
+                RenderDataManager::ms_LocalLightsInFrustum.clear();
 
-                const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
+                Hedgehog::Mirage::CLightListData* pLightListData =
+                    pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
 
-                if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
+                for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
                 {
-                    LightMotionData* pMotionData = nullptr;
+                    if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
+                        continue;
 
-                    for (auto& upMotionData : RenderDataManager::ms_LightMotions)
+                    const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
+
+                    if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
                     {
-                        if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
-                            continue;
+                        LightMotionData* pMotionData = nullptr;
 
-                        pMotionData = upMotionData.get();
-                        break;
+                        for (auto& upMotionData : RenderDataManager::ms_LightMotions)
+                        {
+                            if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
+                                continue;
+
+                            pMotionData = upMotionData.get();
+                            break;
+                        }
+
+                        Eigen::Vector3f position = (*it)->m_Position;
+                        Eigen::Vector3f color = (*it)->m_Color.head<3>();
+                        Eigen::Vector4f range = (*it)->m_Range;
+
+                        if (pMotionData != nullptr)
+                        {
+                            // I have no idea if this is correct at all.
+                            // Simply passing the data as color does not work right.
+                            const float colorScale = pMotionData->m_ValueData.m_Data[0x10] / color.dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
+
+                            color.x() *= colorScale;
+                            color.y() *= colorScale;
+                            color.z() *= colorScale;
+
+                            // If the animation made the color almost black, we have no reason to process this local light in the shader.
+                            if (color.maxCoeff() < 0.001f)
+                                continue;
+
+                            range.x() = pMotionData->m_ValueData.m_Data[0x14];
+                            range.y() = pMotionData->m_ValueData.m_Data[0x15];
+                            range.z() = pMotionData->m_ValueData.m_Data[0x16];
+                            range.w() = pMotionData->m_ValueData.m_Data[0x17];
+                        }
+
+                        RenderDataManager::ms_LocalLightsInFrustum.insert({ position, color, range, distance });
                     }
-
-                    Eigen::Vector3f position = (*it)->m_Position;
-                    Eigen::Vector3f color = (*it)->m_Color.head<3>();
-                    Eigen::Vector4f range = (*it)->m_Range;
-
-                    if (pMotionData != nullptr)
-                    {
-                        // I have no idea if this is correct at all.
-                        // Simply passing the data as color does not work right.
-                        const float colorScale = pMotionData->m_ValueData.m_Data[0x10] / color.dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
-
-                        color.x() *= colorScale;
-                        color.y() *= colorScale;
-                        color.z() *= colorScale;
-
-                        // If the animation made the color almost black, we have no reason to process this local light in the shader.
-                        if (color.maxCoeff() < 0.001f)
-                            continue;
-
-                        range.x() = pMotionData->m_ValueData.m_Data[0x14];
-                        range.y() = pMotionData->m_ValueData.m_Data[0x15];
-                        range.z() = pMotionData->m_ValueData.m_Data[0x16];
-                        range.w() = pMotionData->m_ValueData.m_Data[0x17];
-                    }
-
-                    RenderDataManager::ms_LocalLightsInFrustum.insert({ position, color, range, distance });
                 }
             }
+
+            RenderDataManager::ms_SHLFsInFrustum.clear();
+
+            for (auto& shlf : RenderDataManager::ms_SHLFs)
+            {
+                shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm() / (shlf->m_Radius * shlf->m_Radius);
+                RenderDataManager::ms_SHLFsInFrustum.insert(shlf.get());
+            }
+
+            RenderDataManager::ms_IBLProbesInFrustum.clear();
+
+            for (auto& probe : RenderDataManager::ms_IBLProbes)
+            {
+                if (!frustum.intersects(probe->m_Position, probe->m_Radius))
+                    continue;
+
+                probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm() / (probe->m_Radius * probe->m_Radius);
+                RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
+            }
+
+            s_ProbeUpdateTime = 0.0f;
         }
 
-        RenderDataManager::ms_SHLFsInFrustum.clear();
-
-        for (auto& shlf : RenderDataManager::ms_SHLFs)
+        else 
         {
-            shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm() / (shlf->m_Radius * shlf->m_Radius);
-            RenderDataManager::ms_SHLFsInFrustum.insert(shlf.get());
-        }
-
-        RenderDataManager::ms_IBLProbesInFrustum.clear();
-
-        for (auto& probe : RenderDataManager::ms_IBLProbes)
-        {
-            if (!frustum.intersects(probe->m_Position, probe->m_Radius))
-                continue;
-
-            probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm() / (probe->m_Radius * probe->m_Radius);
-            RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
+            s_ProbeUpdateTime += *(float*)A2;
         }
     }
 
