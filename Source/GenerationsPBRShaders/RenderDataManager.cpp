@@ -86,6 +86,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             pScheduler->GetPicture(data.m_spPicture, shlf.Name);
 
+            if (data.m_spPicture != nullptr && data.m_spPicture->m_spPictureData)
+                data.m_spPicture->m_spPictureData->Validate();
+
             RenderDataManager::ms_SHLFs.push_back(std::make_unique<SHLightFieldData>(std::move(data)));
         }
     }
@@ -114,6 +117,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_Radius = GetRadius(matrix, 1);
 
             pScheduler->GetPicture(data.m_spPicture, iblProbe.Name);
+
+            if (data.m_spPicture != nullptr && data.m_spPicture->m_spPictureData)
+                data.m_spPicture->m_spPictureData->Validate();
 
             RenderDataManager::ms_IBLProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
         }
@@ -160,6 +166,8 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
         if (!spLightMotionData)
             continue;
+
+        spLightMotionData->Validate();
 
         LightMotionData data;
         data.m_spData = spLightMotionData;
