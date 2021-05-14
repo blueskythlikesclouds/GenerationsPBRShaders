@@ -73,13 +73,16 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_InverseMatrix = affine.inverse().matrix();
             data.m_Position = Eigen::Vector3f(shlf.Position[0], shlf.Position[1], shlf.Position[2]) / 10.0f;
 
+            const AABB aabb = getAABBFromOBB(affine.matrix(), 0.5f, 1.0f / 10.0f);
+            data.m_Radius = getAABBRadius(aabb);
+
             pScheduler->GetPicture(data.m_spPicture, shlf.Name);
 
             if (data.m_spPicture != nullptr && data.m_spPicture->m_spPictureData != nullptr)
                 data.m_spPicture->m_spPictureData->Validate();
 
             RenderDataManager::ms_SHLFs.push_back(std::make_unique<SHLightFieldData>(std::move(data)));
-            RenderDataManager::ms_NodeBVH.add(NodeType::SHLightField, RenderDataManager::ms_SHLFs.back().get(), getAABBFromOBB(affine.matrix(), 0.5f, 1.0f / 10.0f));
+            RenderDataManager::ms_NodeBVH.add(NodeType::SHLightField, RenderDataManager::ms_SHLFs.back().get(), aabb);
         }
 
         RenderDataManager::ms_SHLFsInFrustum.reserve(RenderDataManager::ms_SHLFs.size());
@@ -108,13 +111,16 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_Position = Eigen::Vector3f(iblProbe.Position[0], iblProbe.Position[1], iblProbe.Position[2]) / 10.0f;
             data.m_Bias = iblProbe.Bias;
 
+            const AABB aabb = getAABBFromOBB(matrix, 1.0f, 1.0f);
+            data.m_Radius = getAABBRadius(aabb);
+
             pScheduler->GetPicture(data.m_spPicture, iblProbe.Name);
 
             if (data.m_spPicture != nullptr && data.m_spPicture->m_spPictureData != nullptr)
                 data.m_spPicture->m_spPictureData->Validate();
 
             RenderDataManager::ms_IBLProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
-            RenderDataManager::ms_NodeBVH.add(NodeType::IBLProbe, RenderDataManager::ms_IBLProbes.back().get(), getAABBFromOBB(matrix, 1.0f, 1.0f));
+            RenderDataManager::ms_NodeBVH.add(NodeType::IBLProbe, RenderDataManager::ms_IBLProbes.back().get(), aabb);
         }
 
         RenderDataManager::ms_IBLProbesInFrustum.reserve(RenderDataManager::ms_IBLProbes.size());
@@ -227,10 +233,12 @@ void RenderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     {
         SHLightFieldData* shlf = (SHLightFieldData*)node.data;
 
-        shlf->m_Distance = shlf->m_OBB.closestPointDistanceSquared(pSceneRenderer->m_pCamera->m_Position * 10.0f) / 100.0f;
+        shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm();
 
         if (shlf->m_Distance > SceneEffect::Culling.SHLightFieldCullingRange * SceneEffect::Culling.SHLightFieldCullingRange)
             break;
+
+        shlf->m_Distance /= shlf->m_Radius * shlf->m_Radius;
 
         RenderDataManager::ms_SHLFsInFrustum.push_back(shlf);
         break;
@@ -240,9 +248,12 @@ void RenderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     {
         IBLProbeData* probe = (IBLProbeData*)node.data;
 
-        probe->m_Distance = probe->m_OBB.closestPointDistanceSquared(pSceneRenderer->m_pCamera->m_Position);
+        probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm();
+
         if (probe->m_Distance > SceneEffect::Culling.IBLProbeCullingRange * SceneEffect::Culling.IBLProbeCullingRange)
             break;
+
+        probe->m_Distance /= probe->m_Radius * probe->m_Radius;
 
         RenderDataManager::ms_IBLProbesInFrustum.push_back(probe);
         break;
