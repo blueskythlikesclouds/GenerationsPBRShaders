@@ -1,39 +1,23 @@
 ﻿#pragma once
 
-template<typename T>
-struct DistanceComparePointer
-{
-    bool operator()(const T& lhs, const T& rhs) const
-    {
-        return lhs->m_Distance < rhs->m_Distance;
-    }
-};
-
-template<typename T>
-struct DistanceCompareReference
-{
-    bool operator()(const T& lhs, const T& rhs) const
-    {
-        return lhs.m_Distance < rhs.m_Distance;
-    }
-};
+class NodeBVH;
 
 struct SHLightFieldData
 {
+    OBB m_OBB;
     Eigen::Matrix4f m_InverseMatrix;
     Eigen::Vector3f m_Position;
     uint32_t m_ProbeCounts[3];
-    float m_Radius;
     float m_Distance;
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
 };
 
 struct IBLProbeData
 {
+    OBB m_OBB;
     Eigen::Matrix4f m_InverseMatrix;
     Eigen::Vector3f m_Position;
     float m_Bias;
-    float m_Radius;
     float m_Distance;
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
 };
@@ -47,17 +31,13 @@ struct LightMotionData
 
 struct LocalLightData
 {
+    boost::shared_ptr<Hedgehog::Mirage::CLightData> m_spLightData;
     Eigen::Vector3f m_Position;
     Eigen::Vector3f m_Color;
     Eigen::Vector4f m_Range;
     float m_Distance;
+    LightMotionData* m_pLightMotionData;
 };
-
-template<typename T>
-using RenderDataPtrSet = std::set<const T*, DistanceComparePointer<const T*>, boost::fast_pool_allocator<const T*>>;
-
-template<typename T>
-using RenderDataSet = std::set<T, DistanceCompareReference<T>, boost::fast_pool_allocator<T>>;
 
 class RenderDataManager
 {
@@ -70,10 +50,13 @@ public:
     static std::vector<std::unique_ptr<SHLightFieldData>> ms_SHLFs;
     static std::vector<std::unique_ptr<IBLProbeData>> ms_IBLProbes;
     static std::vector<std::unique_ptr<LightMotionData>> ms_LightMotions;
+    static std::vector<std::unique_ptr<LocalLightData>> ms_LocalLights;
 
-    static RenderDataPtrSet<SHLightFieldData> ms_SHLFsInFrustum;
-    static RenderDataPtrSet<IBLProbeData> ms_IBLProbesInFrustum;
-    static RenderDataSet<LocalLightData> ms_LocalLightsInFrustum;
+    static std::vector<const SHLightFieldData*> ms_SHLFsInFrustum;
+    static std::vector<const IBLProbeData*> ms_IBLProbesInFrustum;
+    static std::vector<const LocalLightData*> ms_LocalLightsInFrustum;
+
+    static NodeBVH ms_NodeBVH;
 
     static void applyPatches();
 };

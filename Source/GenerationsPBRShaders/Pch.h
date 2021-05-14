@@ -26,7 +26,7 @@
 #include <Hedgehog.h>
 
 #include "Configuration.h"
-#include "Frustum.h"
+#include "Math.h"
 #include "SceneEffect.h"
 
 // boost

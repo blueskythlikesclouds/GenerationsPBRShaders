@@ -1,6 +1,7 @@
 ﻿#include "SceneEffect.h"
 
 DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
+CullingParam SceneEffect::Culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::SGGI = { 0.7f, 0.35f };
 ESMParam SceneEffect::ESM = { 4096 };
 RLRParam SceneEffect::RLR = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
@@ -44,6 +45,11 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     Sonic::CParameterCategory* pSGGIParamCategory = spParameterGroup->CreateParameterCategory("SGGI", "SGGI");
     pSGGIParamCategory->CreateParamFloat(&SceneEffect::SGGI.StartSmoothness, "StartSmoothness");
     pSGGIParamCategory->CreateParamFloat(&SceneEffect::SGGI.EndSmoothness, "EndSmoothness");
+
+    Sonic::CParameterCategory* pCullingParamCategory = spParameterGroup->CreateParameterCategory("Culling", "Culling");
+    pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.SHLightFieldCullingRange, "SHLightFieldCullingRange");
+    pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.IBLProbeCullingRange, "IBLProbeCullingRange");
+    pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.LocalLightCullingRange, "LocalLightCullingRange");
 
     spParameterGroup->Flush();
 

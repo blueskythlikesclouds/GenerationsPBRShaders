@@ -49,7 +49,12 @@
     <ClCompile Include="CpkBinder.cpp">
       <Filter>Database</Filter>
     </ClCompile>
-    <ClCompile Include="Configuration.cpp" />
+    <ClCompile Include="NodeBVH.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="Configuration.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -80,7 +85,6 @@
     <ClInclude Include="LUTHandler.h">
       <Filter>Shader\Shader\Filter</Filter>
     </ClInclude>
-    <ClInclude Include="Frustum.h" />
     <ClInclude Include="PBROnVanillaFunsies.h">
       <Filter>Shader\Other</Filter>
     </ClInclude>
@@ -105,7 +109,15 @@
     <ClInclude Include="CpkBinder.h">
       <Filter>Database</Filter>
     </ClInclude>
-    <ClInclude Include="Configuration.h" />
+    <ClInclude Include="NodeBVH.h">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Configuration.h">
+      <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="Math.h">
+      <Filter>Base</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Database">

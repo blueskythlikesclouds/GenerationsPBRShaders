@@ -31,6 +31,13 @@ struct DebugParam
     unsigned long MaxProbeCount;
 };
 
+struct CullingParam
+{
+    float SHLightFieldCullingRange;
+    float IBLProbeCullingRange;
+    float LocalLightCullingRange;
+};
+
 struct SGGIParam
 {
     float StartSmoothness;
@@ -79,6 +86,7 @@ class SceneEffect
 {
 public:
     static DebugParam Debug;
+    static CullingParam Culling;
     static SGGIParam SGGI;
     static ESMParam ESM;
     static RLRParam RLR;

@@ -340,24 +340,22 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     size_t localLightCount = 0;
 
     float localLightData[9 * 32];
-    
-    auto lightIterator = RenderDataManager::ms_LocalLightsInFrustum.begin();
-    
+        
     localLightCount = std::min<size_t>(32, RenderDataManager::ms_LocalLightsInFrustum.size());
     
     for (size_t i = 0; i < localLightCount; i++)
     {
-        const LocalLightData& data = *lightIterator++;
+        const LocalLightData* data = RenderDataManager::ms_LocalLightsInFrustum[i];
     
-        localLightData[i * 9 + 0] = data.m_Position.x();
-        localLightData[i * 9 + 1] = data.m_Position.y();
-        localLightData[i * 9 + 2] = data.m_Position.z();
-        localLightData[i * 9 + 3] = data.m_Color.x();
-        localLightData[i * 9 + 4] = data.m_Color.y();
-        localLightData[i * 9 + 5] = data.m_Color.z();
-        localLightData[i * 9 + 6] = data.m_Range.y();
-        localLightData[i * 9 + 7] = data.m_Range.z();
-        localLightData[i * 9 + 8] = data.m_Range.w();
+        localLightData[i * 9 + 0] = data->m_Position.x();
+        localLightData[i * 9 + 1] = data->m_Position.y();
+        localLightData[i * 9 + 2] = data->m_Position.z();
+        localLightData[i * 9 + 3] = data->m_Color.x();
+        localLightData[i * 9 + 4] = data->m_Color.y();
+        localLightData[i * 9 + 5] = data->m_Color.z();
+        localLightData[i * 9 + 6] = data->m_Range.y();
+        localLightData[i * 9 + 7] = data->m_Range.z();
+        localLightData[i * 9 + 8] = data->m_Range.w();
     }
     
     if (localLightCount > 0)
@@ -398,9 +396,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     auto shlfIterator = RenderDataManager::ms_SHLFsInFrustum.begin();
 
-    for (size_t i = 0; i < std::min<size_t>(RenderDataManager::ms_SHLFsInFrustum.size(), 3); i++)
+    for (size_t i = 0; i < 3; i++)
     {
-        const SHLightFieldData* cache = *shlfIterator++;
+        const SHLightFieldData* cache = !RenderDataManager::ms_SHLFsInFrustum.empty() ? 
+            RenderDataManager::ms_SHLFsInFrustum[std::min(i, RenderDataManager::ms_SHLFsInFrustum.size() - 1)] : nullptr;
+
+        if (cache == nullptr || SceneEffect::Debug.DisableSHLightField)
+        {
+            pDevice->UnsetSampler(4 + i);
+            continue;
+        }
 
         pDevice->SetSampler(4 + i, cache->m_spPicture);
         pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -410,9 +415,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
         pD3DDevice->SetPixelShaderConstantF(188 + i, shlfParam, 1);
-
-        if (SceneEffect::Debug.DisableSHLightField)
-            pDevice->UnsetSampler(4 + i);
     }
 
     // Set SSAO.
@@ -555,7 +557,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Process every 8 probes in a shader where no indirect lighting computation is applied.
     // Process remaining probes and raw IBL framebuffer in the main shader.
 
-    auto probeIterator = RenderDataManager::ms_IBLProbesInFrustum.begin();
+    size_t currProbeIndex = 0;
 
     size_t iblCountInFrustum = std::min<size_t>(RenderDataManager::ms_IBLProbesInFrustum.size(), 
         std::min<size_t>(Configuration::maxProbeCount, SceneEffect::Debug.MaxProbeCount));
@@ -608,7 +610,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         for (size_t j = 0; j < iblCount; j++)
         {
-            const IBLProbeData* cache = *probeIterator++;
+            const IBLProbeData* cache = RenderDataManager::ms_IBLProbesInFrustum[currProbeIndex++];
 
             pD3DDevice->SetPixelShaderConstantF(107 + j * 3, cache->m_InverseMatrix.data(), 3);
 

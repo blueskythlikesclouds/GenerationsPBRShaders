@@ -2,6 +2,7 @@
 #include "IBLProbe.h"
 #include "SHLightField.h"
 #include "StageId.h"
+#include "NodeBVH.h"
 
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> RenderDataManager::ms_spDefaultIBLPicture;
 boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> RenderDataManager::ms_spRgbTablePicture;
@@ -9,26 +10,13 @@ boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> RenderDataManager::ms_spRgb
 std::vector<std::unique_ptr<SHLightFieldData>> RenderDataManager::ms_SHLFs;
 std::vector<std::unique_ptr<IBLProbeData>> RenderDataManager::ms_IBLProbes;
 std::vector<std::unique_ptr<LightMotionData>> RenderDataManager::ms_LightMotions;
+std::vector<std::unique_ptr<LocalLightData>> RenderDataManager::ms_LocalLights;
 
-RenderDataPtrSet<SHLightFieldData> RenderDataManager::ms_SHLFsInFrustum;
-RenderDataPtrSet<IBLProbeData> RenderDataManager::ms_IBLProbesInFrustum;
-RenderDataSet<LocalLightData> RenderDataManager::ms_LocalLightsInFrustum;
+std::vector<const SHLightFieldData*> RenderDataManager::ms_SHLFsInFrustum;
+std::vector<const IBLProbeData*> RenderDataManager::ms_IBLProbesInFrustum;
+std::vector<const LocalLightData*> RenderDataManager::ms_LocalLightsInFrustum;
 
-float GetRadius(const Eigen::Matrix4f& matrix, const float relativeBounds)
-{
-    const Eigen::Vector4f min = { -relativeBounds, -relativeBounds, -relativeBounds, 1.0f };
-    const Eigen::Vector4f max = { +relativeBounds, +relativeBounds, +relativeBounds, 1.0f };
-
-    Box aabb;
-    aabb.extend((matrix * min).head<3>());
-    aabb.extend((matrix * max).head<3>());
-
-    float radius = 0.0f;
-    for (size_t i = 0; i < 8; i++)
-        radius = std::max<float>(radius, (aabb.center() - aabb.corner((Box::CornerType)i)).norm());
-
-    return radius;
-}
+NodeBVH RenderDataManager::ms_NodeBVH;
 
 HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* This)
 {
@@ -42,6 +30,8 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     RenderDataManager::ms_SHLFs.clear();
     RenderDataManager::ms_IBLProbes.clear();
     RenderDataManager::ms_LightMotions.clear();
+    RenderDataManager::ms_LocalLights.clear();
+    RenderDataManager::ms_NodeBVH.reset();
 
     Sonic::CFxScheduler* pScheduler = ((Sonic::CRenderDirectorFxPipeline*)(*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spRenderDirector.get())->m_pScheduler;
 
@@ -79,8 +69,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_ProbeCounts[1] = shlf.ProbeCounts[1];
             data.m_ProbeCounts[2] = shlf.ProbeCounts[2];
 
-            data.m_Radius = GetRadius(affine.matrix(), 0.5f) / 10.0f;
-
+            data.m_OBB = OBB(affine.matrix(), 0.5f);
             data.m_InverseMatrix = affine.inverse().matrix();
             data.m_Position = Eigen::Vector3f(shlf.Position[0], shlf.Position[1], shlf.Position[2]) / 10.0f;
 
@@ -90,7 +79,10 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
                 data.m_spPicture->m_spPictureData->Validate();
 
             RenderDataManager::ms_SHLFs.push_back(std::make_unique<SHLightFieldData>(std::move(data)));
+            RenderDataManager::ms_NodeBVH.add(NodeType::SHLightField, RenderDataManager::ms_SHLFs.back().get(), getAABBFromOBB(affine.matrix(), 0.5f, 1.0f / 10.0f));
         }
+
+        RenderDataManager::ms_SHLFsInFrustum.reserve(RenderDataManager::ms_SHLFs.size());
     }
 
     if (spProbeData && spProbeData->m_spData)
@@ -107,14 +99,14 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             for (uint32_t x = 0; x < 4; x++)
                 for (uint32_t y = 0; y < 4; y++)
-                    matrix(x, y) = iblProbe.Matrix[x][y];
+                    matrix(x, y) = iblProbe.Matrix[y][x];
 
             IBLProbeData data;
 
-            data.m_InverseMatrix = matrix.inverse();
+            data.m_OBB = OBB(matrix, 1);
+            data.m_InverseMatrix = matrix.inverse().transpose();
             data.m_Position = Eigen::Vector3f(iblProbe.Position[0], iblProbe.Position[1], iblProbe.Position[2]) / 10.0f;
             data.m_Bias = iblProbe.Bias;
-            data.m_Radius = GetRadius(matrix, 1);
 
             pScheduler->GetPicture(data.m_spPicture, iblProbe.Name);
 
@@ -122,10 +114,13 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
                 data.m_spPicture->m_spPictureData->Validate();
 
             RenderDataManager::ms_IBLProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
+            RenderDataManager::ms_NodeBVH.add(NodeType::IBLProbe, RenderDataManager::ms_IBLProbes.back().get(), getAABBFromOBB(matrix, 1.0f, 1.0f));
         }
+
+        RenderDataManager::ms_IBLProbesInFrustum.reserve(RenderDataManager::ms_IBLProbes.size());
     }
 
-    Hedgehog::Motion::CMotionDatabaseWrapper wrapper(pDatabase);
+    Hedgehog::Motion::CMotionDatabaseWrapper motionWrapper(pDatabase);
 
     boost::shared_ptr<Hedgehog::Database::CRawData> spRawData;
     pDatabase->GetRawData(spRawData, "Autodraw.txt", 0);
@@ -162,7 +157,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         *pExtension = '\0';
 
         boost::shared_ptr<Hedgehog::Motion::CLightMotionData> spLightMotionData;
-        wrapper.GetLightMotionData(spLightMotionData, line, 0);
+        motionWrapper.GetLightMotionData(spLightMotionData, line, 0);
 
         if (!spLightMotionData)
             continue;
@@ -174,6 +169,119 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         data.m_Name = line;
 
         RenderDataManager::ms_LightMotions.push_back(std::make_unique<LightMotionData>(std::move(data)));
+    }
+
+    Hedgehog::Mirage::CMirageDatabaseWrapper mirageWrapper(pDatabase);
+
+    boost::shared_ptr<Hedgehog::Mirage::CLightListData> spLightListData;
+    mirageWrapper.GetLightListData(spLightListData, "light-list", 0);
+
+    if (spLightListData != nullptr)
+    {
+        for (auto it = spLightListData->m_Lights.m_pBegin; it != spLightListData->m_Lights.m_pEnd; it++)
+        {
+            if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
+                continue;
+
+            LocalLightData data;
+            data.m_spLightData = *it;
+            data.m_Position = (*it)->m_Position;
+            data.m_Color = (*it)->m_Color.head<3>();
+            data.m_Range = (*it)->m_Range;
+            data.m_pLightMotionData = nullptr;
+
+            for (auto& upMotionData : RenderDataManager::ms_LightMotions)
+            {
+                if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
+                    continue;
+
+                data.m_pLightMotionData = upMotionData.get();
+                break;
+            }
+
+            RenderDataManager::ms_LocalLights.push_back(std::make_unique<LocalLightData>(std::move(data)));
+
+            // TODO: Compute this properly
+            const float maxRange = (*it)->m_Range.maxCoeff();
+
+            AABB aabb;
+            aabb.min() = (*it)->m_Position - Eigen::Vector3f(maxRange, maxRange, maxRange);
+            aabb.max() = (*it)->m_Position + Eigen::Vector3f(maxRange, maxRange, maxRange);
+
+            RenderDataManager::ms_NodeBVH.add(NodeType::LocalLight, RenderDataManager::ms_LocalLights.back().get(), aabb);
+        }
+
+        RenderDataManager::ms_LocalLightsInFrustum.reserve(RenderDataManager::ms_LocalLights.size());
+    }
+
+    RenderDataManager::ms_NodeBVH.build();
+}
+
+void RenderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
+{
+    Sonic::CFxSceneRenderer* pSceneRenderer = (Sonic::CFxSceneRenderer*)userData;
+
+    switch (node.type)
+    {
+    case NodeType::SHLightField:
+    {
+        SHLightFieldData* shlf = (SHLightFieldData*)node.data;
+
+        shlf->m_Distance = shlf->m_OBB.closestPointDistanceSquared(pSceneRenderer->m_pCamera->m_Position * 10.0f) / 100.0f;
+
+        if (shlf->m_Distance > SceneEffect::Culling.SHLightFieldCullingRange * SceneEffect::Culling.SHLightFieldCullingRange)
+            break;
+
+        RenderDataManager::ms_SHLFsInFrustum.push_back(shlf);
+        break;
+    }
+
+    case NodeType::IBLProbe:
+    {
+        IBLProbeData* probe = (IBLProbeData*)node.data;
+
+        probe->m_Distance = probe->m_OBB.closestPointDistanceSquared(pSceneRenderer->m_pCamera->m_Position);
+        if (probe->m_Distance > SceneEffect::Culling.IBLProbeCullingRange * SceneEffect::Culling.IBLProbeCullingRange)
+            break;
+
+        RenderDataManager::ms_IBLProbesInFrustum.push_back(probe);
+        break;
+    }
+
+    case NodeType::LocalLight:
+    {
+        LocalLightData* localLight = (LocalLightData*)node.data;
+
+        localLight->m_Distance = (pSceneRenderer->m_pCamera->m_Position - localLight->m_Position).squaredNorm();
+
+        if (localLight->m_Distance > SceneEffect::Culling.LocalLightCullingRange * SceneEffect::Culling.LocalLightCullingRange)
+            break;
+
+        if (localLight->m_pLightMotionData != nullptr)
+        {
+            // I have no idea if this is correct at all.
+            // Simply passing the data as color does not work right.
+            const float colorScale = localLight->m_pLightMotionData->m_ValueData.m_Data[0x10] / 
+                localLight->m_spLightData->m_Color.head<3>().dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
+
+            localLight->m_Color = localLight->m_spLightData->m_Color.head<3>() * colorScale;
+
+            // If the animation made the color almost black, we have no reason to process this local light in the shader.
+            if (localLight->m_Color.maxCoeff() < 0.001f)
+                break;
+
+            localLight->m_Range.x() = localLight->m_pLightMotionData->m_ValueData.m_Data[0x14];
+            localLight->m_Range.y() = localLight->m_pLightMotionData->m_ValueData.m_Data[0x15];
+            localLight->m_Range.z() = localLight->m_pLightMotionData->m_ValueData.m_Data[0x16];
+            localLight->m_Range.w() = localLight->m_pLightMotionData->m_ValueData.m_Data[0x17];
+        }
+
+        RenderDataManager::ms_LocalLightsInFrustum.push_back(localLight);
+        break;
+    }
+
+    default:
+        break;
     }
 }
 
@@ -212,80 +320,25 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
         {
             const Frustum frustum(pSceneRenderer->m_pCamera->m_Projection * pSceneRenderer->m_pCamera->m_View);
 
-            if (pSceneRenderer->m_pLightManager->m_pStaticLightContext != nullptr)
-            {
-                RenderDataManager::ms_LocalLightsInFrustum.clear();
-
-                Hedgehog::Mirage::CLightListData* pLightListData =
-                    pSceneRenderer->m_pLightManager->m_pStaticLightContext->m_spLightListData.get();
-
-                for (auto it = pLightListData->m_Lights.m_pBegin; it != pLightListData->m_Lights.m_pEnd; it++)
-                {
-                    if ((*it)->m_Type != Hedgehog::Mirage::eLightType_Omni)
-                        continue;
-
-                    const float distance = ((*it)->m_Position - pSceneRenderer->m_pCamera->m_Position).squaredNorm();
-
-                    if (distance < 100000 && frustum.intersects((*it)->m_Position, (*it)->m_Range.w()))
-                    {
-                        LightMotionData* pMotionData = nullptr;
-
-                        for (auto& upMotionData : RenderDataManager::ms_LightMotions)
-                        {
-                            if (strstr((*it)->m_TypeAndName.m_pStr, upMotionData->m_Name.c_str()) == nullptr)
-                                continue;
-
-                            pMotionData = upMotionData.get();
-                            break;
-                        }
-
-                        Eigen::Vector3f position = (*it)->m_Position;
-                        Eigen::Vector3f color = (*it)->m_Color.head<3>();
-                        Eigen::Vector4f range = (*it)->m_Range;
-
-                        if (pMotionData != nullptr)
-                        {
-                            // I have no idea if this is correct at all.
-                            // Simply passing the data as color does not work right.
-                            const float colorScale = pMotionData->m_ValueData.m_Data[0x10] / color.dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
-
-                            color.x() *= colorScale;
-                            color.y() *= colorScale;
-                            color.z() *= colorScale;
-
-                            // If the animation made the color almost black, we have no reason to process this local light in the shader.
-                            if (color.maxCoeff() < 0.001f)
-                                continue;
-
-                            range.x() = pMotionData->m_ValueData.m_Data[0x14];
-                            range.y() = pMotionData->m_ValueData.m_Data[0x15];
-                            range.z() = pMotionData->m_ValueData.m_Data[0x16];
-                            range.w() = pMotionData->m_ValueData.m_Data[0x17];
-                        }
-
-                        RenderDataManager::ms_LocalLightsInFrustum.insert({ position, color, range, distance });
-                    }
-                }
-            }
+            const SHLightFieldData* pFrontSHLF =
+                !RenderDataManager::ms_SHLFsInFrustum.empty() ? RenderDataManager::ms_SHLFsInFrustum.front() : nullptr;
 
             RenderDataManager::ms_SHLFsInFrustum.clear();
-
-            for (auto& shlf : RenderDataManager::ms_SHLFs)
-            {
-                shlf->m_Distance = (pSceneRenderer->m_pCamera->m_Position - shlf->m_Position).squaredNorm() / (shlf->m_Radius * shlf->m_Radius);
-                RenderDataManager::ms_SHLFsInFrustum.insert(shlf.get());
-            }
-
             RenderDataManager::ms_IBLProbesInFrustum.clear();
+            RenderDataManager::ms_LocalLightsInFrustum.clear();
+            RenderDataManager::ms_NodeBVH.traverse(frustum, pSceneRenderer, RenderDataManagerNodeBVHTraverseCallback);
 
-            for (auto& probe : RenderDataManager::ms_IBLProbes)
-            {
-                if (!frustum.intersects(probe->m_Position, probe->m_Radius))
-                    continue;
+            std::stable_sort(RenderDataManager::ms_SHLFsInFrustum.begin(), RenderDataManager::ms_SHLFsInFrustum.end(), 
+                [](const auto& lhs, const auto& rhs) { return lhs->m_Distance < rhs->m_Distance;  });
 
-                probe->m_Distance = (pSceneRenderer->m_pCamera->m_Position - probe->m_Position).squaredNorm() / (probe->m_Radius * probe->m_Radius);
-                RenderDataManager::ms_IBLProbesInFrustum.insert(probe.get());
-            }
+            std::stable_sort(RenderDataManager::ms_IBLProbesInFrustum.begin(), RenderDataManager::ms_IBLProbesInFrustum.end(),
+                [](const auto& lhs, const auto& rhs) { return lhs->m_Distance < rhs->m_Distance;  });
+
+            std::stable_sort(RenderDataManager::ms_LocalLightsInFrustum.begin(), RenderDataManager::ms_LocalLightsInFrustum.end(),
+                [](const auto& lhs, const auto& rhs) { return lhs->m_Distance < rhs->m_Distance;  });
+
+            if (RenderDataManager::ms_SHLFsInFrustum.empty() && pFrontSHLF != nullptr)
+                RenderDataManager::ms_SHLFsInFrustum.push_back(pFrontSHLF);
 
             s_ProbeUpdateTime = 0.0f;
         }

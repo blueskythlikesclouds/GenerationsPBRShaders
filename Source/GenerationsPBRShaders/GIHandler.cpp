@@ -68,16 +68,6 @@ public:
     }
 
     virtual ~GIStore() = default;
-
-    void* operator new(const size_t size)
-    {
-        return Hedgehog::Base::fpOperatorNew(size);
-    }
-
-    void operator delete(void* pData)
-    {
-        Hedgehog::Base::fpOperatorDelete(pData);
-    }
 };
 
 FUNCTION_PTR(NodeType*, __thiscall, fpFindAtlasSubTexture, 0x72AEE0, MapType* This, const FixedString& key);
@@ -122,18 +112,19 @@ void __stdcall fMovePictureDataSetupGIStore(char* pName, MapType* pMap,
     }
 
     // Crackheadedly create a stub for presenting the data to the game.
-    uint8_t* pStubData = (uint8_t*)Hedgehog::Base::fpOperatorNew(sizeof(Hedgehog::Mirage::CPictureData));
+    uint8_t* pStubData = (uint8_t*)operator new(sizeof(Hedgehog::Mirage::CPictureData));
+    memset(pStubData, 0, sizeof(Hedgehog::Mirage::CPictureData));
 
-    *(uint8_t*)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_Flags)) = spPictureData->m_Flags;
+    *(uint8_t*)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_Flags)) = 0x3;
 
     *(GIStore**)(pStubData + offsetof(Hedgehog::Mirage::CPictureData, m_pD3DTexture)) = 
         new GIStore(spPictureData, spOcclusionTex, occlusionRect, isSg);
 
-    spPictureData = boost::shared_ptr<Hedgehog::Mirage::CPictureData>((Hedgehog::Mirage::CPictureData*)pStubData, 
+    spPictureData = boost::shared_ptr<Hedgehog::Mirage::CPictureData>((Hedgehog::Mirage::CPictureData*)pStubData,
         [](Hedgehog::Mirage::CPictureData* pMem)
         {
             pMem->m_pD3DTexture->Release();
-            Hedgehog::Base::fpOperatorDelete(pMem);
+            operator delete (pMem);
         });
 }
 

@@ -6,7 +6,7 @@
 #undef max
 
 using Plane = Eigen::Hyperplane<float, 3>;
-using Box = Eigen::AlignedBox<float, 3>;
+using AABB = Eigen::AlignedBox<float, 3>;
 
 struct Frustum
 {
@@ -48,7 +48,7 @@ struct Frustum
 			Planes[i].normalize();
 	}
 
-	bool intersects(const Box& box) const
+	bool intersects(const AABB& box) const
 	{
 		for (auto& plane : Planes)
 		{
@@ -86,3 +86,82 @@ struct Frustum
 		return true;
 	}
 };
+
+struct OBB
+{
+	Eigen::Vector3f center;
+	Eigen::Vector3f axis[3];
+	Eigen::Vector3f halfExtents;
+
+	OBB() {}
+
+	OBB(const Eigen::Matrix4f& matrix, const float bounds = 1.0f)
+	{
+		center = matrix.col(3).head<3>();
+		axis[0] = (matrix * Eigen::Vector4f::UnitX()).head<3>().normalized();
+		axis[1] = (matrix * Eigen::Vector4f::UnitY()).head<3>().normalized();
+		axis[2] = (matrix * Eigen::Vector4f::UnitZ()).head<3>().normalized();
+		halfExtents = (Eigen::Vector3f(matrix.col(0).norm(), matrix.col(1).norm(), matrix.col(2).norm()) / bounds) / 2.0f;
+	}
+
+	Eigen::Vector3f closestPoint(const Eigen::Vector3f& point) const
+	{
+		const Eigen::Vector3f direction = point - center;
+
+		const float x = std::clamp(direction.dot(axis[0]), -halfExtents[0], halfExtents[0]);
+		const float y = std::clamp(direction.dot(axis[1]), -halfExtents[1], halfExtents[1]);
+		const float z = std::clamp(direction.dot(axis[2]), -halfExtents[2], halfExtents[2]);
+
+		return center + x * axis[0] + y * axis[1] + z * axis[2];
+	}
+
+	float closestPointDistanceSquared(const Eigen::Vector3f& point) const
+	{
+		return (point - closestPoint(point)).squaredNorm();
+	}
+};
+
+inline Eigen::Vector3f transform(const Eigen::Vector3f& position, const Eigen::Matrix4f& matrix)
+{
+	return (matrix * Eigen::Vector4f(position.x(), position.y(), position.z(), 1)).head<3>();
+}
+
+inline Eigen::Vector3f transformNormal(const Eigen::Vector3f& normal, const Eigen::Matrix4f& matrix)
+{
+	return (matrix * Eigen::Vector4f(normal.x(), normal.y(), normal.z(), 0)).head<3>();
+}
+
+const Eigen::Vector3f AABB_CORNERS[8] =
+{
+	{ +1.0f, +1.0f, +1.0f },
+	{ +1.0f, +1.0f, -1.0f },
+	{ +1.0f, -1.0f, +1.0f },
+	{ +1.0f, -1.0f, -1.0f },
+	{ -1.0f, +1.0f, +1.0f },
+	{ -1.0f, +1.0f, -1.0f },
+	{ -1.0f, -1.0f, +1.0f },
+	{ -1.0f, -1.0f, -1.0f }
+};
+
+inline float getAABBRadius(const AABB& aabb)
+{
+	float radius = 0;
+
+	const Eigen::Vector3f center = aabb.center();
+	for (size_t i = 0; i < 8; i++)
+		radius = std::max<float>(radius, (center - aabb.corner((AABB::CornerType)i)).norm());
+
+	return radius;
+}
+
+inline AABB getAABBFromOBB(const Eigen::Matrix4f& matrix, const float bounds, const float scale)
+{
+	AABB aabb;
+
+	for (auto& corner : AABB_CORNERS)
+	{
+		aabb.extend(transform(corner * bounds, matrix) * scale);
+	}
+
+	return aabb;
+}

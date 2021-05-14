@@ -107,6 +107,7 @@
     <ClCompile Include="CpkBinder.cpp" />
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="LightShaftHandler.cpp" />
+    <ClCompile Include="NodeBVH.cpp" />
     <ClCompile Include="ObjectVisualPatcher.cpp" />
     <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="RenderDataManager.cpp" />
@@ -132,9 +133,10 @@
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="CpkBinder.h" />
     <ClInclude Include="CompressionHandler.h" />
-    <ClInclude Include="Frustum.h" />
+    <ClInclude Include="Math.h" />
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="LightShaftHandler.h" />
+    <ClInclude Include="NodeBVH.h" />
     <ClInclude Include="ObjectVisualPatcher.h" />
     <ClInclude Include="PBROnVanillaFunsies.h" />
     <ClInclude Include="RenderDataManager.h" />
