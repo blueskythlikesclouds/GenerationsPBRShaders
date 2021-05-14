@@ -16,6 +16,24 @@
                "DefaultValue":"0"
             }
          ]
+      },
+	  {
+         "Name":"IBLProbe",
+         "DisplayName":"Reflection Maps",
+         "Elements":[
+            {
+               "Name":"MaxProbeCount",
+               "Description":[
+                  "How many reflection maps can be shown at once.",
+				  "Low/medium are going to have better performance, but might cause reflections to noticeably pop in/out during gameplay."
+               ],
+               "DisplayName":"Density",
+               "Type":"MaxProbeCount",
+               "MinValue":null,
+               "MaxValue":null,
+               "DefaultValue":"24"
+            }
+         ]
       }
    ],
    "Enums":{
@@ -40,6 +58,29 @@
                "Quarter resolution."
             ],
             "Value":"2"
+         }
+      ],      
+	  "MaxProbeCount":[
+         {
+            "DisplayName":"Low",
+            "Description":[
+               "8 reflection maps."
+            ],
+            "Value":"8"
+         },
+         {
+            "DisplayName":"Medium",
+            "Description":[
+               "16 reflection maps."
+            ],
+            "Value":"16"
+         },
+         {
+            "DisplayName":"High",
+            "Description":[
+               "24 reflection maps."
+            ],
+            "Value":"24"
          }
       ]
    },

@@ -45,7 +45,6 @@ float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
     result += ComputeLocalLight(input.Position, material, mrgLocalLight1_Position.xyz, mrgLocalLight1_Color.rgb, mrgLocalLight1_Range);
     result += ComputeLocalLight(input.Position, material, mrgLocalLight2_Position.xyz, mrgLocalLight2_Color.rgb, mrgLocalLight2_Range);
     result += ComputeLocalLight(input.Position, material, mrgLocalLight3_Position.xyz, mrgLocalLight3_Color.rgb, mrgLocalLight3_Range);
-    result += ComputeLocalLight(input.Position, material, mrgLocalLight4_Position.xyz, mrgLocalLight4_Color.rgb, mrgLocalLight4_Range);
 #endif
 
     return result;

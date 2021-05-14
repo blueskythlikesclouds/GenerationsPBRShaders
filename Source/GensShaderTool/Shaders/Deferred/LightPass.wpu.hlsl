@@ -1,14 +1,14 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float4 mrgLocalLightData[80] : register(c107);
-float3x4 mrgSHLightFieldMatrices[4] : register(c187);
-float4 mrgSHLightFieldParams[4] : register(c199);
-float4 g_SSAOSize : register(c203);
+float4 mrgLocalLightData[72] : register(c107);
+float3x4 mrgSHLightFieldMatrices[3] : register(c179);
+float4 mrgSHLightFieldParams[3] : register(c188);
+float4 g_SSAOSize : register(c191);
 
-sampler3D g_SHLightFieldSamplers[4] : register(s4);
-sampler g_ShadowMapNoTerrainSampler : register(s9);
-sampler g_SSAOSampler : register(s10);
+sampler3D g_SHLightFieldSamplers[3] : register(s4);
+sampler g_ShadowMapNoTerrainSampler : register(s7);
+sampler g_SSAOSampler : register(s8);
 
 bool g_IsEnableSSAO : register(b8);
 
@@ -25,7 +25,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
 
     int i;
 
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < 3; i++)
     {
         float3 shCoords = mul(mrgSHLightFieldMatrices[i], float4(position * 10.0f, 1)).xyz;
 
@@ -82,14 +82,6 @@ void ComputeSHLightField(inout Material material, in float3 position)
 
         for (i = 0; i < 6; i++)
             shlf[i] = tex3Dlod(g_SHLightFieldSamplers[2], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
-
-        break;
-
-    case 3:
-        currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[3]);
-
-        for (i = 0; i < 6; i++)
-            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[3], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
 
         break;
     }
@@ -179,26 +171,25 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
 
     direct *= material.Shadow;
 
-
     [unroll] for (int i = 0; i < IterationIndex; i++)
     {
         float3 lightPosition = float3(
-            GetLocalLightData(i * 10 + 0),
-            GetLocalLightData(i * 10 + 1),
-            GetLocalLightData(i * 10 + 2)
+            GetLocalLightData(i * 9 + 0),
+            GetLocalLightData(i * 9 + 1),
+            GetLocalLightData(i * 9 + 2)
         );
 
         float3 lightColor = float3(
-            GetLocalLightData(i * 10 + 3),
-            GetLocalLightData(i * 10 + 4),
-            GetLocalLightData(i * 10 + 5)
+            GetLocalLightData(i * 9 + 3),
+            GetLocalLightData(i * 9 + 4),
+            GetLocalLightData(i * 9 + 5)
         );
 
         float4 lightRange = float4(
-            GetLocalLightData(i * 10 + 6),
-            GetLocalLightData(i * 10 + 7),
-            GetLocalLightData(i * 10 + 8),
-            GetLocalLightData(i * 10 + 9)
+            0,
+            GetLocalLightData(i * 9 + 6),
+            GetLocalLightData(i * 9 + 7),
+            GetLocalLightData(i * 9 + 8)
         );
         
         direct += ComputeLocalLight(position, material, lightPosition, lightColor, lightRange);

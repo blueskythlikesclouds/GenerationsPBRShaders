@@ -339,7 +339,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pass 32 omni lights from the view to shaders.
     size_t localLightCount = 0;
 
-    float localLightData[10 * 32];
+    float localLightData[9 * 32];
     
     auto lightIterator = RenderDataManager::ms_LocalLightsInFrustum.begin();
     
@@ -349,20 +349,19 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         const LocalLightData& data = *lightIterator++;
     
-        localLightData[i * 10 + 0] = data.m_Position.x();
-        localLightData[i * 10 + 1] = data.m_Position.y();
-        localLightData[i * 10 + 2] = data.m_Position.z();
-        localLightData[i * 10 + 3] = data.m_Color.x();
-        localLightData[i * 10 + 4] = data.m_Color.y();
-        localLightData[i * 10 + 5] = data.m_Color.z();
-        localLightData[i * 10 + 6] = data.m_Range.x();
-        localLightData[i * 10 + 7] = data.m_Range.y();
-        localLightData[i * 10 + 8] = data.m_Range.z();
-        localLightData[i * 10 + 9] = data.m_Range.w();
+        localLightData[i * 9 + 0] = data.m_Position.x();
+        localLightData[i * 9 + 1] = data.m_Position.y();
+        localLightData[i * 9 + 2] = data.m_Position.z();
+        localLightData[i * 9 + 3] = data.m_Color.x();
+        localLightData[i * 9 + 4] = data.m_Color.y();
+        localLightData[i * 9 + 5] = data.m_Color.z();
+        localLightData[i * 9 + 6] = data.m_Range.y();
+        localLightData[i * 9 + 7] = data.m_Range.z();
+        localLightData[i * 9 + 8] = data.m_Range.w();
     }
     
     if (localLightCount > 0)
-        pD3DDevice->SetPixelShaderConstantF(107, (const float*)localLightData, std::min<int>(80, (localLightCount * 10 + 5) / 4));
+        pD3DDevice->SetPixelShaderConstantF(107, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
 
     if (SceneEffect::Debug.DisableOmniLight || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
         localLightCount = 0;
@@ -382,9 +381,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMap;
     This->GetTexture(spShadowMap, "shadowmap");
 
-    pDevice->SetSampler(9, spShadowMapNoTerrain);
-    pDevice->SetSamplerFilter(9, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    pDevice->SetSamplerAddressMode(9, D3DTADDRESS_BORDER);
+    pDevice->SetSampler(7, spShadowMapNoTerrain);
+    pDevice->SetSamplerFilter(7, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    pDevice->SetSamplerAddressMode(7, D3DTADDRESS_BORDER);
 
     pDevice->SetSampler(13, spShadowMap);
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
@@ -399,7 +398,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     auto shlfIterator = RenderDataManager::ms_SHLFsInFrustum.begin();
 
-    for (size_t i = 0; i < std::min<size_t>(RenderDataManager::ms_SHLFsInFrustum.size(), 4); i++)
+    for (size_t i = 0; i < std::min<size_t>(RenderDataManager::ms_SHLFsInFrustum.size(), 3); i++)
     {
         const SHLightFieldData* cache = *shlfIterator++;
 
@@ -407,10 +406,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        pD3DDevice->SetPixelShaderConstantF(187 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(179 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
-        pD3DDevice->SetPixelShaderConstantF(199 + i, shlfParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(188 + i, shlfParam, 1);
 
         if (SceneEffect::Debug.DisableSHLightField)
             pDevice->UnsetSampler(4 + i);
@@ -431,11 +430,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             1.0f / (float)s_spSSAOTex->m_CreationParams.Height,
         };
 
-        pD3DDevice->SetPixelShaderConstantF(203, ssaoSize, 1);
+        pD3DDevice->SetPixelShaderConstantF(191, ssaoSize, 1);
 
-        pDevice->SetSampler(10, s_spSSAOTex);
-        pDevice->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-        pDevice->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
+        pDevice->SetSampler(8, s_spSSAOTex);
+        pDevice->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+        pDevice->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
         pDevice->SetRenderTarget(1, spGBuffer2Surface); // To update AO in the GBuffer
     }
@@ -558,7 +557,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     auto probeIterator = RenderDataManager::ms_IBLProbesInFrustum.begin();
 
-    size_t iblCountInFrustum = std::min<size_t>(RenderDataManager::ms_IBLProbesInFrustum.size(), SceneEffect::Debug.MaxProbeCount);
+    size_t iblCountInFrustum = std::min<size_t>(RenderDataManager::ms_IBLProbesInFrustum.size(), 
+        std::min<size_t>(Configuration::maxProbeCount, SceneEffect::Debug.MaxProbeCount));
 
     if (SceneEffect::Debug.DisableIBLProbe)
         iblCountInFrustum = 0;
