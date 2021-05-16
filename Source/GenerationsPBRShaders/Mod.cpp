@@ -1,4 +1,3 @@
-#include "ArchiveTreePatcher.h"
 #include "BloomHandler.h"
 #include "CompressionHandler.h"
 #include "CpkBinder.h"
