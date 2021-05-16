@@ -1,5 +1,45 @@
 ﻿#include "ObjectVisualPatcher.h"
 
+#pragma region Hook Macros
+
+#define STRING_HOOK(name, stringPushInstrAddr, pbrStr)                           \
+    constexpr uint32_t name##ObjVisualMidAsmHookInstrAddr = stringPushInstrAddr; \
+    uint32_t name##ObjVisualMidAsmHookRetAddr = (stringPushInstrAddr)+5;         \
+    const char* volatile name##ObjVisualStr[] =                                  \
+    {                                                                            \
+        *(const char**)((stringPushInstrAddr)+1),                                \
+        pbrStr                                                                   \
+    };                                                                           \
+                                                                                 \
+    void __declspec(naked) name##ObjVisualMidAsmHook()                           \
+    {                                                                            \
+        __asm { push eax }                                                       \
+        __asm { push ebx }                                                       \
+        __asm { lea eax, [g_UsePBR] }                                            \
+        __asm { movzx eax, byte ptr[eax] }                                       \
+        __asm { lea ebx, name##ObjVisualStr }                                    \
+        __asm { mov ecx, [ebx + eax * 4] }                                       \
+        __asm { pop ebx }                                                        \
+        __asm { pop eax }                                                        \
+        __asm { push ecx }                                                       \
+        __asm { jmp[name##ObjVisualMidAsmHookRetAddr] }                          \
+    }                                                                            \
+
+#define INSTALL_STRING_HOOK(name) \
+    WRITE_JUMP(name##ObjVisualMidAsmHookInstrAddr, name##ObjVisualMidAsmHook)
+
+#pragma endregion
+
+STRING_HOOK(UpReelRopeVertexShader, 0x102FE31, "Default2NoV_ConstTexCoord");
+STRING_HOOK(UpReelRopePixelShader, 0x102FE74, "Common2_dp@@_NoLight_NoGI_ConstTexCoord");
+STRING_HOOK(UpReelRopeDiffuse, 0x102FEB7, "cmn_metal_ms_wire_HD_abd");
+STRING_HOOK(UpReelRopeSpecular, 0x102FEF8, "cmn_metal_ms_wire_HD_prm");
+
+STRING_HOOK(PulleyRopeShader, 0x11210AB, "Common2_dp");
+STRING_HOOK(PulleyRopeDiffuse, 0x11211B3, "cmn_metal_ms_wire_HD_abd");
+STRING_HOOK(PulleyRopeSpecular, 0x1121219, "cmn_metal_ms_wire_HD_prm");
+STRING_HOOK(PulleyRopeSlot, 0x1120684, "specular");
+
 bool ObjectVisualPatcher::enabled = false;
 
 void ObjectVisualPatcher::applyPatches()
@@ -9,19 +49,13 @@ void ObjectVisualPatcher::applyPatches()
 
     enabled = true;
 
-    // UpReel
-    {
-        WRITE_MEMORY(0x102FE32, char*, "Default2NoV_ConstTexCoord");
-        WRITE_MEMORY(0x102FE75, char*, "Common2_dp@@_NoLight_NoGI_ConstTexCoord");
-        WRITE_MEMORY(0x102FEB8, char*, "cmn_metal_ms_wire_HD_abd");
-        WRITE_MEMORY(0x102FEF9, char*, "cmn_metal_ms_wire_HD_prm");
-    }
+    INSTALL_STRING_HOOK(UpReelRopeVertexShader);
+    INSTALL_STRING_HOOK(UpReelRopePixelShader);
+    INSTALL_STRING_HOOK(UpReelRopeDiffuse);
+    INSTALL_STRING_HOOK(UpReelRopeSpecular);
 
-    // Pulley
-    {
-        WRITE_MEMORY(0x11210AC, char*, "Common2_dp");
-        WRITE_MEMORY(0x11211B4, char*, "cmn_metal_ms_wire_HD_abd");
-        WRITE_MEMORY(0x112121A, char*, "cmn_metal_ms_wire_HD_prm");
-        WRITE_MEMORY(0x1120685, char*, "specular");
-    }
+    INSTALL_STRING_HOOK(PulleyRopeShader);
+    INSTALL_STRING_HOOK(PulleyRopeDiffuse);
+    INSTALL_STRING_HOOK(PulleyRopeSpecular);
+    INSTALL_STRING_HOOK(PulleyRopeSlot);
 }

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using GensShaderTool.Infos;
 using Vortice.D3DCompiler;
@@ -25,7 +27,7 @@ namespace GensShaderTool
         #if DEBUG
         private const ShaderFlags cShaderFlags = ShaderFlags.SkipOptimization;
         #else
-        private const ShaderFlags cShaderFlags = ShaderFlags.OptimizationLevel3;
+        private const ShaderFlags cShaderFlags = ShaderFlags.OptimizationLevel1;
         #endif
 
         private static void Main(string[] args)
@@ -153,6 +155,13 @@ namespace GensShaderTool
                 pbrShaderDatabase,
                 new[] { new PixelShaderInfoSSAO() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
+            //==============//
+            // Bloom Shader //
+            //==============//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "Bloom.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoBloom() }, pixelShaderGlobalParameterSet, cShaderFlags);
+
             pbrShaderDatabase.Sort();
             pbrShaderDatabase.Save(pbrShaderArPath, cShaderArPadding, cShaderArMaxSplitSize);
         }
@@ -234,14 +243,6 @@ namespace GensShaderTool
                     x.Data = FixMeasureLuminanceShader(x.Data, x.Name);
                 });
 
-            byte[] bloom = ShaderCompiler.CompileFromFile(
-                Path.Combine(sProjectDirectory, "Shaders", "Bloom.wpu.hlsl"), ShaderType.Pixel, cShaderFlags);
-
-            foreach (var data in shaderRegular.Contents.Where(x =>
-                x.Name.Contains("BrightPassHDR", StringComparison.OrdinalIgnoreCase) &&
-                x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)))
-                data.Data = bloom;
-
             Parallel.ForEach(
                 shaderRegularAdd.Contents.Where(x => x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
                 x =>
@@ -271,6 +272,9 @@ namespace GensShaderTool
             }
         }
 
+        private static readonly string sFilterHlsl =
+            File.ReadAllText(Path.Combine(sProjectDirectory, "Shaders", "Filter.hlsl")).Replace("sampler tex", "sampler2D tex");
+
         private static byte[] ConvertShaderToPBRCompatible(byte[] bytes, string debugName)
         {
             string translated = ShaderTranslator.Translate(bytes);
@@ -278,7 +282,28 @@ namespace GensShaderTool
             int index = translated.IndexOf("void main(", StringComparison.Ordinal);
 
             string preCode = translated.Substring(0, index);
-            string code = translated.Substring(index);
+            string mainCode = translated.Substring(index);
+            mainCode = mainCode.Replace(", 4)", ", 65504)");
+
+            preCode += sFilterHlsl;
+            preCode +=
+                "\nfloat4 g_ESMParam : register(c109);" +
+                "float4 texShadow(sampler2D tex, float4 texCoord)\n" +
+                "{\n" +
+                "    if (abs(texCoord.x) > texCoord.w || abs(texCoord.y) > texCoord.w || abs(texCoord.z) > texCoord.w)" +
+                "        return 1.0;" +
+                "    texCoord.xyz /= texCoord.w;\n" +
+                "    return texESM(tex, g_ESMParam.xy, texCoord.xy, texCoord.z, g_ESMParam.z).xxxx;\n" +
+                "}\n";
+
+            int codeIndex = mainCode.IndexOf('{');
+            string mainCodeArgs = mainCode.Substring(0, codeIndex + 1);
+            string code = mainCode.Substring(codeIndex + 1);
+            string codeOriginal = code;
+
+            // Replace shadowmapping for original code
+            codeOriginal = codeOriginal.Replace("texProj(g_ShadowMap", "texShadow(g_ShadowMap");
+            codeOriginal = codeOriginal.Replace("texProj(g_VerticalShadowMap", "texShadow(g_VerticalShadowMap");
 
             // Remove the 0-4 color clamp.
             // TODO: Make this smarter lol.
@@ -308,7 +333,7 @@ namespace GensShaderTool
                 "(mrgLuminanceRange * float4(GetToneMapLuminance().xxx, 1))");
 
             // Convert diffuse to linear space.
-            preCode += "float4 g_HDRParam_SGGIParam : register(c106);" +
+            preCode += "float4 g_HDRParam_SGGIParam : register(c108);" +
                        "sampler2D g_LuminanceSampler : register(s8);" +
                        "float GetToneMapLuminance()" +
                        "{" +
@@ -334,21 +359,69 @@ namespace GensShaderTool
                 // Prevent the smoke color saturation.
                 code = code.Replace("oC0.xyz = saturate", "oC0.xyz =");
             }
-            
+
             // Ignore shadowmaps for the time being.
             code = code.Replace("texProj(g_VerticalShadowMap", "1; //");
             code = code.Replace("texProj(g_ShadowMap", "1; //");
 
             // Pass correct data to GBuffer.
-            code = code[..^3] + "oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0; }";
+            code = code[..^4] + "oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0;\n }";
+
+            // Add the g_UsePBR bool
+            preCode += "bool g_UsePBR : register(b6);";
+
+            // Make the modified code only execute when the PBR toggle is enabled.
+            var codeSplit = code.Split('\n',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            var codeOrgSplit = codeOriginal.Split('\n',
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (codeSplit.Length != codeOrgSplit.Length)
+            {
+                Console.WriteLine("Line counts in original and modified codes are somehow different! {0}", debugName);
+                return bytes;
+            }
+
+            var stringBuilder = new StringBuilder();
+            stringBuilder.Append(preCode);
+            stringBuilder.Append(mainCodeArgs);
+
+            for (int begin = 0; begin < codeSplit.Length;)
+            {
+                if (codeSplit[begin] == codeOrgSplit[begin])
+                {
+                    stringBuilder.AppendFormat("{0}\n", codeSplit[begin++]);
+                    continue;
+                }
+
+                int end = begin + 1;
+
+                while (end < codeSplit.Length && codeSplit[end] != codeOrgSplit[end])
+                    end++;
+                
+                stringBuilder.AppendLine("if (g_UsePBR) {");
+                for (int i = begin; i < end; i++)
+                    stringBuilder.AppendFormat("{0}\n", codeSplit[i]);      
+                
+                stringBuilder.AppendLine("} else {");
+                for (int i = begin; i < end; i++)
+                    stringBuilder.AppendFormat("{0}\n", codeOrgSplit[i]);
+
+                stringBuilder.AppendLine("}");
+
+                begin = end;
+            }
 
             try
             {
-                return ShaderCompiler.Compile(preCode + code, ShaderType.Pixel, cShaderFlags);
+                Console.WriteLine("Compiling {0}", debugName);
+                return ShaderCompiler.Compile(stringBuilder.ToString(), ShaderType.Pixel, cShaderFlags);
             }
             catch (Exception e)
             {
                 Console.WriteLine("Failed to compile shader {0}: {1}", debugName, e.Message);
+                Console.WriteLine(stringBuilder);
                 return bytes;
             }
         }

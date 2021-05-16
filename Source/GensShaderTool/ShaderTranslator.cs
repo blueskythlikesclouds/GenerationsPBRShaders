@@ -164,7 +164,10 @@ namespace GensShaderTool
                 shaderType == ShaderType.Vertex ? mainArguments.TrimEnd('\n', ',') : mainArguments);
 
             foreach (var constant in constants)
-                writer.WriteLine("\tfloat4 {0} = float4{1};", constant.Key, string.Join(", ", constant.Value));
+                writer.WriteLine("\tfloat4 {0};", constant.Key);
+
+            foreach (var constant in constants)
+                writer.WriteLine("\t{0} = float4{1};", constant.Key, string.Join(", ", constant.Value));
 
             if (constants.Count > 0)
                 writer.WriteLine();

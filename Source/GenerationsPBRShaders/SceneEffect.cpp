@@ -46,6 +46,8 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     pSGGIParamCategory->CreateParamFloat(&SceneEffect::SGGI.StartSmoothness, "StartSmoothness");
     pSGGIParamCategory->CreateParamFloat(&SceneEffect::SGGI.EndSmoothness, "EndSmoothness");
 
+    spParameterGroup->Flush();
+
     Sonic::CParameterCategory* pCullingParamCategory = spParameterGroup->CreateParameterCategory("Culling", "Culling");
     pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.SHLightFieldCullingRange, "SHLightFieldCullingRange");
     pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.IBLProbeCullingRange, "IBLProbeCullingRange");

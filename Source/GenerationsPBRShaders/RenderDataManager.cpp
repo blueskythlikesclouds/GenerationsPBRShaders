@@ -33,6 +33,8 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     RenderDataManager::ms_LocalLights.clear();
     RenderDataManager::ms_NodeBVH.reset();
 
+    g_UsePBR = false;
+
     Sonic::CFxScheduler* pScheduler = ((Sonic::CRenderDirectorFxPipeline*)(*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spRenderDirector.get())->m_pScheduler;
 
     pScheduler->GetPicture(RenderDataManager::ms_spDefaultIBLPicture, (StageId::get() + "_defaultibl").c_str());
@@ -45,6 +47,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     boost::shared_ptr<Hedgehog::Database::CRawData> spProbeData;
     pDatabase->GetRawData(spProbeData, (StageId::get() + ".probe").c_str(), 0);
+
+    g_UsePBR = RenderDataManager::ms_spDefaultIBLPicture != nullptr || RenderDataManager::ms_spRgbTablePicture != nullptr ||
+        spShlfData != nullptr || spProbeData != nullptr;
 
     if (spShlfData && spShlfData->m_spData)
     {
@@ -221,6 +226,14 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     }
 
     RenderDataManager::ms_NodeBVH.build();
+
+    // Try env_brdf as a last resort.
+    if (!g_UsePBR)
+    {
+        boost::shared_ptr<Hedgehog::Mirage::CPictureData> spEnvBrdfPicture;
+        mirageWrapper.GetPictureData(spEnvBrdfPicture, "env_brdf", 0);
+        g_UsePBR |= spEnvBrdfPicture != nullptr;
+    }
 }
 
 void RenderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
@@ -298,6 +311,9 @@ void RenderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
 
 HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRenderDirectorFxPipeline* This, void* Edx, uint8_t* A2)
 {
+    if (!g_UsePBR)
+        return originalCRenderDirectorFxPipelineUpdate(This, Edx, A2);
+
     char* pUpdateCommand = *(char**)(A2 + 8);
 
     Sonic::CRenderDirectorFxPipeline* pRenderDirector = (Sonic::CRenderDirectorFxPipeline*)((uint32_t)This - 4); // shifted ptr

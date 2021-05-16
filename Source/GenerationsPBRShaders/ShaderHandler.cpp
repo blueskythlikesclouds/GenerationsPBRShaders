@@ -105,14 +105,56 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
 HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
 {
-    if (!s_spEnvBRDFPicture)
-        This->m_pScheduler->GetPicture(s_spEnvBRDFPicture, "env_brdf");
+    // Get shadowmaps.
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMapNoTerrain;
+    This->GetTexture(spShadowMapNoTerrain, "shadowmap_noterrain");
+
+    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMap;
+    This->GetTexture(spShadowMap, "shadowmap");
 
     // Cache variables because it gets verbose if I don't.
     DX_PATCH::IDirect3DDevice9* pD3DDevice = This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice;
     Hedgehog::Mirage::CRenderingDevice* pRenderingDevice = &This->m_pScheduler->m_pMisc->m_pRenderingInfrastructure->m_RenderingDevice;
     Hedgehog::Yggdrasill::CYggDevice* pDevice = This->m_pScheduler->m_pMisc->m_pDevice;
     Sonic::CFxSceneRenderer* pSceneRenderer = (Sonic::CFxSceneRenderer*)This->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
+
+    // Set g_DebugParam
+    float debugParam[] =
+    {
+        SceneEffect::Debug.UseWhiteAlbedo || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY ? 1.0f : -1.0f,
+        SceneEffect::Debug.UseFlatNormal ? 1.0f : -1.0f,
+        std::min<float>(1.0f, SceneEffect::Debug.ReflectanceOverride),
+        std::min<float>(1.0f, SceneEffect::Debug.RoughnessOverride),
+        std::min<float>(1.0f, SceneEffect::Debug.MetalnessOverride),
+        std::min<float>(1.0f, SceneEffect::Debug.GIShadowMapOverride),
+        0,
+        0
+    };
+    pD3DDevice->SetPixelShaderConstantF(106, debugParam, 2);
+
+    // Set g_HDRParam_SGGIParam
+    float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::SGGI.StartSmoothness - SceneEffect::SGGI.EndSmoothness);
+    float hdrParam_sggiParam[] = { 1.0f / (*(float*)0x1A572D0 + 0.001f), 0, -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale };
+    pD3DDevice->SetPixelShaderConstantF(108, hdrParam_sggiParam, 1);
+
+    float esmParam[] = 
+        { (float)spShadowMap->m_CreationParams.Width, 1.0f / (float)spShadowMap->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
+
+    pD3DDevice->SetPixelShaderConstantF(109, esmParam, 1);
+
+    // Set g_UsePBR
+    BOOL usePBR[] = { g_UsePBR };
+    pD3DDevice->SetPixelShaderConstantB(6, usePBR, 1);
+
+    if (!g_UsePBR)
+    {
+        // Unset mrgIsUseDeferred
+        BOOL isUseDeferred[] = { false };
+        pD3DDevice->SetPixelShaderConstantB(7, isUseDeferred, 1);
+        pD3DDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
+
+        return originalCFxRenderGameSceneExecute(This);
+    }
 
     // Prepare and set render targets. Clear their contents.
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spGBuffer1Surface;
@@ -168,35 +210,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pre-pass: Render opaque/punch-through objects and terrain. //
     //************************************************************//
 
-    // Set g_HDRParam_SGGIParam
-    float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::SGGI.StartSmoothness - SceneEffect::SGGI.EndSmoothness);
-    float hdrParam_sggiParam[] = { 1.0f / (*(float*)0x1A572D0 + 0.001f), 0, -(1.0f - SceneEffect::SGGI.StartSmoothness) * sggiScale, sggiScale };
-    pD3DDevice->SetPixelShaderConstantF(106, hdrParam_sggiParam, 1);
-
     // Set g_LuminanceSampler
     pDevice->SetSampler(8, s_spLuAvgTex);
     pDevice->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
-    // Set g_DebugParam
-    float debugParam[] =
-    {
-        SceneEffect::Debug.UseWhiteAlbedo || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY ? 1.0f : -1.0f,
-        SceneEffect::Debug.UseFlatNormal ? 1.0f : -1.0f,
-        std::min<float>(1.0f, SceneEffect::Debug.ReflectanceOverride),
-        std::min<float>(1.0f, SceneEffect::Debug.RoughnessOverride),
-        std::min<float>(1.0f, SceneEffect::Debug.MetalnessOverride),
-        std::min<float>(1.0f, SceneEffect::Debug.GIShadowMapOverride),
-        0,
-        0
-    };
-
-    pD3DDevice->SetPixelShaderConstantF(222, debugParam, 2);
-
     // Enable mrgIsUseDeferred so shaders output data to GBuffer render targets.
     BOOL isUseDeferred[] = { true };
-    pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
-    pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
+    pD3DDevice->SetPixelShaderConstantB(7, isUseDeferred, 1);
+    pD3DDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
 
     // Setup GI & occlusion flags.
     pDevice->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -219,6 +241,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pRenderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
     // Set Default IBL and Env BRDF
+    if (!s_spEnvBRDFPicture)
+        This->m_pScheduler->GetPicture(s_spEnvBRDFPicture, "env_brdf");
+
     pDevice->SetSampler(14, RenderDataManager::ms_spDefaultIBLPicture);
     pDevice->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
     pDevice->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
@@ -359,7 +384,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
     
     if (localLightCount > 0)
-        pD3DDevice->SetPixelShaderConstantF(107, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
+        pD3DDevice->SetPixelShaderConstantF(110, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
 
     if (SceneEffect::Debug.DisableOmniLight || SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY)
         localLightCount = 0;
@@ -373,12 +398,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetShader(s_FxDeferredPassLightShaders[localLightCount]);
 
     // Set shadowmaps.
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMapNoTerrain;
-    This->GetTexture(spShadowMapNoTerrain, "shadowmap_noterrain");
-
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggTexture> spShadowMap;
-    This->GetTexture(spShadowMap, "shadowmap");
-
     pDevice->SetSampler(7, spShadowMapNoTerrain);
     pDevice->SetSamplerFilter(7, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(7, D3DTADDRESS_BORDER);
@@ -386,11 +405,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSampler(13, spShadowMap);
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
-
-    float shadowMapParams[] = {
-        (float)spShadowMap->m_CreationParams.Width, 1.0f / (float)spShadowMap->m_CreationParams.Width, SceneEffect::ESM.Factor, 0 };
-
-    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     // Set SHLFs in the frustum.
 
@@ -411,15 +425,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         pDevice->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         pDevice->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        pD3DDevice->SetPixelShaderConstantF(179 + i * 3, cache->m_InverseMatrix.data(), 3);
+        pD3DDevice->SetPixelShaderConstantF(182 + i * 3, cache->m_InverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->m_ProbeCounts[0]) * 0.5f, (1.0f / cache->m_ProbeCounts[1]) * 0.5f, (1.0f / cache->m_ProbeCounts[2]) * 0.5f, 0 };
-        pD3DDevice->SetPixelShaderConstantF(188 + i, shlfParam, 1);
+        pD3DDevice->SetPixelShaderConstantF(191 + i, shlfParam, 1);
     }
 
     // Set SSAO.
     BOOL enableSSAO[] = { SceneEffect::SSAO.Enable };
-    pD3DDevice->SetPixelShaderConstantB(8, enableSSAO, 1);
+    pD3DDevice->SetPixelShaderConstantB(7, enableSSAO, 1);
 
     if (SceneEffect::SSAO.Enable)
     {
@@ -432,7 +446,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             1.0f / (float)s_spSSAOTex->m_CreationParams.Height,
         };
 
-        pD3DDevice->SetPixelShaderConstantF(191, ssaoSize, 1);
+        pD3DDevice->SetPixelShaderConstantF(194, ssaoSize, 1);
 
         pDevice->SetSampler(8, s_spSSAOTex);
         pDevice->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -595,7 +609,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     iblLodParam[1] = (float)(SceneEffect::RLR.MaxLod >= 0 ?
         std::min<int32_t>(SceneEffect::RLR.MaxLod, s_spRLRTex->m_CreationParams.Levels) : s_spRLRTex->m_CreationParams.Levels);
 
-    pD3DDevice->SetPixelShaderConstantF(141, iblLodParam, 1);
+    pD3DDevice->SetPixelShaderConstantF(144, iblLodParam, 1);
 
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spPrevIBLSurface;
     s_spPrevIBLTex->GetSurface(spPrevIBLSurface, 0, 0);
@@ -612,7 +626,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         {
             const IBLProbeData* cache = RenderDataManager::ms_IBLProbesInFrustum[currProbeIndex++];
 
-            pD3DDevice->SetPixelShaderConstantF(107 + j * 3, cache->m_InverseMatrix.data(), 3);
+            pD3DDevice->SetPixelShaderConstantF(110 + j * 3, cache->m_InverseMatrix.data(), 3);
 
             probeParams[j * 4 + 0] = cache->m_Position.x();
             probeParams[j * 4 + 1] = cache->m_Position.y();
@@ -634,8 +648,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         if (iblCount > 0)
         {
-            pD3DDevice->SetPixelShaderConstantF(131, probeParams, iblCount);
-            pD3DDevice->SetPixelShaderConstantF(139, probeLodParams, (iblCount + 3) / 4);
+            pD3DDevice->SetPixelShaderConstantF(134, probeParams, iblCount);
+            pD3DDevice->SetPixelShaderConstantF(142, probeLodParams, (iblCount + 3) / 4);
         }
 
         BOOL isEnablePrevIBL[] = { true };
@@ -663,7 +677,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         // Set g_IsEnablePrevIBL
         // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
-        pD3DDevice->SetPixelShaderConstantB(8, isEnablePrevIBL, 1);
+        pD3DDevice->SetPixelShaderConstantB(7, isEnablePrevIBL, 1);
 
         // Set render target.
         pDevice->SetRenderTarget(0, isCombinePass ? This->m_spColorSurface : spPrevIBLSurface);
@@ -715,8 +729,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // We're doing forward rendering now. Set the deferred bool to false.
     isUseDeferred[0] = false;
-    pD3DDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
-    pD3DDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
+    pD3DDevice->SetPixelShaderConstantB(7, isUseDeferred, 1);
+    pD3DDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
 
     // Set g_LuminanceSampler
     pDevice->SetSampler(8, s_spLuAvgTex);
@@ -757,7 +771,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Terrain
     pDevice->SetSampler(13, spShadowMapNoTerrain);
-    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     This->RenderScene(Hedgehog::Yggdrasill::eRenderType_Terrain, 
         Hedgehog::Yggdrasill::eRenderSlot_Transparent);
@@ -766,7 +779,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     pDevice->SetSampler(13, spShadowMap);
     pDevice->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     pDevice->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
-    pD3DDevice->SetPixelShaderConstantF(65, shadowMapParams, 1);
 
     This->RenderScene(
         Hedgehog::Yggdrasill::eRenderType_Object | 
@@ -877,6 +889,9 @@ HOOK(void, __fastcall, CFxToneMappingExecute, Sonic::fpCFxToneMappingExecute, So
 {
     originalCFxToneMappingExecute(This);
 
+    if (!g_UsePBR)
+        return;
+
     boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSurface;
     s_spLuAvgTex->GetSurface(spSurface, 0, 0);
 
@@ -887,6 +902,12 @@ HOOK(void, __fastcall, CFxToneMappingExecute, Sonic::fpCFxToneMappingExecute, So
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
     This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+}
+
+HOOK(void, __fastcall, CGameplayFlowStageOnExit, 0xD05360, void* This)
+{
+    g_UsePBR = false;
+    originalCGameplayFlowStageOnExit(This);
 }
 
 bool ShaderHandler::enabled = false;
@@ -902,7 +923,5 @@ void ShaderHandler::applyPatches()
     INSTALL_HOOK(CFxRenderGameSceneExecute);
     INSTALL_HOOK(CRenderingDeviceSetViewMatrix);
     INSTALL_HOOK(CFxToneMappingExecute);
-
-    // Don't render anything in CFxRenderParticle
-    WRITE_MEMORY(0x10C8273, uint8_t, 0x83, 0xC4, 0x08, 0x90, 0x90);
+    INSTALL_HOOK(CGameplayFlowStageOnExit);
 }

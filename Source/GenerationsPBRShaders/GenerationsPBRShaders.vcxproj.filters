@@ -37,14 +37,8 @@
     <ClCompile Include="LightShaftHandler.cpp">
       <Filter>Shader\Other</Filter>
     </ClCompile>
-    <ClCompile Include="RenderDataManager.cpp">
-      <Filter>Database</Filter>
-    </ClCompile>
     <ClCompile Include="ObjectVisualPatcher.cpp">
       <Filter>Shader\Other</Filter>
-    </ClCompile>
-    <ClCompile Include="ArchiveTreePatcher.cpp">
-      <Filter>Database</Filter>
     </ClCompile>
     <ClCompile Include="CpkBinder.cpp">
       <Filter>Database</Filter>
@@ -54,6 +48,12 @@
     </ClCompile>
     <ClCompile Include="Configuration.cpp">
       <Filter>Base</Filter>
+    </ClCompile>
+    <ClCompile Include="BloomHandler.cpp">
+      <Filter>Shader\Shader\Filter</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderDataManager.cpp">
+      <Filter>Database</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -97,14 +97,8 @@
     <ClInclude Include="LightShaftHandler.h">
       <Filter>Shader\Other</Filter>
     </ClInclude>
-    <ClInclude Include="RenderDataManager.h">
-      <Filter>Database</Filter>
-    </ClInclude>
     <ClInclude Include="ObjectVisualPatcher.h">
       <Filter>Shader\Other</Filter>
-    </ClInclude>
-    <ClInclude Include="ArchiveTreePatcher.h">
-      <Filter>Database</Filter>
     </ClInclude>
     <ClInclude Include="CpkBinder.h">
       <Filter>Database</Filter>
@@ -117,6 +111,12 @@
     </ClInclude>
     <ClInclude Include="Math.h">
       <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="BloomHandler.h">
+      <Filter>Shader\Shader\Filter</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderDataManager.h">
+      <Filter>Database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

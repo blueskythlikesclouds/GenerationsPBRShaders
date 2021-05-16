@@ -1,8 +1,9 @@
 ﻿#pragma once
 
-class ArchiveTreePatcher
+class BloomHandler
 {
     static bool enabled;
+
 public:
     static void applyPatches();
 };

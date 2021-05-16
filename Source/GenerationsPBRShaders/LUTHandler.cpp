@@ -12,6 +12,9 @@ HOOK(void, __fastcall, CFxRenderParticleInitialize, 0x10C7170, Sonic::CFxJob* Th
 
 HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
 {
+    if (!g_UsePBR)
+        return originalCFxRenderParticleExecute(This);
+
     if (!s_FxLUTShader.m_spVertexShader || !s_FxLUTShader.m_spPixelShader)
         return;
 

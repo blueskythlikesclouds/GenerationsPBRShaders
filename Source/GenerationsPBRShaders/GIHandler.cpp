@@ -159,7 +159,7 @@ void __declspec(naked) fMovePictureDataMidAsmHook()
 
 uint32_t pFindAtlasSubTextureMidAsmHookReturnAddress = 0x728E9E;
 
-void __stdcall fFindAtlasSubTextureAppendSgSuffix(FixedString& fixedString)
+void __fastcall fFindAtlasSubTextureAppendSgSuffix(FixedString& fixedString)
 {
     char* pSuffix = strstr(fixedString.pStr, "-level");
     memmove(pSuffix + 3, pSuffix, 7);
@@ -168,18 +168,27 @@ void __stdcall fFindAtlasSubTextureAppendSgSuffix(FixedString& fixedString)
     fixedString.length += 3;
 }
 
+void __fastcall fFindAtlasSubTextureRemoveSgSuffix(FixedString& fixedString)
+{
+    char* pSuffix = strstr(fixedString.pStr, "-level");
+    memmove(pSuffix - 3, pSuffix, 7);
+    pSuffix[4] = '\0';
+    fixedString.length -= 3;
+}
+
 void __declspec(naked) fFindAtlasSubTextureMidAsmHook()
 {
     __asm
     {
+        // TODO: Make this hook shorter
+
         mov edi, [edi + 4] // End of sub-texture map.
         mov[esp + 0x5C], eax // Find result.
         cmp eax, edi // Compare if find was unsuccessful.
         jnz end // Jump if not.
 
         // Append _sg suffix to sub-texture name and try finding that.
-        lea eax, [esp + 0x40]
-        push eax
+        lea ecx, [esp + 0x40]
         call fFindAtlasSubTextureAppendSgSuffix
 
         mov ecx, [esp + 0x30]
@@ -187,10 +196,22 @@ void __declspec(naked) fFindAtlasSubTextureMidAsmHook()
         push eax
         call fpFindAtlasSubTexture
 
-        // Return
+        // Remove _sg suffix if we couldn't locate it
+        // so rest of the function can execute properly.
         mov edi, [esp + 0x30]
         mov edi, [edi + 4]
         mov[esp + 0x5C], eax
+        cmp eax, edi
+        jnz return
+
+        lea ecx, [esp + 0x40]
+        call fFindAtlasSubTextureRemoveSgSuffix
+
+        // Return
+    return:
+        mov edi, [esp + 0x30]
+        mov edi, [edi + 4]
+        mov eax, [esp + 0x5C]
         cmp eax, edi
 
     end:
@@ -232,7 +253,7 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, Hedgehog::Mirage::
     if (hasOcclusion)
     {
         This->m_pD3DDevice->SetTexture(9, pGIStore->spOcclusionTex->m_pD3DTexture);
-        This->m_pD3DDevice->SetPixelShaderConstantF(108, (const float*)&pGIStore->occlusionRect, 1);
+        This->m_pD3DDevice->SetPixelShaderConstantF(111, (const float*)&pGIStore->occlusionRect, 1);
     }
 
     This->m_pD3DDevice->SetTexture(10, pGIStore != nullptr ? pGIStore->spGITex->m_pD3DTexture : nullptr);
@@ -246,13 +267,13 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, Hedgehog::Mirage::
     }
 
     This->m_pD3DDevice->SetVertexShaderConstantF(186, giParam, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantF(107, giParam, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantF(110, giParam, 1);
 
     if (!hasOcclusion)
-        This->m_pD3DDevice->SetPixelShaderConstantF(108, pData, 1);
+        This->m_pD3DDevice->SetPixelShaderConstantF(111, pData, 1);
 
-    This->m_pD3DDevice->SetPixelShaderConstantB(9, &isSg, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantB(10, &hasOcclusion, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantB(8, &isSg, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantB(9, &hasOcclusion, 1);
 }
 
 bool GIHandler::enabled = false;

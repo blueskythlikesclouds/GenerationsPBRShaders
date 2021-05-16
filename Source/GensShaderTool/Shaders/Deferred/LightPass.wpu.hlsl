@@ -1,16 +1,16 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float4 mrgLocalLightData[72] : register(c107);
-float3x4 mrgSHLightFieldMatrices[3] : register(c179);
-float4 mrgSHLightFieldParams[3] : register(c188);
-float4 g_SSAOSize : register(c191);
+float4 mrgLocalLightData[72] : register(c110);
+float3x4 mrgSHLightFieldMatrices[3] : register(c182);
+float4 mrgSHLightFieldParams[3] : register(c191);
+float4 g_SSAOSize : register(c194);
 
 sampler3D g_SHLightFieldSamplers[3] : register(s4);
 sampler g_ShadowMapNoTerrainSampler : register(s7);
 sampler g_SSAOSampler : register(s8);
 
-bool g_IsEnableSSAO : register(b8);
+bool g_IsEnableSSAO : register(b7);
 
 float GetLocalLightData(int index)
 {
@@ -146,7 +146,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
         direct = ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
         indirect = gBuffer0.rgb * ambientOcclusionEx;
 
-        material.Shadow *= ComputeShadow(g_ShadowMapNoTerrainSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
+        material.Shadow *= ComputeShadow(g_ShadowMapNoTerrainSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ESMParam.xy, g_ESMParam.z);
     }
     else
     {
@@ -166,7 +166,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
             indirect += gBuffer0.rgb;
         }
 
-        material.Shadow *= ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ShadowMapParams.xy, g_ShadowMapParams.z);
+        material.Shadow *= ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ESMParam.xy, g_ESMParam.z);
     }
 
     direct *= material.Shadow;

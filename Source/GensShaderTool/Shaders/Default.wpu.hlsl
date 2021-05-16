@@ -217,7 +217,7 @@ void main(in DECLARATION_TYPE input,
 #endif
 
         material.IndirectSpecular += UnpackHDR(texCUBElod(g_DefaultIBLSampler, float4(material.RoughReflectionDirection * float3(1, 1, -1), material.Roughness * 3))) * iblBlendFactor;
-        material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapParams.xy, g_ShadowMapParams.z);
+        material.Shadow *= ComputeShadow(g_ShadowMapSampler, input.ShadowMapCoord, g_ESMParam.xy, g_ESMParam.z);
 
         float3 directLighting = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
 

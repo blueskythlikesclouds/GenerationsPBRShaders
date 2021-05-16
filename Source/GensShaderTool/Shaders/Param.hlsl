@@ -14,8 +14,11 @@
 #define PRIMITIVE_TYPE_CDR          4
 #define PRIMITIVE_TYPE_MAX          4
 
-float4 g_HDRParam_SGGIParam : register(c106);
-float4 g_DebugParam[2] : register(c222);
+float4 g_DebugParam[2] : register(c106);
+float4 g_HDRParam_SGGIParam : register(c108);
+float4 g_ESMParam : register(c109);
+
+bool g_UsePBR : register(b6);
 
 #if defined(GLOBAL_PSPARAM_HLSL_INCLUDED) || defined(GLOBAL_VSPARAM_HLSL_INCLUDED)
 

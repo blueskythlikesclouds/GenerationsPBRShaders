@@ -1,4 +1,5 @@
 #include "ArchiveTreePatcher.h"
+#include "BloomHandler.h"
 #include "CompressionHandler.h"
 #include "CpkBinder.h"
 #include "RenderDataManager.h"
@@ -36,6 +37,7 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     if (!Configuration::load(dir + "GenerationsPBRShaders.ini"))
         MessageBox(NULL, L"Failed to parse GenerationsPBRShaders.ini", NULL, MB_ICONERROR);
 
+    BloomHandler::applyPatches();
     GIHandler::applyPatches();
     ShaderHandler::applyPatches();
     ShadowHandler::applyPatches();
@@ -46,7 +48,6 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
-    ArchiveTreePatcher::applyPatches();
 }
 
 extern "C" void __declspec(dllexport) PostInit()
