@@ -19,6 +19,10 @@ float4 ChrEye1 : register(c150);
 float4 ChrEye2 : register(c151);
 float4 ChrEye3 : register(c152);
 
+#if defined(IsChrEyeSuper) && IsChrEyeSuper
+float4 Blend : register(c153);
+#endif
+
 float4 GetDiffuse(DECLARATION_TYPE input, Material material)
 {
     return pow(abs(tex2D(diffuseSampler, UV(0))), GAMMA);
@@ -32,7 +36,7 @@ float4 GetSpecular(DECLARATION_TYPE input)
 
 float3 GetCdr(float cosTheta, float curvature)
 {
-    return tex2D(cdrSampler, float2(cosTheta * 0.5 + 0.5, curvature));
+    return tex2Dlod(cdrSampler, float4(cosTheta * 0.5 + 0.5, curvature, 0, 0));
 }
 
 void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
@@ -56,6 +60,9 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
+#if defined(IsChrEyeSuper) && IsChrEyeSuper
+    finalColor.rgb += material.Albedo * Blend.x * GetToneMapLuminance();
+#endif
 }
 
 #endif

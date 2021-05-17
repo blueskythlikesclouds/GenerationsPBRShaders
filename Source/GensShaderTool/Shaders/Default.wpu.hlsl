@@ -10,7 +10,7 @@
 #include "Material/Common.hlsl"
 #elif (defined(IsBlend2) && IsBlend2) || (defined(IsMBlend) && IsMBlend)
 #include "Material/Blend.hlsl"
-#elif defined(IsChrEyeCDRF) && IsChrEyeCDRF
+#elif (defined(IsChrEyeCDRF) && IsChrEyeCDRF) || (defined(IsChrEyeSuper) && IsChrEyeSuper)
 #include "Material/Eye.hlsl"
 #elif defined(IsChrSkinCDRF) && IsChrSkinCDRF
 #include "Material/Skin.hlsl"
@@ -34,6 +34,8 @@
 #include "Material/ChrEmission.hlsl"
 #elif (defined(IsPointMarker) && IsPointMarker)
 #include "Material/Object/PointMarker.hlsl"
+#elif (defined(IsSuperSonic) && IsSuperSonic)
+#include "Material/SuperSonic.hlsl"
 #endif
 
 float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)

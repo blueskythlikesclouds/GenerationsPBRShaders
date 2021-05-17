@@ -45,7 +45,7 @@ float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
 
 float3 GetCdr(float cosTheta, float curvature)
 {
-    return tex2D(cdrSampler, float2(cosTheta * 0.5 + 0.5, curvature));
+    return tex2Dlod(cdrSampler, float4(cosTheta * 0.5 + 0.5, curvature, 0, 0));
 }
 
 void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
