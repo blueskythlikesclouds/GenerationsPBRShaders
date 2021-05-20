@@ -23,7 +23,9 @@ extern "C" void __declspec(dllexport) OnFrame()
 extern "C" void __declspec(dllexport) Init(ModInfo* info)
 {
 #if _DEBUG
-    AllocConsole();
+    if (!GetConsoleWindow())
+        AllocConsole();
+
     freopen("CONOUT$", "w", stdout);
 #endif
 

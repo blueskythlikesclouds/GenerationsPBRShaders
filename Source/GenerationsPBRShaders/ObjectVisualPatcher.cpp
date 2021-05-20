@@ -40,6 +40,22 @@ STRING_HOOK(PulleyRopeDiffuse, 0x11211B3, "cmn_metal_ms_wire_HD_abd");
 STRING_HOOK(PulleyRopeSpecular, 0x1121219, "cmn_metal_ms_wire_HD_prm");
 STRING_HOOK(PulleyRopeSlot, 0x1120684, "specular");
 
+HOOK(void, __fastcall, LoadArchive, 0x69AB10, void* This, void* Edx, void* A3, void* A4, const Hedgehog::Base::CSharedString& name, void* pArchiveInfo, void* A7, void* A8)
+{
+    if (strstr(name.m_pStr, "PBR") != nullptr)
+        (*(int32_t*)pArchiveInfo) += 0x0BADF00D; // Priority
+
+    return originalLoadArchive(This, Edx, A3, A4, name, pArchiveInfo, A7, A8);
+}
+
+HOOK(void, __fastcall, LoadArchiveList, 0x69C270, void* This, void* Edx, void* A3, void* A4, const Hedgehog::Base::CSharedString& name, void* pArchiveInfo)
+{
+    if (strstr(name.m_pStr, "PBR") != nullptr)
+        (*(int32_t*)pArchiveInfo) += 0x0BADF00D; // Priority
+
+    return originalLoadArchiveList(This, Edx, A3, A4, name, pArchiveInfo);
+}
+
 bool ObjectVisualPatcher::enabled = false;
 
 void ObjectVisualPatcher::applyPatches()
@@ -58,4 +74,7 @@ void ObjectVisualPatcher::applyPatches()
     INSTALL_STRING_HOOK(PulleyRopeDiffuse);
     INSTALL_STRING_HOOK(PulleyRopeSpecular);
     INSTALL_STRING_HOOK(PulleyRopeSlot);
+
+    INSTALL_HOOK(LoadArchive);
+    INSTALL_HOOK(LoadArchiveList);
 }
