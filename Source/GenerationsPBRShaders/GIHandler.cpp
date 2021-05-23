@@ -57,12 +57,12 @@ public:
 
     ULONG AddRef() override
     {
-        return InterlockedIncrement(&refCount);
+        return ++refCount;
     }
 
     ULONG Release() override
     {
-        const ULONG current = InterlockedDecrement(&refCount);
+        const ULONG current = --refCount;
         if (current == 0) delete this;
         return current;
     }

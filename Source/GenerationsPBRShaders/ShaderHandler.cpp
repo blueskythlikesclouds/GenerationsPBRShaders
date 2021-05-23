@@ -472,7 +472,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Real-time Local Reflections //
     //*****************************//
 
-    if (SceneEffect::RLR.Enable)
+    if (SceneEffect::RLR.Enable && Configuration::rlrEnable)
     {
         boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spRLRSurface;
         s_spRLRTex->GetSurface(spRLRSurface, 0, 0);
@@ -656,7 +656,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         if (i == 0)
         {
-            if (SceneEffect::RLR.Enable)
+            if (SceneEffect::RLR.Enable && Configuration::rlrEnable)
             {
                 pDevice->SetSampler(13, s_spRLRTex);
                 pDevice->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);

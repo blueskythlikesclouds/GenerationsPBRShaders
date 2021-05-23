@@ -5,6 +5,21 @@
          "DisplayName":"Screen Space Reflections",
          "Elements":[
             {
+               "Name":"Enable",
+               "Description":[
+                  "Determines whether SSR is going to be enabled for stages that use it.",
+				  "",
+				  "WARNING:",
+				  "Due to a graphics driver bug, disabling SSR on Nvidia GPUs is going to make graphics bugged.",
+				  "However, it is going to work if reflection map density is set to \"Low\"."
+               ],
+               "DisplayName":"Enable",
+               "Type":"bool",
+               "MinValue":null,
+               "MaxValue":null,
+               "DefaultValue":"true"
+            },
+            {
                "Name":"Resolution",
                "Description":[
                   "Resolution of screen space reflections."

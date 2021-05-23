@@ -1,0 +1,4 @@
+add GenerationsPBRShaders.dll
+add GenerationsPBRShaders.ini
+add GenerationsPBRShaders.json
+add mod.ini
