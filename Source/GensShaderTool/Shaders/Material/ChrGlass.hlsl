@@ -52,7 +52,7 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
     float3 falloff;
 
 #if defined(HasFalloff) && HasFalloff
-    falloff = pow(tex2D(falloffSampler, UV(3)).rgb, 2.2);
+    falloff = pow(tex2D(falloffSampler, UV(3)), GAMMA).rgb;
 #else
     falloff = 1.0;
 #endif

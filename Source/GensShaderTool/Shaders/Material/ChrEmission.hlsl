@@ -56,7 +56,7 @@ void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)
 
 void PostProcessFinalColor(DECLARATION_TYPE input, Material material, bool isDeferred, inout float4 finalColor)
 {
-    float3 emission = tex2D(emissionSampler, UV(4)).rgb * g_Ambient.rgb * Luminance.x;
+    float3 emission = pow(tex2D(emissionSampler, UV(4)), GAMMA).rgb * g_Ambient.rgb * Luminance.x;
 
 #if defined(HasTransparency) && HasTransparency
     emission *= tex2D(transparencySampler, UV(5)).a;
