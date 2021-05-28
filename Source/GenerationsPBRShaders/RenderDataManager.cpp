@@ -75,7 +75,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.m_ProbeCounts[2] = shlf.ProbeCounts[2];
 
             data.m_OBB = OBB(affine.matrix(), 0.5f);
-            data.m_InverseMatrix = affine.inverse().matrix();
+            data.m_InverseMatrix = affine.inverse().matrix().transpose();
             data.m_Position = Eigen::Vector3f(shlf.Position[0], shlf.Position[1], shlf.Position[2]) / 10.0f;
 
             const AABB aabb = getAABBFromOBB(affine.matrix(), 0.5f, 1.0f / 10.0f);
@@ -366,6 +366,8 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
 
             if (RenderDataManager::ms_SHLFsInFrustum.empty() && pFrontSHLF != nullptr)
                 RenderDataManager::ms_SHLFsInFrustum.push_back(pFrontSHLF);
+            else if (RenderDataManager::ms_SHLFsInFrustum.empty() && RenderDataManager::ms_SHLFs.size() == 1)
+                RenderDataManager::ms_SHLFsInFrustum.push_back(RenderDataManager::ms_SHLFs[0].get());
 
             s_ProbeUpdateTime = 0.0f;
         }
