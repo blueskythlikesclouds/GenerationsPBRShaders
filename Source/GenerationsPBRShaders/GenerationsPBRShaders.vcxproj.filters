@@ -55,6 +55,9 @@
     <ClCompile Include="RenderDataManager.cpp">
       <Filter>Database</Filter>
     </ClCompile>
+    <ClCompile Include="IBLCaptureService.cpp">
+      <Filter>Database\Probe</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -117,6 +120,9 @@
     </ClInclude>
     <ClInclude Include="RenderDataManager.h">
       <Filter>Database</Filter>
+    </ClInclude>
+    <ClInclude Include="IBLCaptureService.h">
+      <Filter>Database\Probe</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

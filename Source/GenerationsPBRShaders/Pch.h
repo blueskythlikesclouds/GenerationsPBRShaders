@@ -6,6 +6,9 @@
 #include <Windows.h>
 #include <detours.h>
 
+// DirectXTex
+#include <DirectXTex.h>
+
 // std
 #include <stdint.h>
 #include <array>

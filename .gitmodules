@@ -8,3 +8,6 @@
 [submodule "Dependencies/Amicitia.IO"]
 	path = Dependencies/Amicitia.IO
 	url = https://github.com/TGEnigma/Amicitia.IO.git
+[submodule "Dependencies/DirectXTex"]
+	path = Dependencies/DirectXTex
+	url = https://github.com/microsoft/DirectXTex.git

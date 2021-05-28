@@ -6,6 +6,7 @@
 #include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
 #include "GIHandler.h"
+#include "IBLCaptureService.h"
 #include "LightShaftHandler.h"
 #include "ObjectVisualPatcher.h"
 #include "ShaderHandler.h"
@@ -14,10 +15,27 @@
 #include "VertexBufferHandler.h"
 #include "YggdrasillPatcher.h"
 
+#define ENABLE_IBL_CAPTURE_SERVICE    FALSE
+
 extern "C" void __declspec(dllexport) OnFrame()
 {
     StageId::update();
-    PBROnVanillaFunsies::onFrame();
+
+#if ENABLE_IBL_CAPTURE_SERVICE
+    const std::unique_ptr<DirectX::ScratchImage> result = IBLCaptureService::getResultIfReady();
+    if (result != nullptr)
+    {
+        wchar_t fileName[MAX_PATH];
+        MultiByteToWideChar(CP_UTF8, 0, (StageId::get() + "_defaultibl.dds").c_str(), -1, fileName, MAX_PATH);
+
+        DirectX::SaveToDDSFile(result->GetImages(), result->GetImageCount(), result->GetMetadata(), DirectX::DDS_FLAGS_NONE, fileName);
+    }
+    else
+    {
+        if (GetAsyncKeyState(VK_F1) & 1)
+            IBLCaptureService::capture(Eigen::Vector3f(0, 1, 0), Eigen::Matrix4f::Identity(), 512);
+    }
+#endif
 }
 
 extern "C" void __declspec(dllexport) Init(ModInfo* info)
@@ -49,6 +67,10 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
+
+#if ENABLE_IBL_CAPTURE_SERVICE
+    IBLCaptureService::applyPatches();
+#endif
 }
 
 extern "C" void __declspec(dllexport) PostInit()

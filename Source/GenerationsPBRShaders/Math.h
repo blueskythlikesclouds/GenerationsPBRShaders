@@ -165,3 +165,23 @@ inline AABB getAABBFromOBB(const Eigen::Matrix4f& matrix, const float bounds, co
 
 	return aabb;
 }
+
+#include <corecrt_math_defines.h>
+#include "DllMods/Source/GenerationsFreeCamera/Math.h"
+
+namespace Eigen
+{
+	template<typename Derived>
+	Matrix<typename Derived::Scalar, 4, 4> CreateLookAtMatrix(Derived const& position, Derived const& target, Derived const& up)
+	{
+		Matrix<typename Derived::Scalar, 4, 4> matrix;
+		Matrix<typename Derived::Scalar, 3, 3> rotation;
+		rotation.col(2) = (position - target).normalized();
+		rotation.col(0) = up.cross(rotation.col(2)).normalized();
+		rotation.col(1) = rotation.col(2).cross(rotation.col(0));
+		matrix.template topLeftCorner<3, 3>() = rotation.transpose();
+		matrix.template topRightCorner<3, 1>() = -rotation.transpose() * position;
+		matrix.row(3) << 0, 0, 0, 1;
+		return matrix;
+	}
+}

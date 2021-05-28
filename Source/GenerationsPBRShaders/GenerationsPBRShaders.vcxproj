@@ -60,7 +60,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Dependencies\Eigen;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Dependencies\Eigen;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;..\..\Dependencies\DirectXTex\DirectXTex;..\..\Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>Pch.h</ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/Ob3 %(AdditionalOptions)</AdditionalOptions>
@@ -83,7 +83,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Dependencies\Eigen;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Dependencies\Eigen;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;..\..\Dependencies\DirectXTex\DirectXTex;..\..\Dependencies;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>Pch.h</ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -106,6 +106,7 @@
     <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="CpkBinder.cpp" />
     <ClCompile Include="CompressionHandler.cpp" />
+    <ClCompile Include="IBLCaptureService.cpp" />
     <ClCompile Include="LightShaftHandler.cpp" />
     <ClCompile Include="NodeBVH.cpp" />
     <ClCompile Include="ObjectVisualPatcher.cpp" />
@@ -133,6 +134,7 @@
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="CpkBinder.h" />
     <ClInclude Include="CompressionHandler.h" />
+    <ClInclude Include="IBLCaptureService.h" />
     <ClInclude Include="Math.h" />
     <ClInclude Include="IBLProbe.h" />
     <ClInclude Include="LightShaftHandler.h" />
@@ -152,7 +154,10 @@
     <ClInclude Include="YggdrasillPatcher.h" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="C:\Users\Skyth\source\repos\GenerationsPBRShaders\Dependencies\HedgeLib\HedgeLib\HedgeLib.vcxproj">
+    <ProjectReference Include="..\..\Dependencies\DirectXTex\DirectXTex\DirectXTex_Desktop_2019.vcxproj">
+      <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Dependencies\HedgeLib\HedgeLib\HedgeLib.vcxproj">
       <Project>{b98fb53d-a55c-1049-ce75-fef0baa145d7}</Project>
     </ProjectReference>
   </ItemGroup>
