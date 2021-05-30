@@ -7,10 +7,10 @@ class IBLCaptureService
 public:
     static std::unique_ptr<DirectX::ScratchImage> result;
     static Eigen::Vector3f position;
-    static Eigen::Matrix4f matrix;
-    static size_t index;
+    static size_t faceIndex;
+    static bool includeSky;
 
-    static void capture(const Eigen::Vector3f& position, const Eigen::Matrix4f& matrix, size_t resolution);
+    static void capture(const Eigen::Vector3f& position, size_t resolution, bool includeSky);
     static std::unique_ptr<DirectX::ScratchImage> getResultIfReady();
 
     static void applyPatches();

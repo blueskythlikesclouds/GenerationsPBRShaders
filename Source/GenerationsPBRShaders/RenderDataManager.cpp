@@ -111,6 +111,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             IBLProbeData data;
 
+            data.m_Name = iblProbe.Name;
             data.m_OBB = OBB(matrix, 1);
             data.m_InverseMatrix = matrix.inverse().transpose();
             data.m_Position = Eigen::Vector3f(iblProbe.Position[0], iblProbe.Position[1], iblProbe.Position[2]) / 10.0f;

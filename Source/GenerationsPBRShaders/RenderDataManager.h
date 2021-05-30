@@ -15,6 +15,7 @@ struct SHLightFieldData
 
 struct IBLProbeData
 {
+    std::string m_Name;
     OBB m_OBB;
     Eigen::Matrix4f m_InverseMatrix;
     Eigen::Vector3f m_Position;

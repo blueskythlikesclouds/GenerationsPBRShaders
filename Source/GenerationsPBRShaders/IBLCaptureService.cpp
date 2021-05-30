@@ -7,10 +7,10 @@ bool IBLCaptureService::enabled;
 
 std::unique_ptr<DirectX::ScratchImage> IBLCaptureService::result;
 Eigen::Vector3f IBLCaptureService::position;
-Eigen::Matrix4f IBLCaptureService::matrix;
-size_t IBLCaptureService::index;
+size_t IBLCaptureService::faceIndex;
+bool IBLCaptureService::includeSky;
 
-void IBLCaptureService::capture(const Eigen::Vector3f& position, const Eigen::Matrix4f& matrix, const size_t resolution)
+void IBLCaptureService::capture(const Eigen::Vector3f& position, const size_t resolution, const bool includeSky)
 {
     if (result != nullptr)
         return;
@@ -18,14 +18,16 @@ void IBLCaptureService::capture(const Eigen::Vector3f& position, const Eigen::Ma
     result = std::make_unique<DirectX::ScratchImage>();
     result->InitializeCube(DXGI_FORMAT_R16G16B16A16_FLOAT, resolution, resolution, 1, 1);
     IBLCaptureService::position = position;
-    IBLCaptureService::matrix = matrix;
-    index = 0;
+    IBLCaptureService::includeSky = includeSky;
+    faceIndex = 0;
+
+    // Disable frustum culling since Generations doesn't update the view frustum fast enough.
     *g_ExecuteFrustumCulling = false;
 }
 
 std::unique_ptr<DirectX::ScratchImage> IBLCaptureService::getResultIfReady()
 {
-    return index >= 6 ? std::move(result) : nullptr;
+    return faceIndex >= 6 ? std::move(result) : nullptr;
 }
 
 namespace IBLCapture
@@ -52,22 +54,22 @@ namespace IBLCapture
 
     HOOK(void, __fastcall, CCameraUpdate, 0x10FB770, Camera* This, void* Edx, void* pUpdateInfo)
     {
-        if (IBLCaptureService::index >= 6 || IBLCaptureService::result == nullptr)
+        if (IBLCaptureService::faceIndex >= 6 || IBLCaptureService::result == nullptr)
         {
             originalCCameraUpdate(This, Edx, pUpdateInfo);
             return;
         }
 
-        This->viewMatrix = Eigen::CreateLookAtMatrix<Eigen::Vector3f>(IBLCaptureService::position,
-            IBLCaptureService::position + TARGETS[IBLCaptureService::index], UP_DIRECTIONS[IBLCaptureService::index]);
+        This->viewMatrix = Eigen::CreateLookAtMatrix<Eigen::Vector3f>(IBLCaptureService::position, 
+            IBLCaptureService::position + TARGETS[IBLCaptureService::faceIndex], UP_DIRECTIONS[IBLCaptureService::faceIndex]);
 
         This->fieldOfView = DEGREES_TO_RADIANS(90.0f);
 
-        This->projectionMatrix = Eigen::CreatePerspectiveMatrix(This->fieldOfView, 1.0f, This->zNear, This->zFar);
+        This->projectionMatrix = Eigen::CreatePerspectiveMatrix(This->fieldOfView, 1.0f, 0.001f, 10000.0f);
 
         This->position = IBLCaptureService::position;
 
-        This->direction = TARGETS[IBLCaptureService::index];
+        This->direction = TARGETS[IBLCaptureService::faceIndex];
 
         This->aspectRatio = 1.0f;
     }
@@ -93,9 +95,18 @@ namespace IBLCapture
 
     HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
     {
+        const bool capturing = !IBLCaptureService::faceIndex < 6 && IBLCaptureService::result != nullptr;
+        const Hedgehog::Yggdrasill::ERenderType tmpRenderTypes = This->m_RenderTypes;
+
+        if (capturing)
+        {
+            This->m_RenderTypes = (Hedgehog::Yggdrasill::ERenderType)(Hedgehog::Yggdrasill::eRenderType_Terrain | 
+                (IBLCaptureService::includeSky ? Hedgehog::Yggdrasill::eRenderType_Sky : 0));
+        }
+        
         originalCFxRenderGameSceneExecute(This);
 
-        if (IBLCaptureService::index >= 6 || IBLCaptureService::result == nullptr)
+        if (!capturing)
         {
             *g_ExecuteFrustumCulling = true;
             return;
@@ -122,13 +133,15 @@ namespace IBLCapture
         DirectX::Resize(image, metadata.width, metadata.height, DirectX::TEX_FILTER_BOX, tmpScratchImage);
 
         uint8_t* srcPixels = tmpScratchImage.GetPixels();
-        uint8_t* dstPixels = IBLCaptureService::result->GetImage(0, IBLCaptureService::index, 0)->pixels;
+        uint8_t* dstPixels = IBLCaptureService::result->GetImage(0, IBLCaptureService::faceIndex, 0)->pixels;
 
         memcpy(dstPixels, srcPixels, tmpScratchImage.GetPixelsSize());
 
         s_spScratchImageSurface->UnlockRect();
 
-        IBLCaptureService::index++;
+        IBLCaptureService::faceIndex++;
+
+        This->m_RenderTypes = tmpRenderTypes;
     }
 
     void applyPatches()

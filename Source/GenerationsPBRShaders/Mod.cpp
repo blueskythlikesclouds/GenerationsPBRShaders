@@ -22,19 +22,27 @@ extern "C" void __declspec(dllexport) OnFrame()
     StageId::update();
 
 #if ENABLE_IBL_CAPTURE_SERVICE
+    static size_t index = 0;
+
     const std::unique_ptr<DirectX::ScratchImage> result = IBLCaptureService::getResultIfReady();
     if (result != nullptr)
     {
+       // wchar_t fileName[MAX_PATH];
+       // MultiByteToWideChar(CP_UTF8, 0, (StageId::get() + "_defaultibl.dds").c_str(), -1, fileName, MAX_PATH);
+
         wchar_t fileName[MAX_PATH];
-        MultiByteToWideChar(CP_UTF8, 0, (StageId::get() + "_defaultibl.dds").c_str(), -1, fileName, MAX_PATH);
+        MultiByteToWideChar(CP_UTF8, 0, ("work/ibl/" + RenderDataManager::ms_IBLProbes[index]->m_Name + ".dds").c_str(), -1, fileName, MAX_PATH);
 
         DirectX::SaveToDDSFile(result->GetImages(), result->GetImageCount(), result->GetMetadata(), DirectX::DDS_FLAGS_NONE, fileName);
+
+        index++;
+
+        if (index == RenderDataManager::ms_IBLProbes.size())
+            index = 0;
     }
-    else
-    {
-        if (GetAsyncKeyState(VK_F1) & 1)
-            IBLCaptureService::capture(Eigen::Vector3f(0, 1, 0), Eigen::Matrix4f::Identity(), 512);
-    }
+
+    if (index > 0 || (GetAsyncKeyState(VK_F1) & 1) != 0)
+        IBLCaptureService::capture(RenderDataManager::ms_IBLProbes[index]->m_Position, 128, false);
 #endif
 }
 
