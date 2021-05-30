@@ -136,50 +136,50 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     boost::shared_ptr<Hedgehog::Database::CRawData> spRawData;
     pDatabase->GetRawData(spRawData, "Autodraw.txt", 0);
 
-    if (spRawData == nullptr || spRawData->m_spData == nullptr)
-        return;
-
-    char* pAutodraw = (char*)spRawData->m_spData.get();
-
-    for (size_t i = 0; i < spRawData->m_DataSize;)
+    if (spRawData != nullptr && spRawData->m_spData != nullptr)
     {
-        if (pAutodraw[i] == '\n' || pAutodraw[i] == '\r')
+        char* pAutodraw = (char*)spRawData->m_spData.get();
+
+        for (size_t i = 0; i < spRawData->m_DataSize;)
         {
-            i++;
-            continue;
+            if (pAutodraw[i] == '\n' || pAutodraw[i] == '\r')
+            {
+                i++;
+                continue;
+            }
+
+            size_t j;
+            for (j = i; j < spRawData->m_DataSize; j++)
+            {
+                if (pAutodraw[j] == '\n' || pAutodraw[j] == '\r')
+                    break;
+            }
+
+            char line[256];
+            strncpy(line, pAutodraw + i, j - i);
+
+            i = j + 1;
+
+            char* pExtension = strstr(line, ".lit-anim");
+            if (pExtension == nullptr)
+                continue;
+
+            *pExtension = '\0';
+
+            boost::shared_ptr<Hedgehog::Motion::CLightMotionData> spLightMotionData;
+            motionWrapper.GetLightMotionData(spLightMotionData, line, 0);
+
+            if (!spLightMotionData)
+                continue;
+
+            spLightMotionData->Validate();
+
+            LightMotionData data;
+            data.m_spData = spLightMotionData;
+            data.m_Name = line;
+
+            RenderDataManager::ms_LightMotions.push_back(std::make_unique<LightMotionData>(std::move(data)));
         }
-
-        size_t j;
-        for (j = i; j < spRawData->m_DataSize; j++)
-        {
-            if (pAutodraw[j] == '\n' || pAutodraw[j] == '\r')
-                break;
-        }
-
-        char line[256];
-        strncpy(line, pAutodraw + i, j - i);
-
-        i = j + 1;
-
-        char* pExtension = strstr(line, ".lit-anim");
-        if (pExtension == nullptr)
-            continue;
-
-        *pExtension = '\0';
-
-        boost::shared_ptr<Hedgehog::Motion::CLightMotionData> spLightMotionData;
-        motionWrapper.GetLightMotionData(spLightMotionData, line, 0);
-
-        if (!spLightMotionData)
-            continue;
-
-        spLightMotionData->Validate();
-
-        LightMotionData data;
-        data.m_spData = spLightMotionData;
-        data.m_Name = line;
-
-        RenderDataManager::ms_LightMotions.push_back(std::make_unique<LightMotionData>(std::move(data)));
     }
 
     Hedgehog::Mirage::CMirageDatabaseWrapper mirageWrapper(pDatabase);
