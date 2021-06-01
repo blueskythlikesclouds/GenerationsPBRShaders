@@ -603,7 +603,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData &&
         RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture)
     {
-        iblLodParam[0] = std::min<float>(3, (float)RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
+        iblLodParam[0] = (float)RenderDataManager::ms_spDefaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount();
     }
 
     iblLodParam[1] = (float)(SceneEffect::RLR.MaxLod >= 0 ?
@@ -634,7 +634,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             probeParams[j * 4 + 3] = cache->m_Bias;
 
             if (cache->m_spPicture && cache->m_spPicture->m_spPictureData && cache->m_spPicture->m_spPictureData->m_pD3DTexture)
-                probeLodParams[j] = std::min<float>(3.0f, (float)cache->m_spPicture->m_spPictureData->m_pD3DTexture->GetLevelCount());
+                probeLodParams[j] = (float)cache->m_spPicture->m_spPictureData->m_pD3DTexture->GetLevelCount();
             else
                 probeLodParams[j] = 0.0f;
 
