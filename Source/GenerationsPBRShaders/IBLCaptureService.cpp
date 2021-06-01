@@ -8,9 +8,9 @@ bool IBLCaptureService::enabled;
 std::unique_ptr<DirectX::ScratchImage> IBLCaptureService::result;
 Eigen::Vector3f IBLCaptureService::position;
 size_t IBLCaptureService::faceIndex;
-bool IBLCaptureService::includeSky;
+IBLCaptureMode IBLCaptureService::mode;
 
-void IBLCaptureService::capture(const Eigen::Vector3f& position, const size_t resolution, const bool includeSky)
+void IBLCaptureService::capture(const Eigen::Vector3f& position, const size_t resolution, IBLCaptureMode mode)
 {
     if (result != nullptr)
         return;
@@ -18,7 +18,7 @@ void IBLCaptureService::capture(const Eigen::Vector3f& position, const size_t re
     result = std::make_unique<DirectX::ScratchImage>();
     result->InitializeCube(DXGI_FORMAT_R16G16B16A16_FLOAT, resolution, resolution, 1, 1);
     IBLCaptureService::position = position;
-    IBLCaptureService::includeSky = includeSky;
+    IBLCaptureService::mode = mode;
     faceIndex = 0;
 
     // Disable frustum culling since Generations doesn't update the view frustum fast enough.
@@ -99,10 +99,7 @@ namespace IBLCapture
         const Hedgehog::Yggdrasill::ERenderType tmpRenderTypes = This->m_RenderTypes;
 
         if (capturing)
-        {
-            This->m_RenderTypes = (Hedgehog::Yggdrasill::ERenderType)(Hedgehog::Yggdrasill::eRenderType_Terrain | 
-                (IBLCaptureService::includeSky ? Hedgehog::Yggdrasill::eRenderType_Sky : 0));
-        }
+            This->m_RenderTypes = IBLCaptureService::mode == IBLCaptureMode::DefaultIBL ? Hedgehog::Yggdrasill::eRenderType_Sky : Hedgehog::Yggdrasill::eRenderType_Terrain;
         
         originalCFxRenderGameSceneExecute(This);
 
@@ -142,6 +139,8 @@ namespace IBLCapture
         IBLCaptureService::faceIndex++;
 
         This->m_RenderTypes = tmpRenderTypes;
+
+        This->m_pScheduler->m_pMisc->m_spSceneRenderer->m_pCamera->m_AspectRatio = 16.0f / 9.0f;
     }
 
     void applyPatches()
