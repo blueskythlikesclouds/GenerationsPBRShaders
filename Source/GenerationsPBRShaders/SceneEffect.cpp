@@ -1,26 +1,26 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::Debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
-CullingParam SceneEffect::Culling = { 500, 2500, 100 };
-SGGIParam SceneEffect::SGGI = { 0.7f, 0.35f };
-ESMParam SceneEffect::ESM = { 4096 };
-RLRParam SceneEffect::RLR = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
-HighlightParam SceneEffect::Highlight = { true, 90, 4, 0.08f, 2, 0.02f, 0.3f };
-SSAOParam SceneEffect::SSAO = { false, 32, 0.25f, 0.25f, 1.0f };
+DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
+CullingParam SceneEffect::culling = { 500, 2500, 100 };
+SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
+ESMParam SceneEffect::esm = { 4096 };
+RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
+HighlightParam SceneEffect::highlight = { true, 90, 4, 0.08f, 2, 0.02f, 0.3f };
+SSAOParam SceneEffect::ssao = { false, 32, 0.25f, 0.25f, 1.0f };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
 {
-    boost::shared_ptr<Sonic::CParameterGroup> spParameterGroup;
-    This->CreateParameterGroup(spParameterGroup, "PBR", "PBR");
+    boost::shared_ptr<Sonic::CParameterGroup> parameterGroup;
+    This->CreateParameterGroup(parameterGroup, "PBR", "PBR");
 
-    Sonic::CParameterCategory* pDebugParamCategory = spParameterGroup->CreateParameterCategory("Debug", "Debug");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.UseWhiteAlbedo, "UseWhiteAlbedo");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.UseFlatNormal, "UseFlatNormal");
-    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.ReflectanceOverride, "ReflectanceOverride");
-    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.RoughnessOverride, "RoughnessOverride");
-    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.MetalnessOverride, "MetalnessOverride");
-    pDebugParamCategory->CreateParamFloat(&SceneEffect::Debug.GIShadowMapOverride, "GIShadowMapOverride");
-    pDebugParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::Debug.ViewMode, "ViewMode", "ViewMode",
+    Sonic::CParameterCategory* debugParamCategory = parameterGroup->CreateParameterCategory("Debug", "Debug");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.useWhiteAlbedo, "UseWhiteAlbedo");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.useFlatNormal, "UseFlatNormal");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.reflectanceOverride, "ReflectanceOverride");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.roughnessOverride, "RoughnessOverride");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.metalnessOverride, "MetalnessOverride");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giShadowMapOverride, "GIShadowMapOverride");
+    debugParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::debug.viewMode, "ViewMode", "ViewMode",
         {
             { "None", DEBUG_VIEW_MODE_NONE },
             { "GIOnly", DEBUG_VIEW_MODE_GI_ONLY },
@@ -32,66 +32,66 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
             { "ShadowMap", DEBUG_VIEW_MODE_SHADOW_MAP },
             { "ShadowMapNoTerrain", DEBUG_VIEW_MODE_SHADOW_MAP_NO_TERRAIN },
         });
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableDirectLight, "DisableDirectLight");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableOmniLight, "DisableOmniLight");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableSHLightField, "DisableSHLightField");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableDefaultIBL, "DisableDefaultIBL");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableIBLProbe, "DisableIBLProbe");
-    pDebugParamCategory->CreateParamBool(&SceneEffect::Debug.DisableLUT, "DisableLUT");
-    pDebugParamCategory->CreateParamUnsignedLong(&SceneEffect::Debug.MaxProbeCount, "MaxProbeCount");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDirectLight, "DisableDirectLight");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableOmniLight, "DisableOmniLight");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableSHLightField, "DisableSHLightField");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDefaultIBL, "DisableDefaultIBL");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableIBLProbe, "DisableIBLProbe");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableLUT, "DisableLUT");
+    debugParamCategory->CreateParamUnsignedLong(&SceneEffect::debug.maxProbeCount, "MaxProbeCount");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
-    Sonic::CParameterCategory* pSGGIParamCategory = spParameterGroup->CreateParameterCategory("SGGI", "SGGI");
-    pSGGIParamCategory->CreateParamFloat(&SceneEffect::SGGI.StartSmoothness, "StartSmoothness");
-    pSGGIParamCategory->CreateParamFloat(&SceneEffect::SGGI.EndSmoothness, "EndSmoothness");
+    Sonic::CParameterCategory* sggiParamCategory = parameterGroup->CreateParameterCategory("SGGI", "SGGI");
+    sggiParamCategory->CreateParamFloat(&SceneEffect::sggi.startSmoothness, "StartSmoothness");
+    sggiParamCategory->CreateParamFloat(&SceneEffect::sggi.endSmoothness, "EndSmoothness");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
-    Sonic::CParameterCategory* pCullingParamCategory = spParameterGroup->CreateParameterCategory("Culling", "Culling");
-    pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.SHLightFieldCullingRange, "SHLightFieldCullingRange");
-    pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.IBLProbeCullingRange, "IBLProbeCullingRange");
-    pCullingParamCategory->CreateParamFloat(&SceneEffect::Culling.LocalLightCullingRange, "LocalLightCullingRange");
+    Sonic::CParameterCategory* cullingParamCategory = parameterGroup->CreateParameterCategory("Culling", "Culling");
+    cullingParamCategory->CreateParamFloat(&SceneEffect::culling.shLightFieldCullingRange, "SHLightFieldCullingRange");
+    cullingParamCategory->CreateParamFloat(&SceneEffect::culling.iblProbeCullingRange, "IBLProbeCullingRange");
+    cullingParamCategory->CreateParamFloat(&SceneEffect::culling.localLightCullingRange, "LocalLightCullingRange");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
-    Sonic::CParameterCategory* pESMParamCategory = spParameterGroup->CreateParameterCategory("ESM", "ESM");
-    pESMParamCategory->CreateParamFloat(&SceneEffect::ESM.Factor, "Factor");
+    Sonic::CParameterCategory* esmParamCategory = parameterGroup->CreateParameterCategory("ESM", "ESM");
+    esmParamCategory->CreateParamFloat(&SceneEffect::esm.factor, "Factor");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
-    Sonic::CParameterCategory* pRLRParamCategory = spParameterGroup->CreateParameterCategory("RLR", "RLR");
-    pRLRParamCategory->CreateParamBool(&SceneEffect::RLR.Enable, "Enable");
-    pRLRParamCategory->CreateParamUnsignedLong(&SceneEffect::RLR.StepCount, "StepCount");
-    pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.MaxRoughness, "MaxRoughness");
-    pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.RayLength, "RayLength");
-    pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.Fade, "Fade");
-    pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.AccuracyThreshold, "AccuracyThreshold");
-    pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.Saturation, "Saturation");
-    pRLRParamCategory->CreateParamFloat(&SceneEffect::RLR.Brightness, "Brightness");
-    pRLRParamCategory->CreateParamInt(&SceneEffect::RLR.MaxLod, "MaxLod");
+    Sonic::CParameterCategory* rlrParamCategory = parameterGroup->CreateParameterCategory("RLR", "RLR");
+    rlrParamCategory->CreateParamBool(&SceneEffect::rlr.enable, "Enable");
+    rlrParamCategory->CreateParamUnsignedLong(&SceneEffect::rlr.stepCount, "StepCount");
+    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.maxRoughness, "MaxRoughness");
+    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.rayLength, "RayLength");
+    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.fade, "Fade");
+    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.accuracyThreshold, "AccuracyThreshold");
+    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.saturation, "Saturation");
+    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.brightness, "Brightness");
+    rlrParamCategory->CreateParamInt(&SceneEffect::rlr.maxLod, "MaxLod");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
-    Sonic::CParameterCategory* pHighlightParamCategory = spParameterGroup->CreateParameterCategory("Highlight", "Highlight");
-    pHighlightParamCategory->CreateParamBool(&SceneEffect::Highlight.Enable, "Enable");
-    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.Threshold, "Threshold");
-    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.ObjectAmbientScale, "ObjectAmbientScale");
-    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.ObjectAlbedoHeighten, "ObjectAlbedoHeighten");
-    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaAmbientScale, "CharaAmbientScale");
-    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaAlbedoHeighten, "CharaAlbedoHeighten");
-    pHighlightParamCategory->CreateParamFloat(&SceneEffect::Highlight.CharaFalloffScale, "CharaFalloffScale");
+    Sonic::CParameterCategory* highlightParamCategory = parameterGroup->CreateParameterCategory("Highlight", "Highlight");
+    highlightParamCategory->CreateParamBool(&SceneEffect::highlight.enable, "Enable");
+    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.threshold, "Threshold");
+    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.objectAmbientScale, "ObjectAmbientScale");
+    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.objectAlbedoHeighten, "ObjectAlbedoHeighten");
+    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.charaAmbientScale, "CharaAmbientScale");
+    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.charaAlbedoHeighten, "CharaAlbedoHeighten");
+    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.charaFalloffScale, "CharaFalloffScale");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
-    Sonic::CParameterCategory* pSSAOParamCategory = spParameterGroup->CreateParameterCategory("SSAO", "SSAO");
-    pSSAOParamCategory->CreateParamBool(&SceneEffect::SSAO.Enable, "Enable");
-    pSSAOParamCategory->CreateParamUnsignedLong(&SceneEffect::SSAO.SampleCount, "SampleCount");
-    pSSAOParamCategory->CreateParamFloat(&SceneEffect::SSAO.Radius, "Radius");
-    pSSAOParamCategory->CreateParamFloat(&SceneEffect::SSAO.DistanceFade, "DistanceFade");
-    pSSAOParamCategory->CreateParamFloat(&SceneEffect::SSAO.Strength, "Strength");
+    Sonic::CParameterCategory* ssaoParamCategory = parameterGroup->CreateParameterCategory("SSAO", "SSAO");
+    ssaoParamCategory->CreateParamBool(&SceneEffect::ssao.enable, "Enable");
+    ssaoParamCategory->CreateParamUnsignedLong(&SceneEffect::ssao.sampleCount, "SampleCount");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.radius, "Radius");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.distanceFade, "DistanceFade");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.strength, "Strength");
 
-    spParameterGroup->Flush();
+    parameterGroup->Flush();
 
     originalInitializeSceneEffectParameterFile(This);
 }
@@ -114,7 +114,7 @@ std::array<bool*, 12> POST_PROCESSING_TOGGLES =
 
 HOOK(void, __fastcall, ExecuteFxPipelineJobs, 0x78A3D0, void* This, void* Edx, void* A2)
 {
-    if (SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_NONE)
+    if (SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_NONE)
         return originalExecuteFxPipelineJobs(This, Edx, A2);
 
     // Disable post processing when debug view mode in on.
@@ -122,8 +122,8 @@ HOOK(void, __fastcall, ExecuteFxPipelineJobs, 0x78A3D0, void* This, void* Edx, v
 
     // Keep tonemapping on for GIOnly/RLR.
     const size_t index = 
-        SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_GI_ONLY ||
-        SceneEffect::Debug.ViewMode == DEBUG_VIEW_MODE_RLR ? 1 : 0;
+        SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY ||
+        SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_RLR ? 1 : 0;
 
     for (size_t i = index; i < POST_PROCESSING_TOGGLES.size(); i++)
     {

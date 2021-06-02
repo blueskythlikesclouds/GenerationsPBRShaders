@@ -1,30 +1,30 @@
 ﻿#include "BloomHandler.h"
 
-Hedgehog::Mirage::SShaderPair s_PBR_Bloom_BrightPassHDRShader;
+hh::mr::SShaderPair pbrBloomShader;
 
 HOOK(void, __fastcall, CFxBloomGlareInitialize, Sonic::fpCFxBloomGlareInitialize, Sonic::CFxBloomGlare* This)
 {
     originalCFxBloomGlareInitialize(This);
 
-    This->m_pScheduler->GetShader(s_PBR_Bloom_BrightPassHDRShader, "RenderBuffer", "PBR_Bloom_BrightPassHDR");
+    This->m_pScheduler->GetShader(pbrBloomShader, "RenderBuffer", "PBR_Bloom_BrightPassHDR");
 }
 
-uint32_t pCFxBloomGlareExecuteMidAsmHookReturnAddress = 0x10D3ADD;
+uint32_t CFxBloomGlareExecuteMidAsmHookReturnAddress = 0x10D3ADD;
 
-void __declspec(naked) fCFxBloomGlareExecuteMidAsmHook()
+void __declspec(naked) CFxBloomGlareExecuteMidAsmHook()
 {
     __asm
     {
-        lea ebx, [g_UsePBR]
+        lea ebx, [globalUsePBR]
         mov bl, byte ptr [ebx]
         cmp bl, 0
         jz onFalse
-        lea ebx, [s_PBR_Bloom_BrightPassHDRShader]
+        lea ebx, [pbrBloomShader]
         jmp end
     onFalse:
         lea ebx, [esi + 0xE0]
     end:
-        jmp[pCFxBloomGlareExecuteMidAsmHookReturnAddress]
+        jmp[CFxBloomGlareExecuteMidAsmHookReturnAddress]
     }
 }
 
@@ -38,5 +38,5 @@ void BloomHandler::applyPatches()
     enabled = true;
 
     INSTALL_HOOK(CFxBloomGlareInitialize);
-    WRITE_JUMP(0x10D3AD7, fCFxBloomGlareExecuteMidAsmHook);
+    WRITE_JUMP(0x10D3AD7, CFxBloomGlareExecuteMidAsmHook);
 }

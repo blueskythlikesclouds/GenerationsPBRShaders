@@ -12,4 +12,4 @@ namespace boost
 
 #endif
 
-bool g_UsePBR;
+bool globalUsePBR;

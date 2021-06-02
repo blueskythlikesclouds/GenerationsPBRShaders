@@ -78,28 +78,28 @@ namespace IBLCapture
         void operator()(DX_PATCH::IDirect3DSurface9* pSurface) { pSurface->Release(); }
     };
 
-    std::unique_ptr<DX_PATCH::IDirect3DSurface9, SurfaceDeleter> s_spScratchImageSurface;
+    std::unique_ptr<DX_PATCH::IDirect3DSurface9, SurfaceDeleter> scratchImageSurface;
 
     HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameSceneInitialize, Sonic::CFxRenderGameScene* This)
     {
         originalCFxRenderGameSceneInitialize(This);
 
-        DX_PATCH::IDirect3DSurface9* pSurface;
+        DX_PATCH::IDirect3DSurface9* surface;
 
         This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->CreateOffscreenPlainSurface(
             This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
-            (D3DFORMAT)This->m_spColorTex->m_CreationParams.Format, D3DPOOL_SYSTEMMEM, &pSurface, nullptr);
+            (D3DFORMAT)This->m_spColorTex->m_CreationParams.Format, D3DPOOL_SYSTEMMEM, &surface, nullptr);
 
-        s_spScratchImageSurface = std::unique_ptr<DX_PATCH::IDirect3DSurface9, SurfaceDeleter>(pSurface);
+        scratchImageSurface = std::unique_ptr<DX_PATCH::IDirect3DSurface9, SurfaceDeleter>(surface);
     }
 
     HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
     {
         const bool capturing = !IBLCaptureService::faceIndex < 6 && IBLCaptureService::result != nullptr;
-        const Hedgehog::Yggdrasill::ERenderType tmpRenderTypes = This->m_RenderTypes;
+        const hh::ygg::ERenderType tmpRenderTypes = This->m_RenderTypes;
 
         if (capturing)
-            This->m_RenderTypes = IBLCaptureService::mode == IBLCaptureMode::DefaultIBL ? Hedgehog::Yggdrasill::eRenderType_Sky : Hedgehog::Yggdrasill::eRenderType_Terrain;
+            This->m_RenderTypes = IBLCaptureService::mode == IBLCaptureMode::DefaultIBL ? hh::ygg::eRenderType_Sky : hh::ygg::eRenderType_Terrain;
         
         originalCFxRenderGameSceneExecute(This);
 
@@ -109,13 +109,13 @@ namespace IBLCapture
             return;
         }
 
-        boost::shared_ptr<Hedgehog::Yggdrasill::CYggSurface> spSrcSurface;
-        This->m_spColorTex->GetSurface(spSrcSurface, 0, 0);
+        boost::shared_ptr<hh::ygg::CYggSurface> srcSurface;
+        This->m_spColorTex->GetSurface(srcSurface, 0, 0);
 
-        This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->GetRenderTargetData(spSrcSurface->m_pD3DSurface, s_spScratchImageSurface.get());
+        This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->GetRenderTargetData(srcSurface->m_pD3DSurface, scratchImageSurface.get());
 
         D3DLOCKED_RECT lockedRect;
-        s_spScratchImageSurface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY);
+        scratchImageSurface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY);
 
         DirectX::Image image{};
         image.width = This->m_spColorTex->m_CreationParams.Width;
@@ -134,7 +134,7 @@ namespace IBLCapture
 
         memcpy(dstPixels, srcPixels, tmpScratchImage.GetPixelsSize());
 
-        s_spScratchImageSurface->UnlockRect();
+        scratchImageSurface->UnlockRect();
 
         IBLCaptureService::faceIndex++;
 

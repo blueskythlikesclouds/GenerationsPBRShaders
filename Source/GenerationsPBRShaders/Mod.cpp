@@ -33,7 +33,7 @@ extern "C" void __declspec(dllexport) OnFrame()
         if (IBLCaptureService::mode == IBLCaptureMode::DefaultIBL)
             fileNameMultiByte = "work/ibl/" + StageId::get() + "_defaultibl.dds";
         else
-            fileNameMultiByte = "work/ibl/" + RenderDataManager::ms_IBLProbes[index]->m_Name + ".dds";
+            fileNameMultiByte = "work/ibl/" + RenderDataManager::iblProbes[index]->name + ".dds";
 
         MultiByteToWideChar(CP_UTF8, 0, fileNameMultiByte.c_str(), -1, fileNameWideChar, MAX_PATH);
 
@@ -43,13 +43,13 @@ extern "C" void __declspec(dllexport) OnFrame()
         {
             index++;
 
-            if (index == RenderDataManager::ms_IBLProbes.size())
+            if (index == RenderDataManager::iblProbes.size())
                 index = 0;
         }
     }
 
     if (index > 0 || (GetAsyncKeyState(VK_F1) & 1) != 0)
-        IBLCaptureService::capture(RenderDataManager::ms_IBLProbes[index]->m_Position, 128, IBLCaptureMode::IBLProbe);
+        IBLCaptureService::capture(RenderDataManager::iblProbes[index]->position, 128, IBLCaptureMode::IBLProbe);
     else if ((GetAsyncKeyState(VK_F2) & 1) != 0)
         IBLCaptureService::capture(Eigen::Vector3f::Zero(), 512, IBLCaptureMode::DefaultIBL);
 #endif

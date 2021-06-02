@@ -7,12 +7,12 @@ void PBROnVanillaFunsies::onFrame()
     if (!enabled)
         return;
 
-    SceneEffect::Debug.ReflectanceOverride = 0.17f;
-    SceneEffect::Debug.RoughnessOverride = 0.01f;
-    SceneEffect::Debug.MetalnessOverride = 0;
-    SceneEffect::RLR.Enable = true;
-    SceneEffect::RLR.Brightness = 3;
-    SceneEffect::RLR.MaxLod = 0;
+    SceneEffect::debug.reflectanceOverride = 0.17f;
+    SceneEffect::debug.roughnessOverride = 0.01f;
+    SceneEffect::debug.metalnessOverride = 0;
+    SceneEffect::rlr.enable = true;
+    SceneEffect::rlr.brightness = 3;
+    SceneEffect::rlr.maxLod = 0;
 
     /*SceneEffect::SSAO.Enable = true;
     SceneEffect::SSAO.Strength = 1;*/
@@ -23,32 +23,32 @@ void PBROnVanillaFunsies::onFrame()
 uint32_t trampolineFunctionAddress = 0x6621A0;
 uint32_t trampolineReturnAddress = 0x74251B;
 
-void __fastcall trampolineFunc(Hedgehog::Base::CSharedString* This, void* Edx, const char* name)
+void __fastcall trampolineFunc(hh::base::CSharedString* This, void* Edx, const char* name)
 {
     if (strstr(name, "Water"))
     {
-        Hedgehog::Base::fpCSharedStringCtor(This, "Water05");
+        hh::base::fpCSharedStringCtor(This, "Water05");
     }
 
     else if (strstr(name, "CDRF") || strstr(name, "Ring") || strstr(name, "2_") || strstr(name, "Sky"))
     {
-        Hedgehog::Base::fpCSharedStringCtor(This, name);
+        hh::base::fpCSharedStringCtor(This, name);
     }
 
     else if (strstr(name, "pn") || strstr(name, "sn") || strstr(name, "_dn"))
     {
         if (strstr(name, "Blend"))
-            Hedgehog::Base::fpCSharedStringCtor(This, "Blend2_dndn");
+            hh::base::fpCSharedStringCtor(This, "Blend2_dndn");
         else
-            Hedgehog::Base::fpCSharedStringCtor(This, "Common2_dn");
+            hh::base::fpCSharedStringCtor(This, "Common2_dn");
     }
 
     else
     {
         if (strstr(name, "Blend"))
-            Hedgehog::Base::fpCSharedStringCtor(This, "Blend2_dd");
+            hh::base::fpCSharedStringCtor(This, "Blend2_dd");
         else
-            Hedgehog::Base::fpCSharedStringCtor(This, "Common2_d");
+            hh::base::fpCSharedStringCtor(This, "Common2_d");
     }
 }
 

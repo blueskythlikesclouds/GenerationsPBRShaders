@@ -2,41 +2,43 @@
 
 struct BSCHeader
 {
-    char Magic[3];
-    uint8_t Version;
-    uint32_t CompressionType;
-    uint32_t CompressedLength;
-    uint32_t UncompressedLength;
+    char magic[3];
+    uint8_t version;
+    uint32_t compressionType;
+    uint32_t compressedLength;
+    uint32_t uncompressedLength;
 
-    bool IsValid() const
+    bool isValid() const
     {
-        return Magic[0] == 'B' && Magic[1] == 'S' && Magic[2] == 'C' && Version == 0;
+        return magic[0] == 'B' && magic[1] == 'S' && magic[2] == 'C' && version == 0;
     }
 };
+
 
 HOOK(uint32_t, __cdecl, DecompressCAB, 0xA92E54, void* a1, char* pBuffer, void* a3, void* a4, void* a5, void* a6, void* a7)
 {
     uint8_t* pData = (uint8_t*)strtol(pBuffer, nullptr, 16);
 
-    const BSCHeader* pHeader = *(BSCHeader**)pData;
-    if (pHeader == nullptr || !pHeader->IsValid())
+    const BSCHeader* header = *(BSCHeader**)pData;
+    if (header == nullptr || !header->isValid())
         return originalDecompressCAB(a1, pBuffer, a3, a4, a5, a6, a7);
 
-    uint8_t* uncompressedData = new uint8_t[pHeader->UncompressedLength];
 
-    hlDecompressNoAlloc((HlCompressType)pHeader->CompressionType, (uint8_t*)pHeader + sizeof(BSCHeader), 
-        pHeader->CompressedLength, pHeader->UncompressedLength, uncompressedData);
+    uint8_t* uncompressedData = new uint8_t[header->uncompressedLength];
+
+    hlDecompressNoAlloc((HlCompressType)(header->compressionType & 0xFFFF), (uint8_t*)header + sizeof(BSCHeader), 
+        header->compressedLength, header->uncompressedLength, uncompressedData);
 
     struct Output
     {
-        boost::shared_ptr<uint8_t> spData;
+        boost::shared_ptr<uint8_t> data;
         size_t length;
     };
 
-    Output* pOutput = (Output*)a7;
+    Output* output = (Output*)a7;
 
-    pOutput->spData = boost::shared_ptr<uint8_t>(uncompressedData);
-    pOutput->length = pHeader->UncompressedLength;
+    output->data = boost::shared_ptr<uint8_t>(uncompressedData);
+    output->length = header->uncompressedLength;
 
     return true;
 }

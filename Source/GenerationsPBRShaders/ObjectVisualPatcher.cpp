@@ -15,7 +15,7 @@
     {                                                                            \
         __asm { push eax }                                                       \
         __asm { push ebx }                                                       \
-        __asm { lea eax, [g_UsePBR] }                                            \
+        __asm { lea eax, [globalUsePBR] }                                              \
         __asm { movzx eax, byte ptr[eax] }                                       \
         __asm { lea ebx, name##ObjVisualStr }                                    \
         __asm { mov ecx, [ebx + eax * 4] }                                       \
@@ -40,20 +40,20 @@ STRING_HOOK(PulleyRopeDiffuse, 0x11211B3, "cmn_metal_ms_wire_HD_abd");
 STRING_HOOK(PulleyRopeSpecular, 0x1121219, "cmn_metal_ms_wire_HD_prm");
 STRING_HOOK(PulleyRopeSlot, 0x1120684, "specular");
 
-HOOK(void, __fastcall, LoadArchive, 0x69AB10, void* This, void* Edx, void* A3, void* A4, const Hedgehog::Base::CSharedString& name, void* pArchiveInfo, void* A7, void* A8)
+HOOK(void, __fastcall, LoadArchive, 0x69AB10, void* This, void* Edx, void* A3, void* A4, const hh::base::CSharedString& name, void* archiveInfo, void* A7, void* A8)
 {
     if (strstr(name.m_pStr, "PBR") != nullptr)
-        (*(int32_t*)pArchiveInfo) += 0x0BADF00D; // Priority
+        (*(int32_t*)archiveInfo) += 0x0BADF00D; // Priority
 
-    return originalLoadArchive(This, Edx, A3, A4, name, pArchiveInfo, A7, A8);
+    return originalLoadArchive(This, Edx, A3, A4, name, archiveInfo, A7, A8);
 }
 
-HOOK(void, __fastcall, LoadArchiveList, 0x69C270, void* This, void* Edx, void* A3, void* A4, const Hedgehog::Base::CSharedString& name, void* pArchiveInfo)
+HOOK(void, __fastcall, LoadArchiveList, 0x69C270, void* This, void* Edx, void* A3, void* A4, const hh::base::CSharedString& name, void* archiveInfo)
 {
     if (strstr(name.m_pStr, "PBR") != nullptr)
-        (*(int32_t*)pArchiveInfo) += 0x0BADF00D; // Priority
+        (*(int32_t*)archiveInfo) += 0x0BADF00D; // Priority
 
-    return originalLoadArchiveList(This, Edx, A3, A4, name, pArchiveInfo);
+    return originalLoadArchiveList(This, Edx, A3, A4, name, archiveInfo);
 }
 
 bool ObjectVisualPatcher::enabled = false;

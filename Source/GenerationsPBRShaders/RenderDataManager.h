@@ -4,42 +4,42 @@ class NodeBVH;
 
 struct SHLightFieldData
 {
-    OBB m_OBB;
-    Eigen::Matrix4f m_InverseMatrix;
-    Eigen::Vector3f m_Position;
-    uint32_t m_ProbeCounts[3];
-    float m_Radius;
-    float m_Distance;
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
+    OBB obb;
+    Eigen::Matrix4f inverseMatrix;
+    Eigen::Vector3f position;
+    uint32_t probeCounts[3];
+    float radius;
+    float distance;
+    boost::shared_ptr<hh::ygg::CYggPicture> picture;
 };
 
 struct IBLProbeData
 {
-    std::string m_Name;
-    OBB m_OBB;
-    Eigen::Matrix4f m_InverseMatrix;
-    Eigen::Vector3f m_Position;
-    float m_Bias;
-    float m_Radius;
-    float m_Distance;
-    boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> m_spPicture;
+    std::string name;
+    OBB obb;
+    Eigen::Matrix4f inverseMatrix;
+    Eigen::Vector3f position;
+    float bias;
+    float radius;
+    float distance;
+    boost::shared_ptr<hh::ygg::CYggPicture> picture;
 };
 
 struct LightMotionData
 {
-    std::string m_Name;
-    boost::shared_ptr<Hedgehog::Motion::CLightMotionData> m_spData;
-    Hedgehog::Motion::CLightSubMotionValueData m_ValueData;
+    std::string name;
+    boost::shared_ptr<hh::mot::CLightMotionData> data;
+    hh::mot::CLightSubMotionValueData valueData;
 };
 
 struct LocalLightData
 {
-    boost::shared_ptr<Hedgehog::Mirage::CLightData> m_spLightData;
-    Eigen::Vector3f m_Position;
-    Eigen::Vector3f m_Color;
-    Eigen::Vector4f m_Range;
-    float m_Distance;
-    LightMotionData* m_pLightMotionData;
+    boost::shared_ptr<hh::mr::CLightData> lightData;
+    Eigen::Vector3f position;
+    Eigen::Vector3f color;
+    Eigen::Vector4f range;
+    float distance;
+    LightMotionData* lightMotionData;
 };
 
 class RenderDataManager
@@ -47,19 +47,19 @@ class RenderDataManager
     static bool enabled;
 
 public:
-    static boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> ms_spDefaultIBLPicture;
-    static boost::shared_ptr<Hedgehog::Yggdrasill::CYggPicture> ms_spRgbTablePicture;
+    static boost::shared_ptr<hh::ygg::CYggPicture> defaultIBLPicture;
+    static boost::shared_ptr<hh::ygg::CYggPicture> rgbTablePicture;
 
-    static std::vector<std::unique_ptr<SHLightFieldData>> ms_SHLFs;
-    static std::vector<std::unique_ptr<IBLProbeData>> ms_IBLProbes;
-    static std::vector<std::unique_ptr<LightMotionData>> ms_LightMotions;
-    static std::vector<std::unique_ptr<LocalLightData>> ms_LocalLights;
+    static std::vector<std::unique_ptr<SHLightFieldData>> shlfs;
+    static std::vector<std::unique_ptr<IBLProbeData>> iblProbes;
+    static std::vector<std::unique_ptr<LightMotionData>> lightMotions;
+    static std::vector<std::unique_ptr<LocalLightData>> localLights;
 
-    static std::vector<const SHLightFieldData*> ms_SHLFsInFrustum;
-    static std::vector<const IBLProbeData*> ms_IBLProbesInFrustum;
-    static std::vector<const LocalLightData*> ms_LocalLightsInFrustum;
+    static std::vector<const SHLightFieldData*> shlfsInFrustum;
+    static std::vector<const IBLProbeData*> iblProbesInFrustum;
+    static std::vector<const LocalLightData*> localLightsInFrustum;
 
-    static NodeBVH ms_NodeBVH;
+    static NodeBVH nodeBVH;
 
     static void applyPatches();
 };

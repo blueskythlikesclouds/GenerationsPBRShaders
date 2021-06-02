@@ -38,4 +38,4 @@
 // Other
 #include <INIReader.h>
 
-extern bool g_UsePBR;
+extern bool globalUsePBR;

@@ -1,7 +1,7 @@
 ﻿#include "CpkBinder.h"
 #include <Shlwapi.h>
 
-HOOK(void, __fastcall, CFileBinderCriBindCpk, 0x66AAC0, void* This, void* Edx, const Hedgehog::Base::CSharedString& filePath, int32_t priority)
+HOOK(void, __fastcall, CFileBinderCriBindCpk, 0x66AAC0, void* This, void* Edx, const hh::base::CSharedString& filePath, int32_t priority)
 {
 	if (!CpkBinder::cpkPaths.empty())
 	{

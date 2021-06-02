@@ -15,83 +15,83 @@ enum DebugViewMode : uint32_t
 
 struct DebugParam
 {
-    bool UseWhiteAlbedo;
-    bool UseFlatNormal;
-    float ReflectanceOverride;
-    float RoughnessOverride;
-    float MetalnessOverride;
-    float GIShadowMapOverride;
-    DebugViewMode ViewMode;
-    bool DisableDirectLight;
-    bool DisableOmniLight;
-    bool DisableSHLightField;
-    bool DisableDefaultIBL;
-    bool DisableIBLProbe;
-    bool DisableLUT;
-    unsigned long MaxProbeCount;
+    bool useWhiteAlbedo;
+    bool useFlatNormal;
+    float reflectanceOverride;
+    float roughnessOverride;
+    float metalnessOverride;
+    float giShadowMapOverride;
+    DebugViewMode viewMode;
+    bool disableDirectLight;
+    bool disableOmniLight;
+    bool disableSHLightField;
+    bool disableDefaultIBL;
+    bool disableIBLProbe;
+    bool disableLUT;
+    unsigned long maxProbeCount;
 };
 
 struct CullingParam
 {
-    float SHLightFieldCullingRange;
-    float IBLProbeCullingRange;
-    float LocalLightCullingRange;
+    float shLightFieldCullingRange;
+    float iblProbeCullingRange;
+    float localLightCullingRange;
 };
 
 struct SGGIParam
 {
-    float StartSmoothness;
-    float EndSmoothness;
+    float startSmoothness;
+    float endSmoothness;
 };
 
 struct ESMParam
 {
-    float Factor;
+    float factor;
 };
 
 struct RLRParam
 {
-    bool Enable;
-    unsigned long StepCount;
-    float MaxRoughness;
-    float RayLength;
-    float Fade;
-    float AccuracyThreshold;
-    float Saturation;
-    float Brightness;
-    int32_t MaxLod;
+    bool enable;
+    unsigned long stepCount;
+    float maxRoughness;
+    float rayLength;
+    float fade;
+    float accuracyThreshold;
+    float saturation;
+    float brightness;
+    int32_t maxLod;
 };
 
 struct HighlightParam
 {
-    bool Enable;
-    float Threshold;
-    float ObjectAmbientScale;
-    float ObjectAlbedoHeighten;
-    float CharaAmbientScale;
-    float CharaAlbedoHeighten;
-    float CharaFalloffScale;
+    bool enable;
+    float threshold;
+    float objectAmbientScale;
+    float objectAlbedoHeighten;
+    float charaAmbientScale;
+    float charaAlbedoHeighten;
+    float charaFalloffScale;
 };
 
 struct SSAOParam
 {
-    bool Enable;
-    unsigned long SampleCount;
-    float Radius;
-    float DistanceFade;
-    float Strength;
+    bool enable;
+    unsigned long sampleCount;
+    float radius;
+    float distanceFade;
+    float strength;
 };
 
 class SceneEffect
 {
 public:
-    static DebugParam Debug;
-    static CullingParam Culling;
-    static SGGIParam SGGI;
-    static ESMParam ESM;
-    static RLRParam RLR;
-    static HighlightParam Highlight;
-    static SSAOParam SSAO;
+    static DebugParam debug;
+    static CullingParam culling;
+    static SGGIParam sggi;
+    static ESMParam esm;
+    static RLRParam rlr;
+    static HighlightParam highlight;
+    static SSAOParam ssao;
 
     static void applyPatches();
 };
