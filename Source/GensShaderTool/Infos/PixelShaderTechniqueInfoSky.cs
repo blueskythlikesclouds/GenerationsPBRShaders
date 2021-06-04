@@ -14,4 +14,19 @@
         {
         }
     }
+
+    public class PixelShaderTechniqueInfoSkyUV : PixelShaderTechniqueInfo
+    {
+        private static readonly VertexShaderPermutation[] sVertexShaderPermutations =
+        {
+            new VertexShaderPermutation( VertexShaderSubPermutations.All, "none", "Sky_@uv@" )
+        };
+
+        public static PixelShaderTechniqueInfoSkyUV Instance { get; } =
+            new PixelShaderTechniqueInfoSkyUV();
+
+        public PixelShaderTechniqueInfoSkyUV() : base( "default", "", sVertexShaderPermutations )
+        {
+        }
+    }
 }
