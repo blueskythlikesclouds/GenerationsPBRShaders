@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
+DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
 CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
@@ -17,7 +17,8 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     debugParamCategory->CreateParamBool(&SceneEffect::debug.useWhiteAlbedo, "UseWhiteAlbedo");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.useFlatNormal, "UseFlatNormal");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.reflectanceOverride, "ReflectanceOverride");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.roughnessOverride, "RoughnessOverride");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.smoothnessOverride, "SmoothnessOverride");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.ambientOcclusionOverride, "AmbientOcclusionOverride");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.metalnessOverride, "MetalnessOverride");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.x(), "GIColorOverrideR");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.y(), "GIColorOverrideG");
@@ -27,6 +28,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
         {
             { "None", DEBUG_VIEW_MODE_NONE },
             { "GIOnly", DEBUG_VIEW_MODE_GI_ONLY },
+            { "IBLOnly", DEBUG_VIEW_MODE_IBL_ONLY },
             { "GBuffer1", DEBUG_VIEW_MODE_GBUFFER1 },
             { "GBuffer2", DEBUG_VIEW_MODE_GBUFFER2 },
             { "GBuffer3", DEBUG_VIEW_MODE_GBUFFER3 },
@@ -36,7 +38,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
             { "ShadowMapNoTerrain", DEBUG_VIEW_MODE_SHADOW_MAP_NO_TERRAIN },
         });
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDirectLight, "DisableDirectLight");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableOmniLight, "DisableOmniLight");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableLocalLight, "DisableLocalLight");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableSHLightField, "DisableSHLightField");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDefaultIBL, "DisableDefaultIBL");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableIBLProbe, "DisableIBLProbe");
@@ -123,9 +125,10 @@ HOOK(void, __fastcall, ExecuteFxPipelineJobs, 0x78A3D0, void* This, void* Edx, v
     // Disable post processing when debug view mode in on.
     std::array<bool, POST_PROCESSING_TOGGLES.size()> toggleHistory{};
 
-    // Keep tonemapping on for GIOnly/RLR.
+    // Keep tonemapping on for GIOnly/IBLOnly/RLR.
     const size_t index = 
         SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY ||
+        SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ||
         SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_RLR ? 1 : 0;
 
     for (size_t i = index; i < POST_PROCESSING_TOGGLES.size(); i++)

@@ -120,19 +120,23 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set g_DebugParam
     const bool overrideGIColor = SceneEffect::debug.giColorOverride.minCoeff() >= 0.0f;
+    const bool giOnly = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY;
+    const bool iblOnly = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY;
 
     float debugParam[] =
     {
-        SceneEffect::debug.useWhiteAlbedo || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY ? 1.0f : -1.0f,
-        SceneEffect::debug.useFlatNormal ? 1.0f : -1.0f,
-        std::min<float>(1.0f, SceneEffect::debug.reflectanceOverride),
-        std::min<float>(1.0f, SceneEffect::debug.roughnessOverride),
-        std::min<float>(1.0f, SceneEffect::debug.metalnessOverride),
-        std::min<float>(1.0f, SceneEffect::debug.giShadowMapOverride),
+        SceneEffect::debug.useWhiteAlbedo || giOnly ? 1.0f : -1.0f,
+        iblOnly || SceneEffect::debug.useFlatNormal ? 1.0f : -1.0f,
+        iblOnly ? 1.0f : std::min<float>(1.0f, SceneEffect::debug.reflectanceOverride),
+        iblOnly ? 0.0f : SceneEffect::debug.smoothnessOverride >= 0.0f ? std::max<float>(0.01f, 1 - SceneEffect::debug.smoothnessOverride) : -1.0f,
+
+        giOnly || iblOnly ? 1.0f : std::min<float>(1.0f, SceneEffect::debug.ambientOcclusionOverride),
+        giOnly || iblOnly ? 0.0f : std::min<float>(1.0f, SceneEffect::debug.metalnessOverride),
         overrideGIColor ? SceneEffect::debug.giColorOverride.x() : -1.0f,
         overrideGIColor ? SceneEffect::debug.giColorOverride.y() : -1.0f,
+
         overrideGIColor ? SceneEffect::debug.giColorOverride.z() : -1.0f,
-        0,
+        std::min<float>(1.0f, SceneEffect::debug.giShadowMapOverride),
         0,
         0
     };
@@ -193,19 +197,22 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pre-pass: Render sky. //
     //***********************//
 
-    // Disable Z buffer.
-    renderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
-    renderingDevice->LockRenderState(D3DRS_ZENABLE);
+    if (SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_NONE)
+    {
+        // Disable Z buffer.
+        renderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+        renderingDevice->LockRenderState(D3DRS_ZENABLE);
 
-    // Disable alpha testing.
-    renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-    renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
+        // Disable alpha testing.
+        renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+        renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
-    // Enable alpha blending.
-    renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-    renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
+        // Enable alpha blending.
+        renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+        renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
-    This->RenderScene(hh::ygg::eRenderType_Sky, -1);
+        This->RenderScene(hh::ygg::eRenderType_Sky, -1);
+    }
 
     // Unlock render states we're done with.
     renderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
@@ -392,7 +399,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (localLightCount > 0)
         d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
 
-    if (SceneEffect::debug.disableOmniLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
+    if (SceneEffect::debug.disableLocalLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
         localLightCount = 0;
 
     //***************************************************//
@@ -499,7 +506,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         float stepCount_maxRoughness_rayLength_fade[] = {
             (float)SceneEffect::rlr.stepCount,
-            SceneEffect::rlr.maxRoughness,
+            SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ? -1.0f : SceneEffect::rlr.maxRoughness,
             SceneEffect::rlr.rayLength,
             1.0f / SceneEffect::rlr.fade };
 
@@ -826,13 +833,17 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //***********//
     // Particles //
     //***********//
-    renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-    renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-    renderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
-    renderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
-    This->RenderScene(hh::ygg::eRenderType_Effect | hh::ygg::eRenderType_SparkleObject | hh::ygg::eRenderType_SparkleFramebuffer,
-        hh::ygg::eRenderSlot_Opaque | hh::ygg::eRenderSlot_PunchThrough | hh::ygg::eRenderSlot_Transparent);
+    if (SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_NONE)
+    {
+        renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+        renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+        renderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
+        renderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+
+        This->RenderScene(hh::ygg::eRenderType_Effect | hh::ygg::eRenderType_SparkleObject | hh::ygg::eRenderType_SparkleFramebuffer,
+            hh::ygg::eRenderSlot_Opaque | hh::ygg::eRenderSlot_PunchThrough | hh::ygg::eRenderSlot_Transparent);
+    }
 
     boost::shared_ptr<hh::ygg::CYggTexture> colorTex;
     boost::shared_ptr<hh::ygg::CYggTexture> capturedColorTex;

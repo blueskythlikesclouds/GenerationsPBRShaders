@@ -112,7 +112,8 @@ void main(in DECLARATION_TYPE input,
     if (g_DebugParam[0].x >= 0) material.Albedo = 1.0;
     if (g_DebugParam[0].z >= 0) material.Reflectance = g_DebugParam[0].z;
     if (g_DebugParam[0].w >= 0) material.Roughness = g_DebugParam[0].w;
-    if (g_DebugParam[1].x >= 0) material.Metalness = g_DebugParam[1].x;
+    if (g_DebugParam[1].x >= 0) material.AmbientOcclusion = g_DebugParam[1].x;
+    if (g_DebugParam[1].y >= 0) material.Metalness = g_DebugParam[1].y;
 
     material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
 
@@ -201,12 +202,12 @@ void main(in DECLARATION_TYPE input,
         }
     }
 
-    if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
     if (g_DebugParam[1].z >= 0)
     {
         material.IndirectDiffuse = float3(g_DebugParam[1].zw, g_DebugParam[2].x);
         material.IndirectSpecular = 0;
     }
+    if (g_DebugParam[2].y >= 0) material.Shadow = g_DebugParam[2].y;
 
     material.IndirectDiffuse *= g_GI0Scale.rgb;
     material.IndirectSpecular *= g_GI0Scale.rgb;

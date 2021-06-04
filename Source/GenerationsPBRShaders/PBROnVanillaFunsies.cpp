@@ -8,7 +8,7 @@ void PBROnVanillaFunsies::onFrame()
         return;
 
     SceneEffect::debug.reflectanceOverride = 0.17f;
-    SceneEffect::debug.roughnessOverride = 0.01f;
+    SceneEffect::debug.smoothnessOverride = 0.01f;
     SceneEffect::debug.metalnessOverride = 0;
     SceneEffect::rlr.enable = true;
     SceneEffect::rlr.brightness = 3;

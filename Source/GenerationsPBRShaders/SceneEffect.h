@@ -4,6 +4,7 @@ enum DebugViewMode : uint32_t
 {
     DEBUG_VIEW_MODE_NONE,
     DEBUG_VIEW_MODE_GI_ONLY,
+    DEBUG_VIEW_MODE_IBL_ONLY,
     DEBUG_VIEW_MODE_GBUFFER1,
     DEBUG_VIEW_MODE_GBUFFER2,
     DEBUG_VIEW_MODE_GBUFFER3,
@@ -18,13 +19,14 @@ struct DebugParam
     bool useWhiteAlbedo;
     bool useFlatNormal;
     float reflectanceOverride;
-    float roughnessOverride;
+    float smoothnessOverride;
+    float ambientOcclusionOverride;
     float metalnessOverride;
     Eigen::Vector3f giColorOverride;
     float giShadowMapOverride;
     DebugViewMode viewMode;
     bool disableDirectLight;
-    bool disableOmniLight;
+    bool disableLocalLight;
     bool disableSHLightField;
     bool disableDefaultIBL;
     bool disableIBLProbe;
