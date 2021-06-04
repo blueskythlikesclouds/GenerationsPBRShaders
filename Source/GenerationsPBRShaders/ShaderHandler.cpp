@@ -119,6 +119,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     Sonic::CFxSceneRenderer* sceneRenderer = (Sonic::CFxSceneRenderer*)This->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
 
     // Set g_DebugParam
+    const bool overrideGIColor = SceneEffect::debug.giColorOverride.minCoeff() >= 0.0f;
+
     float debugParam[] =
     {
         SceneEffect::debug.useWhiteAlbedo || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY ? 1.0f : -1.0f,
@@ -127,20 +129,24 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         std::min<float>(1.0f, SceneEffect::debug.roughnessOverride),
         std::min<float>(1.0f, SceneEffect::debug.metalnessOverride),
         std::min<float>(1.0f, SceneEffect::debug.giShadowMapOverride),
+        overrideGIColor ? SceneEffect::debug.giColorOverride.x() : -1.0f,
+        overrideGIColor ? SceneEffect::debug.giColorOverride.y() : -1.0f,
+        overrideGIColor ? SceneEffect::debug.giColorOverride.z() : -1.0f,
+        0,
         0,
         0
     };
-    d3dDevice->SetPixelShaderConstantF(106, debugParam, 2);
+    d3dDevice->SetPixelShaderConstantF(106, debugParam, 3);
 
     // Set g_HDRParam_SGGIParam
     float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::sggi.startSmoothness - SceneEffect::sggi.endSmoothness);
     float hdrParam_sggiParam[] = { 1.0f / (*(float*)0x1A572D0 + 0.001f), 0, -(1.0f - SceneEffect::sggi.startSmoothness) * sggiScale, sggiScale };
-    d3dDevice->SetPixelShaderConstantF(108, hdrParam_sggiParam, 1);
+    d3dDevice->SetPixelShaderConstantF(109, hdrParam_sggiParam, 1);
 
     float esmParam[] = 
         { (float)shadowMap->m_CreationParams.Width, 1.0f / (float)shadowMap->m_CreationParams.Width, SceneEffect::esm.factor, 0 };
 
-    d3dDevice->SetPixelShaderConstantF(109, esmParam, 1);
+    d3dDevice->SetPixelShaderConstantF(110, esmParam, 1);
 
     // Set g_UsePBR
     BOOL usePBR[] = { globalUsePBR };
@@ -384,7 +390,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
     
     if (localLightCount > 0)
-        d3dDevice->SetPixelShaderConstantF(110, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
+        d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
 
     if (SceneEffect::debug.disableOmniLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
         localLightCount = 0;
@@ -425,10 +431,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         device->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        d3dDevice->SetPixelShaderConstantF(182 + i * 3, cache->inverseMatrix.data(), 3);
+        d3dDevice->SetPixelShaderConstantF(183 + i * 3, cache->inverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->probeCounts[0]) * 0.5f, (1.0f / cache->probeCounts[1]) * 0.5f, (1.0f / cache->probeCounts[2]) * 0.5f, 0 };
-        d3dDevice->SetPixelShaderConstantF(191 + i, shlfParam, 1);
+        d3dDevice->SetPixelShaderConstantF(192 + i, shlfParam, 1);
     }
 
     // Set SSAO.
@@ -446,7 +452,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             1.0f / (float)ssaoTex->m_CreationParams.Height,
         };
 
-        d3dDevice->SetPixelShaderConstantF(194, ssaoSize, 1);
+        d3dDevice->SetPixelShaderConstantF(195, ssaoSize, 1);
 
         device->SetSampler(8, ssaoTex);
         device->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -609,7 +615,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     iblLodParam[1] = (float)(SceneEffect::rlr.maxLod >= 0 ?
         std::min<int32_t>(SceneEffect::rlr.maxLod, rlrTex->m_CreationParams.Levels) : rlrTex->m_CreationParams.Levels);
 
-    d3dDevice->SetPixelShaderConstantF(144, iblLodParam, 1);
+    d3dDevice->SetPixelShaderConstantF(145, iblLodParam, 1);
 
     boost::shared_ptr<hh::ygg::CYggSurface> prevIBLSurface;
     prevIBLTex->GetSurface(prevIBLSurface, 0, 0);
@@ -626,7 +632,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         {
             const IBLProbeData* cache = RenderDataManager::iblProbesInFrustum[currProbeIndex++];
 
-            d3dDevice->SetPixelShaderConstantF(110 + j * 3, cache->inverseMatrix.data(), 3);
+            d3dDevice->SetPixelShaderConstantF(111 + j * 3, cache->inverseMatrix.data(), 3);
 
             probeParams[j * 4 + 0] = cache->position.x();
             probeParams[j * 4 + 1] = cache->position.y();
@@ -648,8 +654,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         if (iblCount > 0)
         {
-            d3dDevice->SetPixelShaderConstantF(134, probeParams, iblCount);
-            d3dDevice->SetPixelShaderConstantF(142, probeLodParams, (iblCount + 3) / 4);
+            d3dDevice->SetPixelShaderConstantF(135, probeParams, iblCount);
+            d3dDevice->SetPixelShaderConstantF(143, probeLodParams, (iblCount + 3) / 4);
         }
 
         BOOL isEnablePrevIBL[] = { true };

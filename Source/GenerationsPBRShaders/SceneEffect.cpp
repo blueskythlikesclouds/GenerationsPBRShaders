@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
+DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
 CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
@@ -19,6 +19,9 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.reflectanceOverride, "ReflectanceOverride");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.roughnessOverride, "RoughnessOverride");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.metalnessOverride, "MetalnessOverride");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.x(), "GIColorOverrideR");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.y(), "GIColorOverrideG");
+    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.z(), "GIColorOverrideB");
     debugParamCategory->CreateParamFloat(&SceneEffect::debug.giShadowMapOverride, "GIShadowMapOverride");
     debugParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::debug.viewMode, "ViewMode", "ViewMode",
         {

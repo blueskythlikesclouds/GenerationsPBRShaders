@@ -253,7 +253,7 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
     if (hasOcclusion)
     {
         This->m_pD3DDevice->SetTexture(9, giStore->occlusionTex->m_pD3DTexture);
-        This->m_pD3DDevice->SetPixelShaderConstantF(111, (const float*)&giStore->occlusionRect, 1);
+        This->m_pD3DDevice->SetPixelShaderConstantF(112, (const float*)&giStore->occlusionRect, 1);
     }
 
     This->m_pD3DDevice->SetTexture(10, giStore != nullptr ? giStore->giTex->m_pD3DTexture : nullptr);
@@ -267,10 +267,10 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
     }
 
     This->m_pD3DDevice->SetVertexShaderConstantF(186, giParam, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantF(110, giParam, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantF(111, giParam, 1);
 
     if (!hasOcclusion)
-        This->m_pD3DDevice->SetPixelShaderConstantF(111, pData, 1);
+        This->m_pD3DDevice->SetPixelShaderConstantF(112, pData, 1);
 
     This->m_pD3DDevice->SetPixelShaderConstantB(8, &isSg, 1);
     This->m_pD3DDevice->SetPixelShaderConstantB(9, &hasOcclusion, 1);

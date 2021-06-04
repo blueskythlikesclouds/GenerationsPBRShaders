@@ -14,9 +14,9 @@
 #define PRIMITIVE_TYPE_CDR          4
 #define PRIMITIVE_TYPE_MAX          4
 
-float4 g_DebugParam[2] : register(c106);
-float4 g_HDRParam_SGGIParam : register(c108);
-float4 g_ESMParam : register(c109);
+float4 g_DebugParam[3] : register(c106);
+float4 g_HDRParam_SGGIParam : register(c109);
+float4 g_ESMParam : register(c110);
 
 bool g_UsePBR : register(b6);
 

@@ -20,10 +20,10 @@
 #endif
 
 #ifndef GLOBAL_VSPARAM_HLSL_INCLUDED
-float4 mrgGIAtlasParam : register(c110);
+float4 mrgGIAtlasParam : register(c111);
 #endif
 
-float4 mrgOcclusionAtlasParam : register(c111);
+float4 mrgOcclusionAtlasParam : register(c112);
 
 bool mrgIsUseDeferred : register(b7);
 bool mrgIsSG : register(b8);

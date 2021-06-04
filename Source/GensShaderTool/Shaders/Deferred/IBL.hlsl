@@ -5,10 +5,10 @@
 #include "../Material.hlsl"
 #include "../Param.hlsl"
 
-float3x4 mrgProbeMatrices[8] : register(c110);
-float4 mrgProbeParams[8] : register(c134);
-float4 mrgProbeLodParams[2] : register(c142);
-float4 mrgLodParam : register(c144);
+float3x4 mrgProbeMatrices[8] : register(c111);
+float4 mrgProbeParams[8] : register(c135);
+float4 mrgProbeLodParams[2] : register(c143);
+float4 mrgLodParam : register(c145);
 
 samplerCUBE g_IBLProbeSamplers[8] : register(s4);
 sampler2D g_PrevIBLSampler : register(s13);

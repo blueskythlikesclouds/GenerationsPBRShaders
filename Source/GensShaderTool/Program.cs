@@ -287,7 +287,7 @@ namespace GensShaderTool
 
             preCode += sFilterHlsl;
             preCode +=
-                "\nfloat4 g_ESMParam : register(c109);" +
+                "\nfloat4 g_ESMParam : register(c110);" +
                 "float4 texShadow(sampler2D tex, float4 texCoord)\n" +
                 "{\n" +
                 "    if (abs(texCoord.x) > texCoord.w || abs(texCoord.y) > texCoord.w || abs(texCoord.z) > texCoord.w)" +
@@ -333,7 +333,7 @@ namespace GensShaderTool
                 "(mrgLuminanceRange * float4(GetToneMapLuminance().xxx, 1))");
 
             // Convert diffuse to linear space.
-            preCode += "float4 g_HDRParam_SGGIParam : register(c108);" +
+            preCode += "float4 g_HDRParam_SGGIParam : register(c109);" +
                        "sampler2D g_LuminanceSampler : register(s8);" +
                        "float GetToneMapLuminance()" +
                        "{" +

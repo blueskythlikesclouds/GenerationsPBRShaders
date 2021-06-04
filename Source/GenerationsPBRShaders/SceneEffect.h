@@ -20,6 +20,7 @@ struct DebugParam
     float reflectanceOverride;
     float roughnessOverride;
     float metalnessOverride;
+    Eigen::Vector3f giColorOverride;
     float giShadowMapOverride;
     DebugViewMode viewMode;
     bool disableDirectLight;

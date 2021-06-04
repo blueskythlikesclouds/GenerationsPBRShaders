@@ -201,10 +201,15 @@ void main(in DECLARATION_TYPE input,
         }
     }
 
+    if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
+    if (g_DebugParam[1].z >= 0)
+    {
+        material.IndirectDiffuse = float3(g_DebugParam[1].zw, g_DebugParam[2].x);
+        material.IndirectSpecular = 0;
+    }
+
     material.IndirectDiffuse *= g_GI0Scale.rgb;
     material.IndirectSpecular *= g_GI0Scale.rgb;
-
-    if (g_DebugParam[1].y >= 0) material.Shadow = g_DebugParam[1].y;
 #endif
 
     float cosTheta = dot(-mrgGlobalLight_Direction.xyz, material.Normal);
