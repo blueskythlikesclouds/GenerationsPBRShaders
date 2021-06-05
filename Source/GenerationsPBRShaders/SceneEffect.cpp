@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
+DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, false, 24 };
 CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
@@ -43,6 +43,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDefaultIBL, "DisableDefaultIBL");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableIBLProbe, "DisableIBLProbe");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableLUT, "DisableLUT");
+    debugParamCategory->CreateParamBool(&SceneEffect::debug.disablePBRBloom, "DisablePBRBloom");
     debugParamCategory->CreateParamUnsignedLong(&SceneEffect::debug.maxProbeCount, "MaxProbeCount");
 
     parameterGroup->Flush();

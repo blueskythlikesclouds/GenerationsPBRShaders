@@ -31,6 +31,7 @@ struct DebugParam
     bool disableDefaultIBL;
     bool disableIBLProbe;
     bool disableLUT;
+    bool disablePBRBloom;
     unsigned long maxProbeCount;
 };
 

@@ -19,6 +19,12 @@ void __declspec(naked) CFxBloomGlareExecuteMidAsmHook()
         mov bl, byte ptr [ebx]
         cmp bl, 0
         jz onFalse
+
+        lea ebx, [SceneEffect::debug.disablePBRBloom]
+        mov bl, byte ptr[ebx]
+        cmp bl, 0
+        jnz onFalse
+
         lea ebx, [pbrBloomShader]
         jmp end
     onFalse:
