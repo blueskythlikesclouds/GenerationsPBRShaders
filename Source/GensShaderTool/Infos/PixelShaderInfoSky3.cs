@@ -16,7 +16,8 @@ namespace GensShaderTool.Infos
         public virtual IReadOnlyList<SamplerInfo> Samplers { get; } = new SamplerInfo[]
         {
             new SamplerInfo("diffuseSampler", "diffuse", "d"),
-            new SamplerInfo("transparencySampler", "transparency", "a")
+            new SamplerInfo("transparencySampler", "transparency", "a"),
+            new SamplerInfo("emissionSampler", "emission", "E")
         };
 
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
