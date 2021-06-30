@@ -4,24 +4,24 @@
 #include "Filter.hlsl"
 #include "Material.hlsl"
 
-#define PI					3.14159265358979323846f
-#define LOG2E               1.44269504088896340736f
+#define PI       3.14159265358979323846f
+#define LOG2E    1.44269504088896340736f
 
-#define GAMMA               float4(2.2, 2.2, 2.2, 1.0)
+#define GAMMA    float4(2.2, 2.2, 2.2, 1.0)
 
 float3 FresnelSchlick(float3 F0, float cosTheta)
 {
-	float p = (-5.55473 * cosTheta - 6.98316) * cosTheta;
-	return F0 + (1.0 - F0) * exp2(p);
+    float p = (-5.55473 * cosTheta - 6.98316) * cosTheta;
+    return F0 + (1.0 - F0) * exp2(p);
 }
 
 float NdfGGX(float cosLh, float roughness)
 {
-	float alpha = roughness * roughness;
-	float alphaSq = alpha * alpha;
+    float alpha = roughness * roughness;
+    float alphaSq = alpha * alpha;
 
-	float denom = (cosLh * alphaSq - cosLh) * cosLh + 1;
-	return alphaSq / (PI * denom * denom);
+    float denom = (cosLh * alphaSq - cosLh) * cosLh + 1;
+    return alphaSq / (PI * denom * denom);
 }
 
 float VisSchlick(float roughness, float cosLo, float cosLi)
@@ -35,28 +35,28 @@ float VisSchlick(float roughness, float cosLo, float cosLi)
 
 float2 ApproxEnvBRDF(float cosLo, float roughness)
 {
-	float4 c0 = float4(-1, -0.0275, -0.572, 0.022);
-	float4 c1 = float4(1, 0.0425, 1.04, -0.04);
-	float4 r = roughness * c0 + c1;
-	float a004 = min(r.x * r.x, exp2(-9.28 * cosLo)) * r.x + r.y;
-	return float2(-1.04, 1.04) * a004 + r.zw;
+    float4 c0 = float4(-1, -0.0275, -0.572, 0.022);
+    float4 c1 = float4(1, 0.0425, 1.04, -0.04);
+    float4 r = roughness * c0 + c1;
+    float a004 = min(r.x * r.x, exp2(-9.28 * cosLo)) * r.x + r.y;
+    return float2(-1.04, 1.04) * a004 + r.zw;
 }
 
 void ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 lightColor, out float3 diffuseBRDF, out float3 specularBRDF)
 {
-	float3 halfwayDirection = normalize(material.ViewDirection + lightDirection);
+    float3 halfwayDirection = normalize(material.ViewDirection + lightDirection);
 
-	float cosLightDirection = saturate(dot(lightDirection, material.Normal));
-	float cosHalfwayDirection = saturate(dot(halfwayDirection, material.Normal));
+    float cosLightDirection = saturate(dot(lightDirection, material.Normal));
+    float cosHalfwayDirection = saturate(dot(halfwayDirection, material.Normal));
 
-	float3 F = FresnelSchlick(material.F0, saturate(dot(halfwayDirection, material.ViewDirection)));
-	float D = NdfGGX(cosHalfwayDirection, material.Roughness);
-	float Vis = VisSchlick(material.Roughness, material.CosViewDirection, cosLightDirection);
+    float3 F = FresnelSchlick(material.F0, saturate(dot(halfwayDirection, material.ViewDirection)));
+    float D = NdfGGX(cosHalfwayDirection, material.Roughness);
+    float Vis = VisSchlick(material.Roughness, material.CosViewDirection, cosLightDirection);
 
-	float3 kd = lerp(1 - F, 0, material.Metalness);
+    float3 kd = lerp(1 - F, 0, material.Metalness);
 
-	diffuseBRDF = kd * (material.Albedo / PI) * lightColor;
-	specularBRDF = (D * Vis) * F * lightColor;
+    diffuseBRDF = kd * (material.Albedo / PI) * lightColor;
+    specularBRDF = (D * Vis) * F * lightColor;
 }
 
 float3 ComputeDirectLightingRaw(Material material, float3 lightDirection, float3 lightColor)
