@@ -155,6 +155,13 @@ namespace GensShaderTool
                 pbrShaderDatabase,
                 new[] { new PixelShaderInfoSSAO() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
+            //====================//
+            // SSAO Filter Shader //
+            //====================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "SSAOFilter.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoSSAOFilter() }, pixelShaderGlobalParameterSet, cShaderFlags);
+
             //==============//
             // Bloom Shader //
             //==============//

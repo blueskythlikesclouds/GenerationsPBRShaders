@@ -46,6 +46,9 @@
     <None Update="Shaders\Filter\ConvolutionFilter.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Shaders\Filter\SSAOFilter.wpu.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Shaders\Filter\SSAO.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -95,7 +95,7 @@ namespace IBLCapture
 
     HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
     {
-        const bool capturing = !IBLCaptureService::faceIndex < 6 && IBLCaptureService::result != nullptr;
+        const bool capturing = IBLCaptureService::faceIndex < 6 && IBLCaptureService::result != nullptr;
         const hh::ygg::ERenderType tmpRenderTypes = This->m_RenderTypes;
 
         if (capturing)

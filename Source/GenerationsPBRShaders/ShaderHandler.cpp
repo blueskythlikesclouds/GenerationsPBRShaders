@@ -15,6 +15,7 @@ hh::mr::SShaderPair fxCopyColorShader;
 hh::mr::SShaderPair fxCopyColorDepthShader;
 
 hh::mr::SShaderPair fxSSAOShader;
+hh::mr::SShaderPair fxSSAOFilterShader;
 
 boost::shared_ptr<hh::ygg::CYggTexture> luAvgTex;
 
@@ -28,8 +29,10 @@ boost::shared_ptr<hh::ygg::CYggTexture> rlrTempTex;
 boost::shared_ptr<hh::ygg::CYggTexture> prevIBLTex;
 
 boost::shared_ptr<hh::ygg::CYggTexture> ssaoTex;
+boost::shared_ptr<hh::ygg::CYggTexture> ssaoFilteredTex;
 
 boost::shared_ptr<hh::ygg::CYggPicture> envBrdfPicture;
+boost::shared_ptr<hh::ygg::CYggPicture> blueNoisePicture;
 
 constexpr uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 {
@@ -79,6 +82,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     This->m_pScheduler->GetShader(fxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
     This->m_pScheduler->GetShader(fxSSAOShader, "FxFilterPT", "FxSSAO");
+    This->m_pScheduler->GetShader(fxSSAOFilterShader, "FxFilterT", "FxSSAOFilter");
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(luAvgTex, 1u, 1u, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R16F, D3DPOOL_DEFAULT, NULL);
 
@@ -98,9 +102,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     const uint32_t SSAO_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> 1;
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoFilteredTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
     luAvgTex->m_AutoReset = false;
     envBrdfPicture.reset();
+    blueNoisePicture.reset();
 }
 
 HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
@@ -346,8 +352,19 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     if (SceneEffect::ssao.enable)
     {
+        if (!blueNoisePicture)
+            This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
+        
         boost::shared_ptr<hh::ygg::CYggSurface> ssaoSurface;
         ssaoTex->GetSurface(ssaoSurface, 0, 0);
+
+        float blueNoiseTileSize[] =
+        {
+            (float)ssaoTex->m_CreationParams.Width / 64,
+            (float)ssaoTex->m_CreationParams.Height / 64,
+            0,
+            0
+        };
 
         float sampleCount_invSampleCount_radius_distanceFade[] =
         {
@@ -365,12 +382,27 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             0
         };
 
-        d3dDevice->SetPixelShaderConstantF(150, sampleCount_invSampleCount_radius_distanceFade, 1);
-        d3dDevice->SetPixelShaderConstantF(151, strength, 1);
+        d3dDevice->SetPixelShaderConstantF(150, blueNoiseTileSize, 1);
+        d3dDevice->SetPixelShaderConstantF(151, sampleCount_invSampleCount_radius_distanceFade, 1);
+        d3dDevice->SetPixelShaderConstantF(152, strength, 1);
+
+        device->SetSamplerFilter(4, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+        device->SetSamplerAddressMode(4, D3DTADDRESS_WRAP);
+        device->SetSampler(4, blueNoisePicture);
 
         device->SetShader(fxSSAOShader);
 
         device->SetRenderTarget(0, ssaoSurface);
+        device->RenderQuad(nullptr, 0, 0);
+
+        // Apply blur
+        boost::shared_ptr<hh::ygg::CYggSurface> spSsaoFilteredSurface;
+        ssaoFilteredTex->GetSurface(spSsaoFilteredSurface, 0, 0);
+
+        device->SetRenderTarget(0, spSsaoFilteredSurface);
+        device->SetSampler(4, ssaoTex);
+        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
+        device->SetShader(fxSSAOFilterShader);
         device->RenderQuad(nullptr, 0, 0);
     }
 
@@ -452,16 +484,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         float ssaoSize[] =
         {
-            (float)ssaoTex->m_CreationParams.Width,
-            (float)ssaoTex->m_CreationParams.Height,
+            (float)ssaoFilteredTex->m_CreationParams.Width,
+            (float)ssaoFilteredTex->m_CreationParams.Height,
 
-            1.0f / (float)ssaoTex->m_CreationParams.Width,
-            1.0f / (float)ssaoTex->m_CreationParams.Height,
+            1.0f / (float)ssaoFilteredTex->m_CreationParams.Width,
+            1.0f / (float)ssaoFilteredTex->m_CreationParams.Height,
         };
 
         d3dDevice->SetPixelShaderConstantF(195, ssaoSize, 1);
 
-        device->SetSampler(8, ssaoTex);
+        device->SetSampler(8, ssaoFilteredTex);
         device->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
@@ -867,7 +899,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         break;
 
     case DEBUG_VIEW_MODE_SSAO:
-        colorTex = ssaoTex;
+        colorTex = ssaoFilteredTex;
         break;
 
     case DEBUG_VIEW_MODE_SHADOW_MAP:

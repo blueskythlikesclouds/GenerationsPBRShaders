@@ -3,8 +3,11 @@
 
 #include "../Deferred/Deferred.hlsl"
 
-float4 g_SampleCount_InvSampleCount_Radius_DistanceFade : register(c150);
-float4 g_Strength : register(c151);
+float4 g_BlueNoiseTileSize : register(c150);
+float4 g_SampleCount_InvSampleCount_Radius_DistanceFade : register(c151);
+float4 g_Strength : register(c152);
+
+sampler2D g_BlueNoiseSampler : register(s4);
 
 float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
 {
@@ -21,14 +24,14 @@ float4 main(in float2 vPos : TEXCOORD0, in float2 texCoord : TEXCOORD1) : COLOR
     float3 normal = normalize(mul(gBuffer3.xyz * 2 - 1, g_MtxView));
 
     float radius = g_SampleCount_InvSampleCount_Radius_DistanceFade.z / max(0.0001, -position.z);
-    float noise = InterleavedGradientNoise(texCoord.xy * g_ViewportSize.xy);
+    float noise = tex2Dlod(g_BlueNoiseSampler, float4(texCoord.xy * g_BlueNoiseTileSize.xy, 0, 0)).x;
 
     float occlusion = 0;
 
     for (int i = 0; i < int(g_SampleCount_InvSampleCount_Radius_DistanceFade.x); i++)
     {
-        float2 cmpTexCoord = texCoord + (CalculateVogelDiskSample(i,
-            g_SampleCount_InvSampleCount_Radius_DistanceFade.x, noise * 2 * PI) * 2 - 1) * radius;
+        float2 cmpTexCoord = texCoord + CalculateVogelDiskSample(i,
+            g_SampleCount_InvSampleCount_Radius_DistanceFade.x, noise * 2 * PI) * radius;
 
         float cmpDepth = tex2Dlod(g_DepthSampler, float4(cmpTexCoord, 0, 0)).x;
 
