@@ -78,7 +78,7 @@ void main(in DECLARATION_TYPE input,
     Material material = NewMaterial();
 
 #if (defined(HasNormal) && HasNormal)
-    float3x3 worldToTangentMatrix = float3x3(input.Tangent.xyz, input.Binormal.xyz, input.Normal.xyz);
+    float3x3 worldToTangentMatrix = float3x3(normalize(input.Tangent.xyz), normalize(input.Binormal.xyz), normalize(input.Normal.xyz));
     float3x3 tangentToWorldMatrix = transpose(worldToTangentMatrix);
 
     material.Normal = normalize(g_DebugParam[0].y >= 0 ? input.Normal.xyz : GetNormal(input, tangentToWorldMatrix));
