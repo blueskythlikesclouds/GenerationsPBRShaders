@@ -13,7 +13,7 @@ namespace GensShaderTool.Infos
 
         public IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();
 
-        public virtual int IterationCount { get; } = 1 + 32;
+        public virtual int IterationCount { get; } = 1 + 50;
 
         public bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
         {

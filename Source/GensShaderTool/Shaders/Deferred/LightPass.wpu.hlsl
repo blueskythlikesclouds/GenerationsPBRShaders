@@ -1,21 +1,16 @@
 #include "Deferred.hlsl"
 #include "../Functions.hlsl"
 
-float4 mrgLocalLightData[72] : register(c111);
-float3x4 mrgSHLightFieldMatrices[3] : register(c183);
-float4 mrgSHLightFieldParams[3] : register(c192);
-float4 g_SSAOSize : register(c195);
+float4 mrgLocalLightData[100] : register(c111);
+float3x4 mrgSHLightFieldMatrices[3] : register(c211);
+float4 mrgSHLightFieldParams[3] : register(c220);
+float4 g_SSAOSize : register(c223);
 
 sampler3D g_SHLightFieldSamplers[3] : register(s4);
 sampler g_ShadowMapNoTerrainSampler : register(s7);
 sampler g_SSAOSampler : register(s8);
 
 bool g_IsEnableSSAO : register(b7);
-
-float GetLocalLightData(int index)
-{
-    return mrgLocalLightData[index / 4][index % 4];
-}
 
 void ComputeSHLightField(inout Material material, in float3 position)
 {
@@ -173,26 +168,10 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
 
     [unroll] for (int i = 0; i < IterationIndex; i++)
     {
-        float3 lightPosition = float3(
-            GetLocalLightData(i * 9 + 0),
-            GetLocalLightData(i * 9 + 1),
-            GetLocalLightData(i * 9 + 2)
-        );
-
-        float3 lightColor = float3(
-            GetLocalLightData(i * 9 + 3),
-            GetLocalLightData(i * 9 + 4),
-            GetLocalLightData(i * 9 + 5)
-        );
-
-        float4 lightRange = float4(
-            0,
-            GetLocalLightData(i * 9 + 6),
-            GetLocalLightData(i * 9 + 7),
-            GetLocalLightData(i * 9 + 8)
-        );
+        float4 positionAndRange = mrgLocalLightData[i * 2 + 0];
+        float4 colorAndInvRange = mrgLocalLightData[i * 2 + 1];
         
-        direct += ComputeLocalLight(position, material, lightPosition, lightColor, lightRange);
+        direct += ComputeLocalLight(position, material, positionAndRange.xyz, colorAndInvRange.rgb, float2(positionAndRange.w, colorAndInvRange.w));
     } 
 
     return float4(direct + indirect, material.Alpha);

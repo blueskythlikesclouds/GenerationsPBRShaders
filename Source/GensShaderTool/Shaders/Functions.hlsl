@@ -82,22 +82,21 @@ float3 ComputeDirectLighting(Material material, float3 lightDirection, float3 li
     return ComputeDirectLightingRaw(material, lightDirection, lightColor) * saturate(dot(lightDirection, material.Normal));
 }
 
-float3 ComputeLocalLight(float3 position, Material material, float3 lightPosition, float3 lightColor, float4 lightRange)
+float3 ComputeLocalLight(float3 position, Material material, float3 lightPosition, float3 lightColor, float2 lightRange)
 {
     float3 delta = lightPosition - position;
-    float distance = length(delta);
-    float3 direction = delta / distance;
+    float distanceSqr = dot(delta, delta);
 
-    float attenuation = 1.0f / (lightRange.y + lightRange.z * distance + lightRange.w * distance * distance);
+    [branch] if (distanceSqr > lightRange.x)
+        return 0;
 
-    // Apply cutoff
-    const float cutoff = 0.0002f;
-    attenuation = saturate((attenuation - cutoff) / (1 - cutoff));
+    float lightMask = distanceSqr * lightRange.y;
+    lightMask = saturate(1 - lightMask * lightMask);
+    lightMask *= lightMask;
 
-    [branch] if (attenuation > 0)
-        return ComputeDirectLighting(material, direction, lightColor) * attenuation;
+    float lightAttenuation = 1.0f / max(1, distanceSqr);
 
-    return 0;
+    return ComputeDirectLighting(material, delta * rsqrt(distanceSqr), lightColor) * lightMask * lightAttenuation;
 }
 
 float3 ComputeIndirectLighting(Material material, float2 specularBRDF)

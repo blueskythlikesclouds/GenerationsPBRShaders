@@ -5,7 +5,7 @@
 // TODO: Split literally everything here to multiple files.
 //
 
-std::array<hh::mr::SShaderPair, 1 + 32> fxDeferredPassLightShaders;
+std::array<hh::mr::SShaderPair, 1 + 50> fxDeferredPassLightShaders;
 hh::mr::SShaderPair fxRLRShader;
 std::array<hh::mr::SShaderPair, 1 + 8> fxDeferredPassIBLCombineShaders;
 hh::mr::SShaderPair fxDeferredPassIBLProbeShader;
@@ -409,27 +409,28 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pass 32 omni lights from the view to shaders.
     size_t localLightCount = 0;
 
-    float localLightData[9 * 32];
+    float localLightData[8 * 50];
         
-    localLightCount = std::min<size_t>(32, RenderDataManager::localLightsInFrustum.size());
+    localLightCount = std::min<size_t>(50, RenderDataManager::localLightsInFrustum.size());
     
     for (size_t i = 0; i < localLightCount; i++)
     {
         const LocalLightData* data = RenderDataManager::localLightsInFrustum[i];
-    
-        localLightData[i * 9 + 0] = data->position.x();
-        localLightData[i * 9 + 1] = data->position.y();
-        localLightData[i * 9 + 2] = data->position.z();
-        localLightData[i * 9 + 3] = data->color.x();
-        localLightData[i * 9 + 4] = data->color.y();
-        localLightData[i * 9 + 5] = data->color.z();
-        localLightData[i * 9 + 6] = data->range.y();
-        localLightData[i * 9 + 7] = data->range.z();
-        localLightData[i * 9 + 8] = data->range.w();
+
+        const float rangeSqr = data->range.w() * data->range.w();
+
+        localLightData[i * 8 + 0] = data->position.x();
+        localLightData[i * 8 + 1] = data->position.y();
+        localLightData[i * 8 + 2] = data->position.z();
+        localLightData[i * 8 + 3] = rangeSqr;
+        localLightData[i * 8 + 4] = data->color.x() / (float)(4 * M_PI);
+        localLightData[i * 8 + 5] = data->color.y() / (float)(4 * M_PI);
+        localLightData[i * 8 + 6] = data->color.z() / (float)(4 * M_PI);
+        localLightData[i * 8 + 7] = 1.0f / rangeSqr;
     }
     
     if (localLightCount > 0)
-        d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, std::min<int>(72, (localLightCount * 9 + 3) / 4));
+        d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, 2 * localLightCount);
 
     if (SceneEffect::debug.disableLocalLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
         localLightCount = 0;
@@ -470,10 +471,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         device->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        d3dDevice->SetPixelShaderConstantF(183 + i * 3, cache->inverseMatrix.data(), 3);
+        d3dDevice->SetPixelShaderConstantF(211 + i * 3, cache->inverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->probeCounts[0]) * 0.5f, (1.0f / cache->probeCounts[1]) * 0.5f, (1.0f / cache->probeCounts[2]) * 0.5f, 0 };
-        d3dDevice->SetPixelShaderConstantF(192 + i, shlfParam, 1);
+        d3dDevice->SetPixelShaderConstantF(220 + i, shlfParam, 1);
     }
 
     // Set SSAO.
@@ -491,7 +492,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             1.0f / (float)ssaoFilteredTex->m_CreationParams.Height,
         };
 
-        d3dDevice->SetPixelShaderConstantF(195, ssaoSize, 1);
+        d3dDevice->SetPixelShaderConstantF(223, ssaoSize, 1);
 
         device->SetSampler(8, ssaoFilteredTex);
         device->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);

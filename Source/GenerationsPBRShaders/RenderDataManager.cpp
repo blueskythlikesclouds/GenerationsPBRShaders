@@ -213,12 +213,11 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             RenderDataManager::localLights.push_back(std::make_unique<LocalLightData>(std::move(data)));
 
-            // TODO: Compute this properly
-            const float maxRange = (*it)->m_Range.maxCoeff();
+            const float range = (*it)->m_Range.w();
 
             AABB aabb;
-            aabb.min() = (*it)->m_Position - Eigen::Vector3f(maxRange, maxRange, maxRange);
-            aabb.max() = (*it)->m_Position + Eigen::Vector3f(maxRange, maxRange, maxRange);
+            aabb.min() = (*it)->m_Position - Eigen::Vector3f(range, range, range);
+            aabb.max() = (*it)->m_Position + Eigen::Vector3f(range, range, range);
 
             RenderDataManager::nodeBVH.add(NodeType::LocalLight, RenderDataManager::localLights.back().get(), aabb);
         }
@@ -287,18 +286,13 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
             // I have no idea if this is correct at all.
             // Simply passing the data as color does not work right.
             const float colorScale = localLight->lightMotionData->valueData.m_Data[0x10] / 
-                localLight->lightData->m_Color.head<3>().dot(Eigen::Vector3f(0.2126f, 0.7152f, 0.0722f));
+                localLight->lightData->m_Color.head<3>().maxCoeff();
 
             localLight->color = localLight->lightData->m_Color.head<3>() * colorScale;
 
             // If the animation made the color almost black, we have no reason to process this local light in the shader.
             if (localLight->color.maxCoeff() < 0.001f)
                 break;
-
-            localLight->range.x() = localLight->lightMotionData->valueData.m_Data[0x14];
-            localLight->range.y() = localLight->lightMotionData->valueData.m_Data[0x15];
-            localLight->range.z() = localLight->lightMotionData->valueData.m_Data[0x16];
-            localLight->range.w() = localLight->lightMotionData->valueData.m_Data[0x17];
         }
 
         RenderDataManager::localLightsInFrustum.push_back(localLight);
