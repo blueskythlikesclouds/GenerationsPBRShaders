@@ -19,6 +19,7 @@ hh::mr::SShaderPair fxSSAOFilterShader;
 
 boost::shared_ptr<hh::ygg::CYggTexture> luAvgTex;
 
+boost::shared_ptr<hh::ygg::CYggTexture> gBuffer0Tex;
 boost::shared_ptr<hh::ygg::CYggTexture> gBuffer1Tex;
 boost::shared_ptr<hh::ygg::CYggTexture> gBuffer2Tex;
 boost::shared_ptr<hh::ygg::CYggTexture> gBuffer3Tex;
@@ -86,6 +87,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(luAvgTex, 1u, 1u, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R16F, D3DPOOL_DEFAULT, NULL);
 
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer0Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer3Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16, D3DPOOL_DEFAULT, NULL);
@@ -173,10 +175,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
 
     // Prepare and set render targets. Clear their contents.
+    boost::shared_ptr<hh::ygg::CYggSurface> gBuffer0Surface;
     boost::shared_ptr<hh::ygg::CYggSurface> gBuffer1Surface;
     boost::shared_ptr<hh::ygg::CYggSurface> gBuffer2Surface;
     boost::shared_ptr<hh::ygg::CYggSurface> gBuffer3Surface;
 
+    gBuffer0Tex->GetSurface(gBuffer0Surface, 0, 0);
     gBuffer1Tex->GetSurface(gBuffer1Surface, 0, 0);
     gBuffer2Tex->GetSurface(gBuffer2Surface, 0, 0);
     gBuffer3Tex->GetSurface(gBuffer3Surface, 0, 0);
@@ -508,7 +512,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         d3dDevice->SetPixelShaderConstantF(37, globalLightColor, 1);
     }
 
-    device->SetRenderTarget(0, This->m_spColorSurface);
+    device->SetRenderTarget(0, gBuffer0Surface);
     device->RenderQuad(nullptr, 0, 0);
 
     if (SceneEffect::ssao.enable)
@@ -527,7 +531,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetRenderTarget(0, rlrSurface);
         device->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
-        device->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+        device->SetSampler(0, gBuffer0Tex);
+        device->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
 
         // Set parameters
         float framebufferSize[] = {
@@ -601,12 +606,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             device->RenderQuad(nullptr, 0, 0);
         }
 
-        // Revert render targets/textures.
-        device->SetRenderTarget(0, This->m_spColorSurface);
-        device->SetSampler(0, This->m_spColorTex);
+        // Revert sampler filters.
         device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-        device->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     }
+
+    device->SetSampler(0, gBuffer0Tex);
 
     //****************************************************//
     // Deferred specular pass: Add specular lighting to   //

@@ -4,10 +4,12 @@
 bool LUTHandler::enabled = false;
 
 hh::mr::SShaderPair fxLutShader;
+boost::shared_ptr<hh::ygg::CYggTexture> lutTex;
 
 HOOK(void, __fastcall, CFxRenderParticleInitialize, 0x10C7170, Sonic::CFxJob* This)
 {
     This->m_pScheduler->GetShader(fxLutShader, "FxFilterT", "FxLUT");
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(lutTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, NULL);
 }
 
 HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
@@ -22,7 +24,7 @@ HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
     This->GetTexture(colorTex, "colortex");
 
     boost::shared_ptr<hh::ygg::CYggSurface> surface;
-    colorTex->GetSurface(surface, 0, 0);
+    lutTex->GetSurface(surface, 0, 0);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, surface);
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(fxLutShader.m_spVertexShader, fxLutShader.m_spPixelShader);
@@ -42,7 +44,7 @@ HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
 
     This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
 
-    This->SetDefaultTexture(colorTex);
+    This->SetDefaultTexture(lutTex);
 }
 
 void LUTHandler::applyPatches()
