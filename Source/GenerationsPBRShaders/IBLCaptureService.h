@@ -1,5 +1,10 @@
 ﻿#pragma once
 
+namespace DirectX
+{
+    class ScratchImage;
+}
+
 enum class IBLCaptureMode
 {
     DefaultIBL,

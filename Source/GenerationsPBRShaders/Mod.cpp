@@ -15,13 +15,11 @@
 #include "VertexBufferHandler.h"
 #include "YggdrasillPatcher.h"
 
-#define ENABLE_IBL_CAPTURE_SERVICE    FALSE
-
 extern "C" void __declspec(dllexport) OnFrame()
 {
     StageId::update();
 
-#if ENABLE_IBL_CAPTURE_SERVICE
+#ifdef ENABLE_IBL_CAPTURE_SERVICE
     static size_t index = 0;
 
     const std::unique_ptr<DirectX::ScratchImage> result = IBLCaptureService::getResultIfReady();
@@ -85,7 +83,7 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
 
-#if ENABLE_IBL_CAPTURE_SERVICE
+#ifdef ENABLE_IBL_CAPTURE_SERVICE
     IBLCaptureService::applyPatches();
 #endif
 }

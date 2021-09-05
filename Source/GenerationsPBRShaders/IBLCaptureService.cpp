@@ -1,4 +1,6 @@
-﻿#include "IBLCaptureService.h"
+﻿#ifdef ENABLE_IBL_CAPTURE_SERVICE
+
+#include "IBLCaptureService.h"
 #include "DllMods/Source/GenerationsFreeCamera/Camera.h"
 
 bool* const g_ExecuteFrustumCulling = (bool*)0x1A42FFE;
@@ -160,3 +162,5 @@ void IBLCaptureService::applyPatches()
 
     IBLCapture::applyPatches();
 }
+
+#endif

@@ -5,7 +5,7 @@
 // TODO: Split literally everything here to multiple files.
 //
 
-std::array<hh::mr::SShaderPair, 1 + 50> fxDeferredPassLightShaders;
+std::array<hh::mr::SShaderPair, 1 + 32> fxDeferredPassLightShaders;
 hh::mr::SShaderPair fxRLRShader;
 std::array<hh::mr::SShaderPair, 1 + 8> fxDeferredPassIBLCombineShaders;
 hh::mr::SShaderPair fxDeferredPassIBLProbeShader;
@@ -413,9 +413,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pass 32 omni lights from the view to shaders.
     size_t localLightCount = 0;
 
-    float localLightData[8 * 50];
+    float localLightData[8 * 32];
         
-    localLightCount = std::min<size_t>(50, RenderDataManager::localLightsInFrustum.size());
+    localLightCount = std::min<size_t>(32, RenderDataManager::localLightsInFrustum.size());
     
     for (size_t i = 0; i < localLightCount; i++)
     {
@@ -475,10 +475,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         device->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
-        d3dDevice->SetPixelShaderConstantF(211 + i * 3, cache->inverseMatrix.data(), 3);
+        d3dDevice->SetPixelShaderConstantF(175 + i * 3, cache->inverseMatrix.data(), 3);
 
         float shlfParam[] = { (1.0f / cache->probeCounts[0]) * 0.5f, (1.0f / cache->probeCounts[1]) * 0.5f, (1.0f / cache->probeCounts[2]) * 0.5f, 0 };
-        d3dDevice->SetPixelShaderConstantF(220 + i, shlfParam, 1);
+        d3dDevice->SetPixelShaderConstantF(184 + i, shlfParam, 1);
     }
 
     // Set SSAO.
@@ -496,7 +496,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             1.0f / (float)ssaoFilteredTex->m_CreationParams.Height,
         };
 
-        d3dDevice->SetPixelShaderConstantF(223, ssaoSize, 1);
+        d3dDevice->SetPixelShaderConstantF(187, ssaoSize, 1);
 
         device->SetSampler(8, ssaoFilteredTex);
         device->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);

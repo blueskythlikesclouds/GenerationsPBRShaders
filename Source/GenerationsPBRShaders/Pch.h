@@ -7,7 +7,9 @@
 #include <detours.h>
 
 // DirectXTex
+#ifdef ENABLE_IBL_CAPTURE_SERVICE
 #include <DirectXTex.h>
+#endif
 
 // std
 #include <stdint.h>
