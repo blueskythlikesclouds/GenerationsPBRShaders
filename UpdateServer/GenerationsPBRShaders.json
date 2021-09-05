@@ -7,11 +7,7 @@
             {
                "Name":"Enable",
                "Description":[
-                  "Determines whether SSR is going to be enabled for stages that use it.",
-				  "",
-				  "WARNING:",
-				  "Due to a graphics driver bug, disabling SSR on Nvidia GPUs is going to make graphics bugged.",
-				  "However, it is going to work if reflection map density is set to \"Low\"."
+                  "Determines whether SSR is going to be enabled for stages that use it."
                ],
                "DisplayName":"Enable",
                "Type":"bool",

@@ -1,2 +1,13 @@
+add disk/bb/PBRSystemCommon.ar.00
+add disk/bb/PBRSystemCommon.arl
+add disk/bb3/PBRSonic.ar.00
+add disk/bb3/PBRSonic.ar.01
+add disk/bb3/PBRSonic.ar.02
+add disk/bb3/PBRSonic.arl
+add disk/bb3/shader_pbr.ar
+add disk/bb3/shader_pbr.arl
+add disk/bb3/shader_vanilla.ar
+add disk/bb3/shader_vanilla.arl
 add GenerationsPBRShaders.dll
+add GenerationsPBRShaders.json
 add mod.ini
