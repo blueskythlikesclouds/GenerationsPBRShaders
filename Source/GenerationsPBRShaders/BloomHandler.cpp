@@ -9,7 +9,7 @@ std::array<boost::shared_ptr<hh::ygg::CYggTexture>, COLORS_BLOOM_BUFFER_COUNT> c
 std::array<boost::shared_ptr<hh::ygg::CYggTexture>, COLORS_BLOOM_BUFFER_COUNT> colorsBloomTmpTex;
 
 hh::mr::SShaderPair pbrBloomShader;
-hh::mr::SShaderPair swaBloomShader;
+hh::mr::SShaderPair colorsBloomShader;
 
 hh::mr::SShaderPair downSampleNShader;
 hh::mr::SShaderPair downSample4Shader;
@@ -33,7 +33,7 @@ HOOK(void, __fastcall, CFxBloomGlareInitialize, Sonic::fpCFxBloomGlareInitialize
     }
 
     This->m_pScheduler->GetShader(pbrBloomShader, "RenderBuffer", "PBR_Bloom_BrightPassHDR");
-    This->m_pScheduler->GetShader(swaBloomShader, "RenderBuffer", "SWA_Bloom_BrightPassHDR");
+    This->m_pScheduler->GetShader(colorsBloomShader, "RenderBuffer", "Colors_Bloom_BrightPassHDR");
     This->m_pScheduler->GetShader(downSampleNShader, "FxFilterT", "FxDownSampleN");
     This->m_pScheduler->GetShader(downSample4Shader, "RenderBuffer", "DownSample4");
     This->m_pScheduler->GetShader(blendColorShader, "FxFilterT", "FxBlendColor");
@@ -136,7 +136,7 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetShader(swaBloomShader);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetShader(colorsBloomShader);
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
     This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
 
