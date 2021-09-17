@@ -31,7 +31,6 @@ struct DebugParam
     bool disableDefaultIBL;
     bool disableIBLProbe;
     bool disableLUT;
-    bool disablePBRBloom;
     unsigned long maxProbeCount;
 };
 
@@ -86,6 +85,19 @@ struct SSAOParam
     float strength;
 };
 
+enum BloomType : uint32_t
+{
+    BLOOM_TYPE_DEFAULT,
+    BLOOM_TYPE_PBR,
+    BLOOM_TYPE_BFXP,
+    BLOOM_TYPE_COLORS
+};
+
+struct BloomParam
+{
+    BloomType type;
+};
+
 class SceneEffect
 {
 public:
@@ -96,6 +108,7 @@ public:
     static RLRParam rlr;
     static HighlightParam highlight;
     static SSAOParam ssao;
+    static BloomParam bloom;
 
     static void applyPatches();
 };

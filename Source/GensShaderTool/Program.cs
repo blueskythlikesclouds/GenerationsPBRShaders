@@ -167,7 +167,21 @@ namespace GensShaderTool
             //==============//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "Bloom.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoBloom() }, pixelShaderGlobalParameterSet, cShaderFlags);
+                new[] { new PixelShaderInfoBloom() }, pixelShaderGlobalParameterSet, cShaderFlags); 
+            
+            //=======================//
+            // Bicubic Filter Shader //
+            //=======================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "BicubicFilter.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoBicubicFilter() }, pixelShaderGlobalParameterSet, cShaderFlags);    
+            
+            //======================//
+            // Down Sample N Shader //
+            //======================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "DownSampleN.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoDownSampleN() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             pbrShaderDatabase.Sort();
             pbrShaderDatabase.Save(pbrShaderArPath, cShaderArPadding, cShaderArMaxSplitSize);

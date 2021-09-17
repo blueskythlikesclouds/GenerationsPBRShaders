@@ -40,7 +40,13 @@
     <None Update="Parameters\Unleashed\global.vsparam">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Shaders\Filter\DownSampleN.wpu.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Shaders\Filter\Bloom.wpu.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Shaders\Filter\BicubicFilter.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\Filter\ConvolutionFilter.wpu.hlsl">
