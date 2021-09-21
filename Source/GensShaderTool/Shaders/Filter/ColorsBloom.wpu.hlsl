@@ -32,5 +32,5 @@ float3 GetToneMappedColor(float2 v0)
 
 float4 main(float4 texCoord : TEXCOORD0) : COLOR
 {
-	return float4(saturate((tex2D(sampDif0, texCoord).rgb / g_BloomStar_Param1.x - g_BloomStar_Param1.x) * 0.5), 1);
+	return float4(saturate(saturate(GetToneMappedColor(texCoord.xy) * 0.5) / (g_BloomStar_Param1.x * 0.5) - g_BloomStar_Param1.x), 1);
 }

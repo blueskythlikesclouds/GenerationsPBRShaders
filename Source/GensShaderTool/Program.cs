@@ -311,7 +311,6 @@ namespace GensShaderTool
 
             string preCode = translated.Substring(0, index);
             string mainCode = translated.Substring(index);
-            mainCode = mainCode.Replace(", 4)", ", 65504)");
 
             preCode += sFilterHlsl;
             preCode +=
