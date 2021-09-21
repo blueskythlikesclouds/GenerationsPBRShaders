@@ -240,7 +240,8 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
     static GIStore* prevGIStore = nullptr;
 
     GIStore* giStore = nullptr;
-    dxpTex->QueryInterface(IID(), (void**)&giStore);
+    if (dxpTex)
+        dxpTex->QueryInterface(IID(), (void**)&giStore);
 
     if (prevGIStore != nullptr && giStore == prevGIStore)
         return;
