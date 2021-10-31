@@ -51,7 +51,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
         float3(0, 0, -1)
     };
 
-    float3 shlf[6];
+    float4 shlf[6];
 
     switch (abs(currentIndex))
     {
@@ -60,7 +60,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
         currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[0]);
 
         for (i = 0; i < 6; i++)
-            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[0], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
+            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[0], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0));
 
         break;
 
@@ -68,7 +68,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
         currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[1]);
 
         for (i = 0; i < 6; i++)
-            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[1], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
+            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[1], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0));
 
         break;
 
@@ -76,7 +76,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
         currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[2]);
 
         for (i = 0; i < 6; i++)
-            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[2], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0)).rgb;
+            shlf[i] = tex3Dlod(g_SHLightFieldSamplers[2], float4(currentShCoords + float3(i / 9.0f, 0, 0), 0));
 
         break;
     }
@@ -85,6 +85,7 @@ void ComputeSHLightField(inout Material material, in float3 position)
         material.IndirectDiffuse += ComputeSHBasis(material, shlf[i], directions[i]);
 
     material.IndirectDiffuse = ComputeSHFinal(material.IndirectDiffuse) * g_GI0Scale.rgb;
+    material.Shadow *= shlf[0].a;
 }
 
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGBuffer2 : COLOR1) : COLOR
