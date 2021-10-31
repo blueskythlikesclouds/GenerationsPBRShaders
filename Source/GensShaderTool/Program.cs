@@ -107,7 +107,7 @@ namespace GensShaderTool
             //==================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Sky.wpu.hlsl"),
                 pbrShaderDatabase,
-                new IShaderInfo[] { new PixelShaderInfoSky2(), new PixelShaderInfoSky3() }, pixelShaderGlobalParameterSet, cShaderFlags);
+                new IShaderInfo[] { new PixelShaderInfoSky2(), new PixelShaderInfoSky2Sqrt(), new PixelShaderInfoSky3() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             //============//
             // LUT Shader //

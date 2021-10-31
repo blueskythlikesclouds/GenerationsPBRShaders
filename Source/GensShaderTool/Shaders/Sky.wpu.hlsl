@@ -23,7 +23,13 @@ float4 main(in float2 vPos : VPOS, in float4 texCoord0 : TEXCOORD0, in float4 te
 
     diffuse = pow(abs(saturate(diffuse)), GAMMA);
 #else
+
+#if defined(IsSky2Sqrt) && IsSky2Sqrt
+    diffuse.rgb = UnpackHDRSqrt(diffuse);
+#else
     diffuse.rgb = UnpackHDR(diffuse);
+#endif
+
     diffuse.a = 1;
 #endif
 

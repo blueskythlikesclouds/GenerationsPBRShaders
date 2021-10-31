@@ -522,6 +522,12 @@ float3 UnpackHDR(float4 color)
     return color.rgb * exp2(color.a * (16 * LOG2E) - (4 * LOG2E));
 }
 
+float3 UnpackHDRSqrt(float4 color)
+{
+    // rgb * rgb * exp(a * 16 - 4)
+    return color.rgb * color.rgb * exp2(color.a * (16 * LOG2E) - (4 * LOG2E));
+}
+
 float LinearizeDepth(float depth, in float4x4 invProjection)
 {
     float4 position = mul(float4(0, 0, depth, 1), invProjection);
