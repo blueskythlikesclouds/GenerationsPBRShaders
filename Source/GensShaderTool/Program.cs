@@ -262,14 +262,11 @@ namespace GensShaderTool
             shaderRegularAdd.Contents.AddRange(shaderRegular.Contents.Where(x => x.Name.StartsWith(misplacedShaderName)));
             shaderRegular.Contents.RemoveAll(x => x.Name.StartsWith(misplacedShaderName));
 
-            Parallel.ForEach(
-                shaderRegular.Contents.Where(x =>
-                    x.Name.Contains("MeasureLuminance", StringComparison.OrdinalIgnoreCase) &&
-                    x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
-                x =>
-                {
-                    x.Data = FixMeasureLuminanceShader(x.Data, x.Name);
-                });
+            // Why does ST clamp the colors??? First regular shaders now the tonemapping shader...
+            ConvertShadersToPBRCompatible(shaderRegular, "MeasureLuminance", translated => translated.Replace("saturate", ""));
+
+            // Ignore vertex alpha in punch through shadow as we may use it for blending or ambient occlusion
+            ConvertShadersToPBRCompatible(shaderRegular, "MakeShadowMapTransparent", translated => translated.Replace("v0.zzzz", "1"));
 
             Parallel.ForEach(
                 shaderRegularAdd.Contents.Where(x => x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
@@ -282,22 +279,26 @@ namespace GensShaderTool
             return shaderRegular;
         }
 
-        private static byte[] FixMeasureLuminanceShader(byte[] bytes, string debugName)
+        private static void ConvertShadersToPBRCompatible(ArchiveDatabase shaderRegular, string name, Func<string, string> action)
         {
-            string translated = ShaderTranslator.Translate(bytes);
+            Parallel.ForEach(
+                shaderRegular.Contents.Where(x =>
+                    x.Name.Contains(name, StringComparison.OrdinalIgnoreCase) &&
+                    x.Name.EndsWith(".wpu", StringComparison.OrdinalIgnoreCase)),
+                x =>
+                {
+                    string translated = action(ShaderTranslator.Translate(x.Data));
 
-            // Why does ST clamp the colors??? First regular shaders now the tonemapping shader...
-            translated = translated.Replace("saturate", "");
-
-            try
-            {
-                return ShaderCompiler.Compile(translated, ShaderType.Pixel, cShaderFlags);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Failed to compile shader {0}: {1}", debugName, e.Message);
-                return bytes;
-            }
+                    try
+                    {
+                        Console.WriteLine("Compiling {0}", x.Name);
+                        x.Data = ShaderCompiler.Compile(translated, ShaderType.Pixel, cShaderFlags);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Failed to compile shader {0}: {1}", x, e.Message);
+                    }
+                });
         }
 
         private static readonly string sFilterHlsl =
