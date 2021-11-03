@@ -301,8 +301,9 @@ namespace GensShaderTool
                 });
         }
 
-        private static readonly string sFilterHlsl =
-            File.ReadAllText(Path.Combine(sProjectDirectory, "Shaders", "Filter.hlsl")).Replace("sampler tex", "sampler2D tex");
+        private static readonly string sHlslIncludes =
+            File.ReadAllText(Path.Combine(sProjectDirectory, "Shaders", "Param.hlsl")) + "\n" +
+            File.ReadAllText(Path.Combine(sProjectDirectory, "Shaders", "Filter.hlsl")).Replace("sampler tex", "sampler2D tex") + "\n";
 
         private static byte[] ConvertShaderToPBRCompatible(byte[] bytes, string debugName)
         {
@@ -313,9 +314,8 @@ namespace GensShaderTool
             string preCode = translated.Substring(0, index);
             string mainCode = translated.Substring(index);
 
-            preCode += sFilterHlsl;
+            preCode += sHlslIncludes;
             preCode +=
-                "\nfloat4 g_ESMParam : register(c110);" +
                 "float4 texShadow(sampler2D tex, float4 texCoord)\n" +
                 "{\n" +
                 "    if (abs(texCoord.x) > texCoord.w || abs(texCoord.y) > texCoord.w || abs(texCoord.z) > texCoord.w)" +
@@ -361,8 +361,7 @@ namespace GensShaderTool
                 "(mrgLuminanceRange * float4(GetToneMapLuminance().xxx, 1))");
 
             // Convert diffuse to linear space.
-            preCode += "float4 g_HDRParam_SGGIParam : register(c109);" +
-                       "sampler2D g_LuminanceSampler : register(s8);" +
+            preCode += "sampler2D g_LuminanceSampler : register(s8);" +
                        "float GetToneMapLuminance()" +
                        "{" +
                        "    return tex2Dlod(g_LuminanceSampler, 0).x * g_HDRParam_SGGIParam.x;" +
@@ -393,10 +392,27 @@ namespace GensShaderTool
             code = code.Replace("texProj(g_ShadowMap", "1; //");
 
             // Pass correct data to GBuffer.
-            code = code[..^4] + "oC1 = 0; oC2 = float4(0, 1, 0, 1); oC3 = 0;\n }";
+            if (debugName.Contains("GrassInstance_", StringComparison.Ordinal))
+            {
+                int componentIndex = translated.IndexOf(" : COLOR,", StringComparison.Ordinal);
+                string component = translated.Substring(componentIndex - 2, 2);
 
-            // Add the g_UsePBR bool
-            preCode += "bool g_UsePBR : register(b6);";
+                code = code[..^4] +
+                       "float4 color = texSRGB(s0, v0);" +
+                       "oC0 = float4(0, 0, 0, color.a); " +
+                       "oC1 = float4(color.rgb, 1); " +
+                       "oC2 = float4(0, 0.8, 1, 0); " +
+                       $"oC3 = float4({component}.xyz, PackPrimitiveType(PRIMITIVE_TYPE_NO_GI));\n }}";
+            }
+
+            else
+            {
+                // Pass placeholder data to at least appear correctly.
+                code = code[..^4] + 
+                       "oC1 = 0; " +
+                       "oC2 = float4(0, 1, 0, 1); " +
+                       "oC3 = float4(0, 0, 0, PackPrimitiveType(PRIMITIVE_TYPE_RAW));\n }";
+            }
 
             // Make the modified code only execute when the PBR toggle is enabled.
             var codeSplit = code.Split('\n',

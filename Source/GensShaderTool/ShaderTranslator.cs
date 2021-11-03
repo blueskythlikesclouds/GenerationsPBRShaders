@@ -166,6 +166,9 @@ namespace GensShaderTool
             foreach (var constant in constants)
                 writer.WriteLine("\tfloat4 {0};", constant.Key);
 
+            if (constants.Count > 0)
+                writer.WriteLine();
+
             foreach (var constant in constants)
                 writer.WriteLine("\t{0} = float4{1};", constant.Key, string.Join(", ", constant.Value));
 
@@ -718,6 +721,10 @@ namespace GensShaderTool
 
                     stringBuilder.AppendFormat("{0} = rsqrt({1});", Arguments[0], Arguments[1]);
                     break;      
+
+                case "sincos":
+                    stringBuilder.AppendFormat("{0} = float2(sin({1}), cos({1})){2};", Arguments[0], Arguments[1], Arguments[0].Swizzle);
+                    break;
 
                 case "sub":
                     Arguments[1].Swizzle.Convert(Arguments[0].Swizzle);
