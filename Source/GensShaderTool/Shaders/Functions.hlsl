@@ -120,12 +120,12 @@ float3 ComputeIndirectLighting(Material material, sampler2D envBRDF)
     return ComputeIndirectLighting(material, tex2Dlod(envBRDF, float4(material.CosViewDirection, material.Roughness, 0, 0)).xy);
 }
 
-float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 texSize, float esmFactor)
+float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 texSize, float esmFactor, float fallback = 1.0)
 {
     if (abs(shadowMapCoord.x) > shadowMapCoord.w || 
         abs(shadowMapCoord.y) > shadowMapCoord.w || 
         abs(shadowMapCoord.z) > shadowMapCoord.w)
-        return 1.0;
+        return fallback;
 
     float3 shadowPos = shadowMapCoord.xyz / shadowMapCoord.w;
     shadowPos.xy = shadowPos.xy * float2(0.5, -0.5) + 0.5;
@@ -172,7 +172,7 @@ float ComputeShadow(sampler shadowTex, float4 shadowMapCoord, float2 texSize, fl
     fade *= saturate((1 - shadowPos.y) / 0.01);
     fade *= saturate((1 - shadowPos.z) / 0.01);
 
-    return lerp(1, sum / 16, fade);
+    return lerp(fallback, sum / 16, fade);
 }
 
 // Welcome to Sonic Forces PC....

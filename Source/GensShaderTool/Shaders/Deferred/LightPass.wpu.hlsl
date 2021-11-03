@@ -146,23 +146,40 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     }
     else
     {
-        ComputeSHLightField(material, position);
-
-        indirect = ComputeIndirectLighting(material);
-
         direct = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
+
+        material.Shadow = ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ESMParam.xy, g_ESMParam.z, material.Shadow);
 
         if (type == PRIMITIVE_TYPE_CDR)
         {
             direct *= gBuffer0.rgb;
+            indirect = 0;
         }
         else
         {
-            direct *= saturate(dot(-mrgGlobalLight_Direction.xyz, material.Normal));
-            indirect += gBuffer0.rgb;
+            float nDotL = dot(material.Normal, -mrgGlobalLight_Direction.xyz);
+
+            if (type == PRIMITIVE_TYPE_TRANS_THIN)
+            {
+                direct *= saturate(nDotL);
+                indirect = 0;
+
+                float vDotL = dot(material.ViewDirection, -mrgGlobalLight_Direction.xyz);
+                float wrap = saturate((-nDotL + 0.5) / ((1 + 0.5) * (1 + 0.5)));
+                float scatter = NdfGGX(saturate(-vDotL), 0.6);
+                direct += mrgGlobalLight_Diffuse.rgb * wrap * scatter * gBuffer0.rgb;
+
+                material.Shadow += (1 - material.Shadow) * saturate(vDotL);
+            }
+            else 
+            {
+                direct *= saturate(nDotL);
+                indirect = gBuffer0.rgb;
+            }
         }
 
-        material.Shadow *= ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ESMParam.xy, g_ESMParam.z);
+        ComputeSHLightField(material, position);
+        indirect += ComputeIndirectLighting(material);
     }
 
     direct *= material.Shadow;

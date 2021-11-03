@@ -36,6 +36,8 @@
 #include "Material/Object/PointMarker.hlsl"
 #elif (defined(IsSuperSonic) && IsSuperSonic)
 #include "Material/SuperSonic.hlsl"
+#elif (defined(IsTransThin2) && IsTransThin2)
+#include "Material/TransThin.hlsl"
 #endif
 
 float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
@@ -117,7 +119,7 @@ void main(in DECLARATION_TYPE input,
 
     material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
 
-#if defined(NoGI) && NoGI
+#if (defined(NoGI) && NoGI)
     float sggiBlendFactor = 0.0;
     float iblBlendFactor = 1.0;
 
@@ -253,21 +255,29 @@ void main(in DECLARATION_TYPE input,
     {
         float3 color = 0;
 
-#if defined(NoGI) && NoGI
-#if defined(HasCdr) && HasCdr
-        color = GetCdr(cosTheta, input.Color.y);
-        type = PRIMITIVE_TYPE_CDR;
-#else
-        type = PRIMITIVE_TYPE_NO_GI;
-#endif
-#else
-#if defined(UseApproxEnvBRDF) && UseApproxEnvBRDF
-        color = ComputeIndirectLighting(material);
-#else
-        color = ComputeIndirectLighting(material, g_EnvBRDFSampler);
-#endif
-        type = PRIMITIVE_TYPE_GI;
-#endif
+        #if (defined(IsTransThin2) && IsTransThin2)
+            color = GetTrans(input);
+            type = PRIMITIVE_TYPE_TRANS_THIN;
+        //endif
+        
+        #elif (defined(NoGI) && NoGI)
+            #if (defined(HasCdr) && HasCdr)
+                color = GetCdr(cosTheta, input.Color.y);
+                type = PRIMITIVE_TYPE_CDR;
+            #else
+                type = PRIMITIVE_TYPE_NO_GI;
+            #endif
+        //endif
+
+        #else
+            #if (defined(UseApproxEnvBRDF) && UseApproxEnvBRDF)
+                color = ComputeIndirectLighting(material);
+            #else
+                color = ComputeIndirectLighting(material, g_EnvBRDFSampler);
+            #endif
+        
+            type = PRIMITIVE_TYPE_GI;
+        #endif
 
         outColor0 = float4(color, material.Alpha);
         PostProcessFinalColor(input, material, true, outColor0);

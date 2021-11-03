@@ -6,13 +6,15 @@
 // GI: GBuffer0 has GI and emission color. Direct light, local light, IBL and light scattering is applied.
 // No GI: GBuffer0 has emission color. Direct light, local light, SHLF, IBL and light scattering is applied.
 // CDR: GBuffer0 has CDR color. Direct light, local light, SHLF, IBL and light scattering is applied.
+// TransThin: GBuffer0 has SSS color. Direct light, local light, SHLF, IBL and light scattering is applied.
 
 #define PRIMITIVE_TYPE_RAW          0
 #define PRIMITIVE_TYPE_EMISSION     1
 #define PRIMITIVE_TYPE_GI           2
 #define PRIMITIVE_TYPE_NO_GI        3
 #define PRIMITIVE_TYPE_CDR          4
-#define PRIMITIVE_TYPE_MAX          4
+#define PRIMITIVE_TYPE_TRANS_THIN   5
+#define PRIMITIVE_TYPE_MAX          5
 
 float4 g_DebugParam[3] : register(c106);
 float4 g_HDRParam_SGGIParam : register(c109);
