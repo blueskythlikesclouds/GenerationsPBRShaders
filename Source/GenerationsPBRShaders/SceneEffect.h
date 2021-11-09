@@ -65,17 +65,6 @@ struct RLRParam
     int32_t maxLod;
 };
 
-struct HighlightParam
-{
-    bool enable;
-    float threshold;
-    float objectAmbientScale;
-    float objectAlbedoHeighten;
-    float charaAmbientScale;
-    float charaAlbedoHeighten;
-    float charaFalloffScale;
-};
-
 struct SSAOParam
 {
     bool enable;
@@ -107,7 +96,6 @@ public:
     static SGGIParam sggi;
     static ESMParam esm;
     static RLRParam rlr;
-    static HighlightParam highlight;
     static SSAOParam ssao;
     static BloomParam bloom;
 

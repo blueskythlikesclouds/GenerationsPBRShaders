@@ -5,7 +5,6 @@ CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
 RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
-HighlightParam SceneEffect::highlight = { true, 90, 4, 0.08f, 2, 0.02f, 0.3f };
 SSAOParam SceneEffect::ssao = { false, 32, 0.17f, 0.25f, 1.5f, 0.06f };
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
 
@@ -76,17 +75,6 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.saturation, "Saturation");
     rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.brightness, "Brightness");
     rlrParamCategory->CreateParamInt(&SceneEffect::rlr.maxLod, "MaxLod");
-
-    parameterGroup->Flush();
-
-    Sonic::CParameterCategory* highlightParamCategory = parameterGroup->CreateParameterCategory("Highlight", "Highlight");
-    highlightParamCategory->CreateParamBool(&SceneEffect::highlight.enable, "Enable");
-    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.threshold, "Threshold");
-    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.objectAmbientScale, "ObjectAmbientScale");
-    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.objectAlbedoHeighten, "ObjectAlbedoHeighten");
-    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.charaAmbientScale, "CharaAmbientScale");
-    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.charaAlbedoHeighten, "CharaAlbedoHeighten");
-    highlightParamCategory->CreateParamFloat(&SceneEffect::highlight.charaFalloffScale, "CharaFalloffScale");
 
     parameterGroup->Flush();
 
