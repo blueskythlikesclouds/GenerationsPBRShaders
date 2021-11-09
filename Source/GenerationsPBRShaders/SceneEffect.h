@@ -83,6 +83,7 @@ struct SSAOParam
     float radius;
     float distanceFade;
     float strength;
+    float depthThreshold;
 };
 
 enum BloomType : uint32_t

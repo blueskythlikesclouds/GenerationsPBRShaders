@@ -6,7 +6,7 @@ SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
 RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
 HighlightParam SceneEffect::highlight = { true, 90, 4, 0.08f, 2, 0.02f, 0.3f };
-SSAOParam SceneEffect::ssao = { false, 32, 0.25f, 0.25f, 1.0f };
+SSAOParam SceneEffect::ssao = { false, 32, 0.17f, 0.25f, 1.5f, 0.06f };
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
@@ -96,6 +96,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.radius, "Radius");
     ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.distanceFade, "DistanceFade");
     ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.strength, "Strength");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.depthThreshold, "DepthThreshold");
 
     parameterGroup->Flush();
 

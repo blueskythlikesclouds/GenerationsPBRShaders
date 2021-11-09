@@ -104,7 +104,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     const uint32_t SSAO_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> 1;
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoFilteredTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoFilteredTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
     luAvgTex->m_AutoReset = false;
     envBrdfPicture.reset();
@@ -403,6 +403,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         boost::shared_ptr<hh::ygg::CYggSurface> spSsaoFilteredSurface;
         ssaoFilteredTex->GetSurface(spSsaoFilteredSurface, 0, 0);
 
+        float ssaoSize_depthThreshold[] = 
+        {
+            1.0f / (float)ssaoTex->m_CreationParams.Width,
+            1.0f / (float)ssaoTex->m_CreationParams.Height,
+            SceneEffect::ssao.depthThreshold,
+            0
+        };
+
+        d3dDevice->SetPixelShaderConstantF(150, ssaoSize_depthThreshold, 1);
+
         device->SetRenderTarget(0, spSsaoFilteredSurface);
         device->SetSampler(4, ssaoTex);
         device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
@@ -499,7 +509,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         d3dDevice->SetPixelShaderConstantF(187, ssaoSize, 1);
 
         device->SetSampler(8, ssaoFilteredTex);
-        device->SetSamplerFilter(8, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+        device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
         device->SetRenderTarget(1, gBuffer2Surface); // To update AO in the GBuffer
