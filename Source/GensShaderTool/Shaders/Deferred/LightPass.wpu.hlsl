@@ -90,7 +90,8 @@ void ComputeSHLightField(inout Material material, in float3 position)
 
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGBuffer2 : COLOR1) : COLOR
 {
-    float3 viewPosition = GetPositionFromDepth(vPos, tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x, g_MtxInvProjection);
+    float depth = tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x;
+    float3 viewPosition = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
     float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
 
     float4 gBuffer0 = tex2Dlod(g_GBuffer0Sampler, float4(texCoord, 0, 0));
@@ -137,7 +138,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     float3 direct;
     float3 indirect;
 
-    if (type == PRIMITIVE_TYPE_GI)
+    [branch] if (type == PRIMITIVE_TYPE_GI)
     {
         direct = ComputeDirectLighting(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
         indirect = gBuffer0.rgb * ambientOcclusionEx;
@@ -146,11 +147,35 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
     }
     else
     {
+        [branch] if (type == PRIMITIVE_TYPE_TRANS_THIN)
+        {
+            // Shadowing
+            float3 halfwayDirection = normalize(material.ViewDirection - mrgGlobalLight_Direction.xyz);
+            float3 cmpWorldPos = position + halfwayDirection * 0.04;
+            float3 cmpViewPos = mul(float4(cmpWorldPos, 1), g_MtxView).xyz;
+            float4 cmpProjPos = mul(float4(cmpViewPos, 1), g_MtxProjection);
+            cmpProjPos.xyz /= cmpProjPos.w;
+            cmpProjPos.xy = cmpProjPos.xy * float2(0.5, -0.5) + 0.5;
+
+            float visibility = LinearizeDepth(tex2Dlod(g_DepthSampler, float4(cmpProjPos.xy, 0, 0)).x, g_MtxInvProjection) - cmpViewPos.z > 0.04;
+            material.Albedo = lerp(material.Albedo, material.Albedo * 0.5, visibility * saturate(dot(halfwayDirection, -mrgGlobalLight_Direction.xyz)));
+
+            // Rim light
+            cmpWorldPos = position + normalize(material.ViewDirection + material.Normal) * 0.04;
+            cmpViewPos = mul(float4(cmpWorldPos, 1), g_MtxView).xyz;
+            cmpProjPos = mul(float4(cmpViewPos, 1), g_MtxProjection);
+            cmpProjPos.xyz /= cmpProjPos.w;
+            cmpProjPos.xy = cmpProjPos.xy * float2(0.5, -0.5) + 0.5;
+
+            visibility = viewPosition.z - LinearizeDepth(tex2Dlod(g_DepthSampler, float4(cmpProjPos.xy, 0, 0)).x, g_MtxInvProjection) > 0.04;
+            material.Albedo = lerp(material.Albedo, saturate(material.Albedo * 2.0), visibility * (1 - saturate(dot(material.ViewDirection, material.Normal))));
+        }
+
         direct = ComputeDirectLightingRaw(material, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb);
 
         material.Shadow = ComputeShadow(g_ShadowMapSampler, mul(float4(position, 1), g_MtxLightViewProjection), g_ESMParam.xy, g_ESMParam.z, material.Shadow);
 
-        if (type == PRIMITIVE_TYPE_CDR)
+        [branch] if (type == PRIMITIVE_TYPE_CDR)
         {
             direct *= gBuffer0.rgb;
             indirect = 0;
@@ -159,7 +184,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
         {
             float nDotL = dot(material.Normal, -mrgGlobalLight_Direction.xyz);
 
-            if (type == PRIMITIVE_TYPE_TRANS_THIN)
+            [branch] if (type == PRIMITIVE_TYPE_TRANS_THIN)
             {
                 direct *= saturate(nDotL);
                 indirect = 0;
@@ -167,9 +192,7 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1, out float4 oGB
                 float vDotL = dot(material.ViewDirection, -mrgGlobalLight_Direction.xyz);
                 float wrap = saturate((-nDotL + 0.5) / ((1 + 0.5) * (1 + 0.5)));
                 float scatter = NdfGGX(saturate(-vDotL), 0.6);
-                direct += mrgGlobalLight_Diffuse.rgb * wrap * scatter * gBuffer0.rgb;
-
-                material.Shadow += (1 - material.Shadow) * saturate(vDotL);
+                direct += mrgGlobalLight_Diffuse.rgb * wrap * scatter * gBuffer1.rgb;
             }
             else 
             {
