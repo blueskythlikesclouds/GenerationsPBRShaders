@@ -7,10 +7,10 @@ sampler2D g_BlueNoiseSampler : register(s0);
 
 #define G g_SampleCount_InvSampleCount_G_InScatteringScale.z
 
-float ComputeScattering(float3 viewPosition)
+float ComputeMieScattering(float3 position)
 {
-    float cosTheta = dot(-mrgGlobalLight_Direction.xyz, -normalize(viewPosition));
-    return (1.0f - G * G) / (4.0f * PI * pow(1.0f + G * G - (2.0f * G) * cosTheta, 1.5f));
+    float cosTheta = dot(-mrgGlobalLight_Direction.xyz, normalize(g_EyePosition.xyz - position));
+    return (1.0 - G * G) / (4.0 * PI * pow(1.0 + G * G + -2.0 * G * cosTheta, 1.5));
 }
 
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
@@ -20,15 +20,13 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         return 0;
 
     float3 viewPosition = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
+    float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
 
-    float scattering = ComputeScattering(viewPosition);
-    [branch] if (scattering <= 0)
+    float mieScattering = ComputeMieScattering(position);
+    [branch] if (mieScattering <= 0)
         return 0;
 
     float noise = tex2Dlod(g_BlueNoiseSampler, float4(texCoord.xy * (g_ViewportSize.xy / 64.0), 0, 0)).x;
-
-    float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
-
     float visibility = 0;
 
     for (int i = 0; i < int(g_SampleCount_InvSampleCount_G_InScatteringScale.x); i++)
@@ -46,5 +44,5 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
         visibility += shadowDepth > shadowMapCoords.z ? g_SampleCount_InvSampleCount_G_InScatteringScale.y : 0.0;
     }
 
-    return float4(mrgGlobalLight_Diffuse.rgb * scattering * visibility * g_SampleCount_InvSampleCount_G_InScatteringScale.w, 1);
+    return float4(mrgGlobalLight_Diffuse.rgb * mieScattering * visibility * g_SampleCount_InvSampleCount_G_InScatteringScale.w, 1);
 }
