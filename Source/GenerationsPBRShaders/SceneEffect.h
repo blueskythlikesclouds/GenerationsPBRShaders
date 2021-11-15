@@ -88,6 +88,15 @@ struct BloomParam
     BloomType type;
 };
 
+struct VolumetricLightingParam
+{
+    bool enable;
+    unsigned long sampleCount;
+    float g;
+    float inScatteringScale;
+    float depthThreshold;
+};
+
 class SceneEffect
 {
 public:
@@ -98,6 +107,7 @@ public:
     static RLRParam rlr;
     static SSAOParam ssao;
     static BloomParam bloom;
+    static VolumetricLightingParam volumetricLighting;
 
     static void applyPatches();
 };

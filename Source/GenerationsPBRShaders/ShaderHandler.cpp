@@ -15,7 +15,9 @@ hh::mr::SShaderPair fxCopyColorShader;
 hh::mr::SShaderPair fxCopyColorDepthShader;
 
 hh::mr::SShaderPair fxSSAOShader;
-hh::mr::SShaderPair fxSSAOFilterShader;
+hh::mr::SShaderPair fxVolumetricLightingShader;
+
+hh::mr::SShaderPair fxBoxBlurShader;
 
 boost::shared_ptr<hh::ygg::CYggTexture> luAvgTex;
 
@@ -30,7 +32,9 @@ boost::shared_ptr<hh::ygg::CYggTexture> rlrTempTex;
 boost::shared_ptr<hh::ygg::CYggTexture> prevIBLTex;
 
 boost::shared_ptr<hh::ygg::CYggTexture> ssaoTex;
-boost::shared_ptr<hh::ygg::CYggTexture> ssaoFilteredTex;
+boost::shared_ptr<hh::ygg::CYggTexture> ssaoBlurredTex;
+
+boost::shared_ptr<hh::ygg::CYggTexture> volumetricLightTex;
 
 boost::shared_ptr<hh::ygg::CYggPicture> envBrdfPicture;
 boost::shared_ptr<hh::ygg::CYggPicture> blueNoisePicture;
@@ -83,7 +87,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     This->m_pScheduler->GetShader(fxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
     This->m_pScheduler->GetShader(fxSSAOShader, "FxFilterPT", "FxSSAO");
-    This->m_pScheduler->GetShader(fxSSAOFilterShader, "FxFilterT", "FxSSAOFilter");
+    This->m_pScheduler->GetShader(fxVolumetricLightingShader, "FxFilterPT", "FxVolumetricLighting");
+
+    This->m_pScheduler->GetShader(fxBoxBlurShader, "FxFilterT", "FxBoxBlur");
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(luAvgTex, 1u, 1u, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R16F, D3DPOOL_DEFAULT, NULL);
 
@@ -100,11 +106,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(prevIBLTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
-    const uint32_t SSAO_WIDTH = This->m_spColorTex->m_CreationParams.Width >> 1;
-    const uint32_t SSAO_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> 1;
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, 0.5f, 0.5f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoBlurredTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, SSAO_WIDTH, SSAO_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoFilteredTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(volumetricLightTex, 0.5f, 0.5f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
     luAvgTex->m_AutoReset = false;
     envBrdfPicture.reset();
@@ -400,10 +405,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->RenderQuad(nullptr, 0, 0);
 
         // Apply blur
-        boost::shared_ptr<hh::ygg::CYggSurface> spSsaoFilteredSurface;
-        ssaoFilteredTex->GetSurface(spSsaoFilteredSurface, 0, 0);
+        boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
+        ssaoBlurredTex->GetSurface(ssaoBlurredSurface, 0, 0);
 
-        float ssaoSize_depthThreshold[] = 
+        float sourceSize_depthThreshold[] = 
         {
             1.0f / (float)ssaoTex->m_CreationParams.Width,
             1.0f / (float)ssaoTex->m_CreationParams.Height,
@@ -411,12 +416,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             0
         };
 
-        d3dDevice->SetPixelShaderConstantF(150, ssaoSize_depthThreshold, 1);
+        d3dDevice->SetPixelShaderConstantF(150, sourceSize_depthThreshold, 1);
 
-        device->SetRenderTarget(0, spSsaoFilteredSurface);
+        device->SetRenderTarget(0, ssaoBlurredSurface);
         device->SetSampler(4, ssaoTex);
         device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
-        device->SetShader(fxSSAOFilterShader);
+        device->SetShader(fxBoxBlurShader);
         device->RenderQuad(nullptr, 0, 0);
     }
 
@@ -499,16 +504,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         float ssaoSize[] =
         {
-            (float)ssaoFilteredTex->m_CreationParams.Width,
-            (float)ssaoFilteredTex->m_CreationParams.Height,
+            (float)ssaoBlurredTex->m_CreationParams.Width,
+            (float)ssaoBlurredTex->m_CreationParams.Height,
 
-            1.0f / (float)ssaoFilteredTex->m_CreationParams.Width,
-            1.0f / (float)ssaoFilteredTex->m_CreationParams.Height,
+            1.0f / (float)ssaoBlurredTex->m_CreationParams.Width,
+            1.0f / (float)ssaoBlurredTex->m_CreationParams.Height,
         };
 
         d3dDevice->SetPixelShaderConstantF(187, ssaoSize, 1);
 
-        device->SetSampler(8, ssaoFilteredTex);
+        device->SetSampler(8, ssaoBlurredTex);
         device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
@@ -892,6 +897,82 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             hh::ygg::eRenderSlot_Opaque | hh::ygg::eRenderSlot_PunchThrough | hh::ygg::eRenderSlot_Transparent);
     }
 
+    //*********************//
+    // Volumetric Lighting //
+    //*********************//
+    if (SceneEffect::volumetricLighting.enable)
+    {
+        if (!blueNoisePicture)
+            This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
+
+        renderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+        renderingDevice->LockRenderState(D3DRS_ZENABLE);
+
+        renderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
+        renderingDevice->LockRenderState(D3DRS_ZWRITEENABLE);
+
+        renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
+        renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
+
+        float sampleCount_invSampleCount_g_inScatteringScale[] =
+        {
+            (float)SceneEffect::volumetricLighting.sampleCount,
+            1.0f / (float)SceneEffect::volumetricLighting.sampleCount,
+            SceneEffect::volumetricLighting.g,
+            SceneEffect::volumetricLighting.inScatteringScale
+        };
+
+        d3dDevice->SetPixelShaderConstantF(150, sampleCount_invSampleCount_g_inScatteringScale, 1);
+
+        device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+        device->SetSamplerAddressMode(0, D3DTADDRESS_WRAP);
+        device->SetSampler(0, blueNoisePicture);
+
+        boost::shared_ptr<hh::ygg::CYggSurface> volumetricLightSurface;
+        volumetricLightTex->GetSurface(volumetricLightSurface, 0, 0);
+
+        device->UnsetDepthStencil();
+        device->SetRenderTarget(0, volumetricLightSurface);
+        device->SetShader(fxVolumetricLightingShader);
+        device->RenderQuad(nullptr, 0, 0);
+
+        // Apply blur
+        renderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
+        renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+        renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
+
+        renderingDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+        renderingDevice->LockRenderState(D3DRS_SRCBLEND);
+
+        renderingDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+        renderingDevice->LockRenderState(D3DRS_DESTBLEND);
+
+        float sourceSize_depthThreshold[] =
+        {
+            1.0f / (float)volumetricLightTex->m_CreationParams.Width,
+            1.0f / (float)volumetricLightTex->m_CreationParams.Height,
+            SceneEffect::volumetricLighting.depthThreshold,
+            0
+        };
+
+        d3dDevice->SetPixelShaderConstantF(150, sourceSize_depthThreshold, 1);
+
+        device->SetSampler(4, volumetricLightTex);
+        device->SetSamplerFilter(4, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
+
+        device->SetRenderTarget(0, This->m_spColorSurface);
+        device->SetShader(fxBoxBlurShader);
+        device->RenderQuad(nullptr, 0, 0);
+
+        // Unlock render states we are done with.
+        renderingDevice->UnlockRenderState(D3DRS_DESTBLEND);
+        renderingDevice->UnlockRenderState(D3DRS_SRCBLEND);
+        renderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
+        renderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
+        renderingDevice->UnlockRenderState(D3DRS_ZENABLE);
+    }
+
     boost::shared_ptr<hh::ygg::CYggTexture> colorTex;
     boost::shared_ptr<hh::ygg::CYggTexture> capturedColorTex;
 
@@ -914,7 +995,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         break;
 
     case DEBUG_VIEW_MODE_SSAO:
-        colorTex = ssaoFilteredTex;
+        colorTex = ssaoBlurredTex;
         break;
 
     case DEBUG_VIEW_MODE_SHADOW_MAP:

@@ -7,6 +7,7 @@ ESMParam SceneEffect::esm = { 4096 };
 RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
 SSAOParam SceneEffect::ssao = { false, 32, 0.17f, 0.25f, 1.5f, 0.06f };
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
+VolumetricLightingParam SceneEffect::volumetricLighting = { false, 16, 0.7f, 1.0f, 0.06f };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
 {
@@ -96,6 +97,15 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
             { "Better FxPipeline", BLOOM_TYPE_BFXP },
             { "Colors", BLOOM_TYPE_COLORS },
         });
+
+    parameterGroup->Flush();
+
+    Sonic::CParameterCategory* volumetricLightingCategory = parameterGroup->CreateParameterCategory("VolumetricLighting", "VolumetricLighting");
+    volumetricLightingCategory->CreateParamBool(&SceneEffect::volumetricLighting.enable, "Enable");
+    volumetricLightingCategory->CreateParamUnsignedLong(&SceneEffect::volumetricLighting.sampleCount, "SampleCount");
+    volumetricLightingCategory->CreateParamFloat(&SceneEffect::volumetricLighting.g, "G");
+    volumetricLightingCategory->CreateParamFloat(&SceneEffect::volumetricLighting.inScatteringScale, "InScatteringScale");
+    volumetricLightingCategory->CreateParamFloat(&SceneEffect::volumetricLighting.depthThreshold, "DepthThreshold");
 
     parameterGroup->Flush();
 

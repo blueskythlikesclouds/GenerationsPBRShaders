@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace GensShaderTool.Infos
 {
-    public class PixelShaderInfoSSAOFilter : IPixelShaderInfo
+    public class PixelShaderInfoBoxBlur : IPixelShaderInfo
     {
-        public string Name { get; } = "FxSSAOFilter";
+        public string Name { get; } = "FxBoxBlur";
 
         public IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = Array.Empty<PixelShaderTechniqueInfo>();
 

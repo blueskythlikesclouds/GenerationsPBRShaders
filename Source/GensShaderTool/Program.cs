@@ -156,13 +156,6 @@ namespace GensShaderTool
                 pbrShaderDatabase,
                 new[] { new PixelShaderInfoSSAO() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
-            //====================//
-            // SSAO Filter Shader //
-            //====================//
-            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "SSAOFilter.wpu.hlsl"),
-                pbrShaderDatabase,
-                new[] { new PixelShaderInfoSSAOFilter() }, pixelShaderGlobalParameterSet, cShaderFlags);
-
             //==============//
             // Bloom Shader //
             //==============//
@@ -189,7 +182,21 @@ namespace GensShaderTool
             //======================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "DownSampleN.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoDownSampleN() }, pixelShaderGlobalParameterSet, cShaderFlags);
+                new[] { new PixelShaderInfoDownSampleN() }, pixelShaderGlobalParameterSet, cShaderFlags);           
+
+            //=================//
+            // Box Blur Shader //
+            //=================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "BoxBlur.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoBoxBlur() }, pixelShaderGlobalParameterSet, cShaderFlags);
+
+            //============================//
+            // Volumetric Lighting Shader //
+            //============================//
+            ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "VolumetricLighting.wpu.hlsl"),
+                pbrShaderDatabase,
+                new[] { new PixelShaderInfoVolumetricLighting() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             pbrShaderDatabase.Sort();
             pbrShaderDatabase.Save(pbrShaderArPath, cShaderArPadding, cShaderArMaxSplitSize);

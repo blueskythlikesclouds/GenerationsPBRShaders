@@ -40,6 +40,9 @@
     <None Update="Parameters\Unleashed\global.vsparam">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Shaders\Filter\VolumetricLighting.wpu.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Shaders\Filter\ColorsBloom.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -55,7 +58,7 @@
     <None Update="Shaders\Filter\ConvolutionFilter.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\Filter\SSAOFilter.wpu.hlsl">
+    <None Update="Shaders\Filter\BoxBlur.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\Filter\SSAO.wpu.hlsl">
