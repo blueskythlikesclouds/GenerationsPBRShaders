@@ -35,6 +35,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
             { "GBuffer3", DEBUG_VIEW_MODE_GBUFFER3 },
             { "RLR", DEBUG_VIEW_MODE_RLR },
             { "SSAO", DEBUG_VIEW_MODE_SSAO },
+            { "VolumetricLighting", DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING },
             { "ShadowMap", DEBUG_VIEW_MODE_SHADOW_MAP },
             { "ShadowMapNoTerrain", DEBUG_VIEW_MODE_SHADOW_MAP_NO_TERRAIN },
         });
@@ -136,11 +137,12 @@ HOOK(void, __fastcall, ExecuteFxPipelineJobs, 0x78A3D0, void* This, void* Edx, v
     // Disable post processing when debug view mode in on.
     std::array<bool, POST_PROCESSING_TOGGLES.size()> toggleHistory{};
 
-    // Keep tonemapping on for GIOnly/IBLOnly/RLR.
+    // Keep tonemapping on for GIOnly/IBLOnly/RLR/VolumetricLighting.
     const size_t index = 
         SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY ||
         SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ||
-        SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_RLR ? 1 : 0;
+        SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_RLR ||
+        SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING ? 1 : 0;
 
     for (size_t i = index; i < POST_PROCESSING_TOGGLES.size(); i++)
     {

@@ -900,7 +900,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //*********************//
     // Volumetric Lighting //
     //*********************//
-    if (SceneEffect::volumetricLighting.enable)
+    if (SceneEffect::volumetricLighting.enable || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING)
     {
         if (!blueNoisePicture)
             This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
@@ -944,7 +944,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
         renderingDevice->LockRenderState(D3DRS_SRCBLEND);
 
-        renderingDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+        renderingDevice->SetRenderState(D3DRS_DESTBLEND, SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING ? D3DBLEND_ZERO : D3DBLEND_ONE);
         renderingDevice->LockRenderState(D3DRS_DESTBLEND);
 
         float sourceSize_depthThreshold[] =
@@ -1008,6 +1008,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     case DEBUG_VIEW_MODE_NONE:
     case DEBUG_VIEW_MODE_GI_ONLY:
+    case DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING:
     default:
         colorTex = This->m_spColorTex;
         capturedColorTex = This->m_spCapturedColorTex;
