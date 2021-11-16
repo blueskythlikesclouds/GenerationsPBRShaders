@@ -405,11 +405,13 @@ namespace GensShaderTool
                 int componentIndex = translated.IndexOf(" : COLOR,", StringComparison.Ordinal);
                 string component = translated.Substring(componentIndex - 2, 2);
 
+                preCode += "sampler2D s1 : register(s1);";
                 code = code[..^4] +
                        "float4 color = texSRGB(s0, v0);" +
+                       "float4 specular = tex2D(s1, v0);" +
                        "oC0 = float4(0, 0, 0, color.a); " +
                        "oC1 = float4(color.rgb, 1); " +
-                       "oC2 = float4(0, 0.8, 1, 0); " +
+                       "oC2 = float4(specular.r * 0.25, max(0.01, 1 - specular.y), specular.z, specular.x > 0.9); " +
                        $"oC3 = float4({component}.xyz, PackPrimitiveType(PRIMITIVE_TYPE_NO_GI));\n }}";
             }
 
