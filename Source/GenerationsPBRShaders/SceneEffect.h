@@ -95,6 +95,8 @@ struct VolumetricLightingParam
     unsigned long sampleCount;
     float g;
     float inScatteringScale;
+    bool ignoreSky;
+    float skyDepth;
     float depthThreshold;
 };
 

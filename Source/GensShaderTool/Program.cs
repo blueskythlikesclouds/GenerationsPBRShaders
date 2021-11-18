@@ -196,7 +196,7 @@ namespace GensShaderTool
             //============================//
             ShaderCompiler.Compile(Path.Combine(sProjectDirectory, "Shaders", "Filter", "VolumetricLighting.wpu.hlsl"),
                 pbrShaderDatabase,
-                new[] { new PixelShaderInfoVolumetricLighting() }, pixelShaderGlobalParameterSet, cShaderFlags);
+                new IShaderInfo[] { new PixelShaderInfoVolumetricLighting(), new PixelShaderInfoVolumetricLightingIgnoreSky() }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             pbrShaderDatabase.Sort();
             pbrShaderDatabase.Save(pbrShaderArPath, cShaderArPadding, cShaderArMaxSplitSize);

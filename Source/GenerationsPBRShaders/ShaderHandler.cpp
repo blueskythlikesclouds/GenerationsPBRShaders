@@ -15,7 +15,9 @@ hh::mr::SShaderPair fxCopyColorShader;
 hh::mr::SShaderPair fxCopyColorDepthShader;
 
 hh::mr::SShaderPair fxSSAOShader;
+
 hh::mr::SShaderPair fxVolumetricLightingShader;
+hh::mr::SShaderPair fxVolumetricLightingIgnoreSkyShader;
 
 hh::mr::SShaderPair fxBoxBlurShader;
 
@@ -87,7 +89,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     This->m_pScheduler->GetShader(fxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
     This->m_pScheduler->GetShader(fxSSAOShader, "FxFilterPT", "FxSSAO");
+
     This->m_pScheduler->GetShader(fxVolumetricLightingShader, "FxFilterPT", "FxVolumetricLighting");
+    This->m_pScheduler->GetShader(fxVolumetricLightingIgnoreSkyShader, "FxFilterPT", "FxVolumetricLighting_IgnoreSky");
 
     This->m_pScheduler->GetShader(fxBoxBlurShader, "FxFilterT", "FxBoxBlur");
 
@@ -922,7 +926,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             SceneEffect::volumetricLighting.inScatteringScale
         };
 
+        float skyDepth[] =
+        {
+            -abs(SceneEffect::volumetricLighting.skyDepth),
+            0,
+            0,
+            0
+        };
+
         d3dDevice->SetPixelShaderConstantF(150, sampleCount_invSampleCount_g_inScatteringScale, 1);
+        d3dDevice->SetPixelShaderConstantF(151, skyDepth, 1);
 
         device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(0, D3DTADDRESS_WRAP);
@@ -933,7 +946,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->UnsetDepthStencil();
         device->SetRenderTarget(0, volumetricLightSurface);
-        device->SetShader(fxVolumetricLightingShader);
+        device->SetShader(SceneEffect::volumetricLighting.ignoreSky ? fxVolumetricLightingIgnoreSkyShader : fxVolumetricLightingShader);
         device->RenderQuad(nullptr, 0, 0);
 
         // Apply blur

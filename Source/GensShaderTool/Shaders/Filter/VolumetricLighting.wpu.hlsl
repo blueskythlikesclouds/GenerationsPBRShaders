@@ -3,6 +3,7 @@
 #include "../Param.hlsl"
 
 float4 g_SampleCount_InvSampleCount_G_InScatteringScale : register(c150);
+float4 g_SkyDepth : register(c151);
 sampler2D g_BlueNoiseSampler : register(s0);
 
 #define G g_SampleCount_InvSampleCount_G_InScatteringScale.z
@@ -16,13 +17,23 @@ float ComputeMieScattering(float3 position)
 float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 {
     float depth = tex2Dlod(g_DepthSampler, float4(texCoord, 0, 0)).x;
+
+#if defined(IgnoreSky) && IgnoreSky
     [branch] if (depth >= 1.0)
         return 0;
+#endif
 
     float3 viewPosition = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
+
+#if !defined(IgnoreSky) || !IgnoreSky
+    if (depth >= 1.0)
+        viewPosition.z = g_SkyDepth.x;
+#endif
+
     float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
 
     float mieScattering = ComputeMieScattering(position);
+
     [branch] if (mieScattering <= 0)
         return 0;
 
@@ -35,7 +46,13 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 
         float4 shadowMapCoords = mul(float4(currentPosition, 1), g_MtxLightViewProjection);
         if (max(abs(shadowMapCoords.x), max(abs(shadowMapCoords.y), abs(shadowMapCoords.z))) > shadowMapCoords.w)
+        {
+
+#if !defined(IgnoreSky) || !IgnoreSky
+            visibility += depth >= 1.0 ? g_SampleCount_InvSampleCount_G_InScatteringScale.y : 0.0;
+#endif
             continue;
+        }
 
         shadowMapCoords.xyz /= shadowMapCoords.w;
         shadowMapCoords.xy = shadowMapCoords.xy * float2(0.5, -0.5) + 0.5;
