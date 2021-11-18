@@ -959,7 +959,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->SetSampler(4, volumetricLightTex);
         device->SetSamplerFilter(4, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
+        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);       
+
+        device->SetSampler(12, This->m_spDepthTex);
+        device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+        device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
         device->SetRenderTarget(0, This->m_spColorSurface);
         device->SetShader(fxBoxBlurShader);

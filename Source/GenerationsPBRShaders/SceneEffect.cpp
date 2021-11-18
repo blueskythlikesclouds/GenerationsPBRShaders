@@ -5,9 +5,9 @@ CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
 RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
-SSAOParam SceneEffect::ssao = { false, 32, 0.17f, 0.25f, 1.5f, 0.06f };
+SSAOParam SceneEffect::ssao = { false, 32, 0.17f, 0.25f, 1.5f, 0.002f };
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
-VolumetricLightingParam SceneEffect::volumetricLighting = { false, 16, -0.98f, 1.0f, 0.06f };
+VolumetricLightingParam SceneEffect::volumetricLighting = { false, 16, -0.98f, 1.0f, 0.002f };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
 {

@@ -6,23 +6,22 @@ sampler2D g_SourceSampler : register(s4);
 
 float4 main(in float2 texCoord : TEXCOORD0) : COLOR
 {
-    float depth = LinearizeDepth(tex2Dlod(g_DepthSampler, float4(texCoord.xy, 0, 0)).x, g_MtxInvProjection);
+    float depth = tex2D(g_DepthSampler, texCoord).x;
 
     float4 result = 0;
     int count = 0;
 
-    for (int i = -4; i < 4; i++)
+    [unroll] for (int i = -3; i < 3; i++)
     {
-        for (int j = -4; j < 4; j++)
+        [unroll] for (int j = -3; j < 3; j++)
         {
-            float4 cmpTexCoord = float4(texCoord + float2(i, j) * g_SourceSize_DepthThreshold.xy, 0, 0);
-            float cmpDepth = LinearizeDepth(tex2Dlod(g_DepthSampler, cmpTexCoord).x, g_MtxInvProjection);
+            float2 cmpTexCoord = texCoord + float2(i, j) * g_SourceSize_DepthThreshold.xy;
+            float cmpDepth = tex2D(g_DepthSampler, cmpTexCoord).x;
+            float4 cmpColor = tex2D(g_SourceSampler, cmpTexCoord);
+            bool valid = depth - cmpDepth < g_SourceSize_DepthThreshold.z;
 
-            if (depth - cmpDepth > g_SourceSize_DepthThreshold.z)
-                continue;
-
-            result += tex2Dlod(g_SourceSampler, cmpTexCoord);
-            count++;
+            result += cmpColor * valid;
+            count += valid;
         }
     }
 
