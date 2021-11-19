@@ -92,11 +92,10 @@ struct BloomParam
 struct VolumetricLightingParam
 {
     bool enable;
+    bool ignoreSky;
     unsigned long sampleCount;
     float g;
     float inScatteringScale;
-    bool ignoreSky;
-    float skyDepth;
     float depthThreshold;
 };
 

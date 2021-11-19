@@ -926,16 +926,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             SceneEffect::volumetricLighting.inScatteringScale
         };
 
-        float skyDepth[] =
-        {
-            -abs(SceneEffect::volumetricLighting.skyDepth),
-            0,
-            0,
-            0
-        };
-
         d3dDevice->SetPixelShaderConstantF(150, sampleCount_invSampleCount_g_inScatteringScale, 1);
-        d3dDevice->SetPixelShaderConstantF(151, skyDepth, 1);
 
         device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(0, D3DTADDRESS_WRAP);

@@ -3,7 +3,6 @@
 #include "../Param.hlsl"
 
 float4 g_SampleCount_InvSampleCount_G_InScatteringScale : register(c150);
-float4 g_SkyDepth : register(c151);
 sampler2D g_BlueNoiseSampler : register(s0);
 
 #define G g_SampleCount_InvSampleCount_G_InScatteringScale.z
@@ -24,12 +23,6 @@ float4 main(float2 vPos : TEXCOORD0, float2 texCoord : TEXCOORD1) : COLOR
 #endif
 
     float3 viewPosition = GetPositionFromDepth(vPos, depth, g_MtxInvProjection);
-
-#if !defined(IgnoreSky) || !IgnoreSky
-    if (depth >= 1.0)
-        viewPosition.z = g_SkyDepth.x;
-#endif
-
     float3 position = mul(float4(viewPosition, 1), g_MtxInvView).xyz;
 
     float mieScattering = ComputeMieScattering(position);
