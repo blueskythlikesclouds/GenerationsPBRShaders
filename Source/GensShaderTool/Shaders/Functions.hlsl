@@ -599,4 +599,20 @@ float2 CalculateVogelDiskSample(int sampleIndex, int sampleCount, float phi)
     return float2(r * cosine, r * sine);
 }
 
+float3 SampleNormal(sampler2D normalMap, float2 texCoord)
+{
+    float4 normal = tex2D(normalMap, texCoord);
+    normal.xy = normal.xy * 2.0 - 1.0;
+    normal.z = sqrt(1.0 - saturate(dot(normal.xy, normal.xy)));
+    return normal.xyz;
+}
+
+float3 BlendNormal(float3 normal1, float3 normal2)
+{
+    normal1 += float3(0, 0, 1);
+    normal2 *= float3(-1, -1, 1);
+
+    return normal1 * dot(normal1, normal2) / normal1.z - normal2;
+}
+
 #endif

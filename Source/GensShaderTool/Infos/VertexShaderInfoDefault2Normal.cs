@@ -8,7 +8,7 @@ namespace GensShaderTool.Infos
         public string Name { get; } = "Default2Normal";
 
         public IReadOnlyList<string> Constants => Array.Empty<string>();
-        public IReadOnlyList<string> Definitions => Array.Empty<string>();
+        public IReadOnlyList<string> Definitions => new[] { "HasNormal" };
         public virtual int IterationCount { get; } = 1;
     }
 }

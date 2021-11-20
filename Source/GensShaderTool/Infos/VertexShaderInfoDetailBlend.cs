@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 namespace GensShaderTool.Infos
 {
-    public class VertexShaderInfoWater2 : IVertexShaderInfo
+    public class VertexShaderInfoDetailBlend : IVertexShaderInfo
     {
-        public string Name { get; } = "Water2";
+        public string Name { get; } = "DetailBlend";
 
         public IReadOnlyList<string> Constants => Array.Empty<string>();
-        public IReadOnlyList<string> Definitions { get; } = new[] { "IsBoneless", "HasNormal" };
+        public IReadOnlyList<string> Definitions => new[] { "HasNormal", "IsBoneless" };
         public virtual int IterationCount { get; } = 1;
     }
 }

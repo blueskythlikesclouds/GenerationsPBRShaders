@@ -76,7 +76,7 @@ namespace GensShaderTool
                 pbrShaderDatabase, new IShaderInfo[]
                 {
                     new VertexShaderInfoDefault2(), new VertexShaderInfoDefault2Normal(), new VertexShaderInfoEye2(),
-                    new VertexShaderInfoWater2(), new VertexShaderInfoDefault2NoV()
+                    new VertexShaderInfoWater2(), new VertexShaderInfoDefault2NoV(), new VertexShaderInfoDetailBlend()
                 }, vertexShaderGlobalParameterSet, cShaderFlags);
 
             //======================//
@@ -93,7 +93,7 @@ namespace GensShaderTool
                     new PixelShaderInfoChrGlass(), new PixelShaderInfoDry(), new PixelShaderInfoFalloff2(), new PixelShaderInfoMFalloff(),
                     new PixelShaderInfoChrEmission(), new PixelShaderInfoMChrEmission(),
                     new PixelShaderInfoPointMarker(), new PixelShaderInfoSuperSonic(), new PixelShaderInfoChrEyeSuper(),
-                    new PixelShaderInfoTransThin()
+                    new PixelShaderInfoTransThin(), new PixelShaderInfoDetailBlend()
                 }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             //===========================//

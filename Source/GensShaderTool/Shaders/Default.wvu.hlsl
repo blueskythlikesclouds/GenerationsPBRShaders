@@ -17,6 +17,8 @@ struct Input
     float4 Color : COLOR;
 };
 
+float4 TileScale : register(c246);
+
 void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : POSITION)
 {
 #if !defined(IsBoneless) || !IsBoneless
@@ -25,7 +27,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
     bool hasBone = false;
 #endif
 
-#if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
+#if (defined(HasNormal) && HasNormal)
     float3 binormal;
 
     [branch] if (dot(input.Binormal.xyz, input.Binormal.xyz) == 0)
@@ -44,7 +46,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
         output.Position.xyz = mul(blendMatrix, float4(input.Position.xyz, 1));
         output.Normal.xyz = mul(blendMatrix, float4(input.Normal.xyz, 0));
 
-#if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
+#if (defined(HasNormal) && HasNormal)
         output.Tangent.xyz = mul(blendMatrix, float4(input.Tangent.xyz, 0));
         output.Binormal.xyz = mul(blendMatrix, float4(binormal, 0));
 #endif
@@ -58,7 +60,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
         output.Position.xyz = input.Position.xyz;
         output.Normal.xyz = input.Normal.xyz;
 
-#if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
+#if (defined(HasNormal) && HasNormal)
         output.Tangent.xyz = input.Tangent.xyz;
         output.Binormal.xyz = binormal;
 #endif
@@ -87,7 +89,7 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
     output.Normal.xyz = mul(float4(output.Normal.xyz, 0), g_MtxWorld).xyz;
 
-#if (defined(IsDefault2Normal) && IsDefault2Normal) || (defined(IsWater2) && IsWater2)
+#if (defined(HasNormal) && HasNormal)
     output.Tangent.xyz = mul(float4(output.Tangent.xyz, 0), g_MtxWorld).xyz;
     output.Binormal.xyz = mul(float4(output.Binormal.xyz, 0), g_MtxWorld).xyz;
 #endif
@@ -106,5 +108,12 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
 #if defined(IsEye2) && IsEye2
     output.EyeNormal = mul(mul(float4(output.EyeNormal, 0), g_MtxWorld), g_MtxView).xyz;
+#endif
+
+#if defined(IsDetailBlend) && IsDetailBlend
+    float tileScale = length(g_MtxWorld[0].xyz);
+    output.TexCoord0.xy = input.TexCoord0.xy * tileScale * TileScale.x;
+    output.TexCoord1.xy = input.TexCoord0.xy * tileScale * TileScale.y;
+    output.TexCoord1.zw = input.TexCoord0.xy;
 #endif
 }
