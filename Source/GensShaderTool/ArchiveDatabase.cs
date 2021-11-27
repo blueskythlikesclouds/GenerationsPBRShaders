@@ -52,7 +52,7 @@ namespace GensShaderTool
                 {
                     Name = name,
                     Data = reader.ReadArray<byte>((int)dataSize),
-                    Time = DateTime.FromFileTime((long)(modifiedTime - 504911232000000000))
+                    Time = modifiedTime != 0 ? DateTime.FromFileTime((long)(modifiedTime - 504911232000000000)) : DateTime.MinValue
                 });
 
                 reader.Seek(currentOffset + blockSize, SeekOrigin.Begin);
@@ -113,7 +113,7 @@ namespace GensShaderTool
                 writer.Write((uint)(blockSize - currentOffset));
                 writer.Write(databaseData.Data.Length);
                 writer.Write((uint)(dataOffset - currentOffset));
-                writer.Write((ulong)(databaseData.Time.ToFileTime() + 504911232000000000));
+                writer.Write(databaseData.Time != DateTime.MinValue ? (ulong)(databaseData.Time.ToFileTime() + 504911232000000000) : 0);
                 writer.WriteString(StringBinaryFormat.NullTerminated, databaseData.Name);
                 writer.Align(padding);
                 writer.WriteBytes(databaseData.Data);

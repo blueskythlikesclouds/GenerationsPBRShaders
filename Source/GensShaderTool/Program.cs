@@ -64,7 +64,9 @@ namespace GensShaderTool
                     {
                         string outputFilePath = Path.Combine(outputDirectoryPath, databaseData.Name);
                         File.WriteAllBytes(outputFilePath, databaseData.Data);
-                        File.SetLastWriteTime(outputFilePath, databaseData.Time);
+
+                        if (databaseData.Time != DateTime.MinValue)
+                            File.SetLastWriteTime(outputFilePath, databaseData.Time);
                     }
 
                     return;
