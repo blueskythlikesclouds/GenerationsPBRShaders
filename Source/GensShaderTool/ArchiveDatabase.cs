@@ -21,6 +21,12 @@ namespace GensShaderTool
     {
         public string Name { get; set; }
         public byte[] Data { get; set; }
+        public DateTime Time { get; set; }
+
+        public DatabaseData()
+        {
+            Time = DateTime.Now;
+        }
     }
 
     public class ArchiveDatabase
@@ -38,14 +44,15 @@ namespace GensShaderTool
                 long blockSize = reader.Read<uint>();
                 long dataSize = reader.Read<uint>();
                 long dataOffset = reader.Read<uint>();
-                reader.Seek(8, SeekOrigin.Current);
+                ulong modifiedTime = reader.Read<ulong>();
                 string name = reader.ReadString(StringBinaryFormat.NullTerminated);
 
                 reader.Seek(currentOffset + dataOffset, SeekOrigin.Begin);
                 Contents.Add(new DatabaseData
                 {
                     Name = name,
-                    Data = reader.ReadArray<byte>((int)dataSize)
+                    Data = reader.ReadArray<byte>((int)dataSize),
+                    Time = DateTime.FromFileTime((long)(modifiedTime - 504911232000000000))
                 });
 
                 reader.Seek(currentOffset + blockSize, SeekOrigin.Begin);
@@ -106,8 +113,7 @@ namespace GensShaderTool
                 writer.Write((uint)(blockSize - currentOffset));
                 writer.Write(databaseData.Data.Length);
                 writer.Write((uint)(dataOffset - currentOffset));
-                writer.Write(0);
-                writer.Write(0);
+                writer.Write((ulong)(databaseData.Time.ToFileTime() + 504911232000000000));
                 writer.WriteString(StringBinaryFormat.NullTerminated, databaseData.Name);
                 writer.Align(padding);
                 writer.WriteBytes(databaseData.Data);

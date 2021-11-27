@@ -50,6 +50,25 @@ namespace GensShaderTool
 
                     return;
                 }
+
+                if (args[0].EndsWith(".ar.00", StringComparison.OrdinalIgnoreCase) ||
+                    args[0].EndsWith(".ar", StringComparison.OrdinalIgnoreCase))
+                {
+                    string fileName = Path.GetFileName(args[0]);
+                    string outputDirectoryPath = Path.Combine(Path.GetDirectoryName(args[0]), fileName[..fileName.IndexOf(".ar", StringComparison.OrdinalIgnoreCase)]);
+
+                    Directory.CreateDirectory(outputDirectoryPath);
+
+                    var archiveDatabase = new ArchiveDatabase(args[0]);
+                    foreach (var databaseData in archiveDatabase.Contents)
+                    {
+                        string outputFilePath = Path.Combine(outputDirectoryPath, databaseData.Name);
+                        File.WriteAllBytes(outputFilePath, databaseData.Data);
+                        File.SetLastWriteTime(outputFilePath, databaseData.Time);
+                    }
+
+                    return;
+                }
             }
 
             string vanillaShaderArPath = Path.Combine(sOutputDirectory, "shader_vanilla.ar.00");
