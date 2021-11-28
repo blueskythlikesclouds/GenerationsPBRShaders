@@ -17,8 +17,6 @@ struct Input
     float4 Color : COLOR;
 };
 
-float4 TileScale : register(c246);
-
 void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : POSITION)
 {
 #if !defined(IsBoneless) || !IsBoneless
@@ -108,12 +106,5 @@ void main(in Input input, out DECLARATION_TYPE output, out float4 svPosition : P
 
 #if defined(IsEye2) && IsEye2
     output.EyeNormal = mul(mul(float4(output.EyeNormal, 0), g_MtxWorld), g_MtxView).xyz;
-#endif
-
-#if defined(IsDetailBlend) && IsDetailBlend
-    float tileScale = length(g_MtxWorld[0].xyz);
-    output.TexCoord0.xy = input.TexCoord0.xy * tileScale * TileScale.x;
-    output.TexCoord1.xy = input.TexCoord0.xy * tileScale * TileScale.y;
-    output.TexCoord1.zw = input.TexCoord0.xy;
 #endif
 }

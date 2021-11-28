@@ -10,7 +10,7 @@ namespace GensShaderTool.Infos
 
         public virtual IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = new PixelShaderTechniqueInfo[]
         {
-            PixelShaderTechniqueInfoDetailBlend.Instance
+            PixelShaderTechniqueInfoDefault2Normal.Instance
         };
 
         public virtual IReadOnlyList<SamplerInfo> Samplers { get; } = new[]
@@ -21,7 +21,7 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "diffuseBlendSampler", "diffuse", "d" ),
             new SamplerInfo( "specularBlendSampler", "specular", "p" ),
             new SamplerInfo( "normalBlendSampler", "normal", "n" ),
-            new SamplerInfo( "normalDetailSampler", "normal2", "n" ),
+            new SamplerInfo( "normalDetailSampler", "normal", "n" ),
         };
 
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();

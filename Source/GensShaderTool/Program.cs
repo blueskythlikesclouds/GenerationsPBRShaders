@@ -97,7 +97,7 @@ namespace GensShaderTool
                 pbrShaderDatabase, new IShaderInfo[]
                 {
                     new VertexShaderInfoDefault2(), new VertexShaderInfoDefault2Normal(), new VertexShaderInfoEye2(),
-                    new VertexShaderInfoWater2(), new VertexShaderInfoDefault2NoV(), new VertexShaderInfoDetailBlend()
+                    new VertexShaderInfoWater2(), new VertexShaderInfoDefault2NoV()
                 }, vertexShaderGlobalParameterSet, cShaderFlags);
 
             //======================//
@@ -302,6 +302,7 @@ namespace GensShaderTool
                 x =>
                 {
                     x.Data = ConvertShaderToPBRCompatible(x.Data, x.Name);
+                    x.Time = DateTime.Now;
                 });
 
             shaderRegular.Contents.AddRange(shaderRegularAdd.Contents);
@@ -322,6 +323,7 @@ namespace GensShaderTool
                     {
                         Console.WriteLine("Compiling {0}", x.Name);
                         x.Data = ShaderCompiler.Compile(translated, ShaderType.Pixel, cShaderFlags);
+                        x.Time = DateTime.Now;
                     }
                     catch (Exception e)
                     {
