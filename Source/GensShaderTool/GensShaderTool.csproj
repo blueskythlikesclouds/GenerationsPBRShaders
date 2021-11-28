@@ -64,7 +64,7 @@
     <None Update="Shaders\Filter\SSAO.wpu.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Shaders\Material\DetailBlend.hlsl">
+    <None Update="Shaders\Material\TriplanarBlend.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Shaders\Material\TransThin.hlsl">

@@ -4,9 +4,9 @@ using Amicitia.IO;
 
 namespace GensShaderTool.Infos
 {
-    public class PixelShaderInfoDetailBlend : IPixelShaderInfo
+    public class PixelShaderInfoTriplanarBlend : IPixelShaderInfo
     {
-        public virtual string Name { get; } = "DetailBlend";
+        public virtual string Name { get; } = "TriplanarBlend";
 
         public virtual IReadOnlyList<PixelShaderTechniqueInfo> Techniques { get; } = new PixelShaderTechniqueInfo[]
         {
@@ -28,10 +28,10 @@ namespace GensShaderTool.Infos
 
         public virtual int IterationCount { get; } = 1;
 
-        public virtual bool ValidatePermutation( ushort samplerBits, PixelShaderTechniqueInfo technique )
+        public virtual bool ValidatePermutation(ushort samplerBits, PixelShaderTechniqueInfo technique)
         {
-            // Have all samplers
-            return samplerBits == 0b1111111;
+            // dpndpn, dpndpnn
+            return samplerBits == 0b111111 || samplerBits == 0b1111111;
         }
     }
 }

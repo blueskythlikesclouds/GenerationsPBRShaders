@@ -114,7 +114,7 @@ namespace GensShaderTool
                     new PixelShaderInfoChrGlass(), new PixelShaderInfoDry(), new PixelShaderInfoFalloff2(), new PixelShaderInfoMFalloff(),
                     new PixelShaderInfoChrEmission(), new PixelShaderInfoMChrEmission(),
                     new PixelShaderInfoPointMarker(), new PixelShaderInfoSuperSonic(), new PixelShaderInfoChrEyeSuper(),
-                    new PixelShaderInfoTransThin(), new PixelShaderInfoDetailBlend()
+                    new PixelShaderInfoTransThin(), new PixelShaderInfoTriplanarBlend()
                 }, pixelShaderGlobalParameterSet, cShaderFlags);
 
             //===========================//

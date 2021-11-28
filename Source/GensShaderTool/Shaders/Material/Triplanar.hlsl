@@ -1,5 +1,5 @@
-#ifndef SCENE_MATERIAL_DETAIL_BLEND_HLSL_INCLUDED
-#define SCENE_MATERIAL_DETAIL_BLEND_HLSL_INCLUDED
+#ifndef SCENE_MATERIAL_TRIPLANAR_HLSL_INCLUDED
+#define SCENE_MATERIAL_TRIPLANAR_HLSL_INCLUDED
 
 #include "../../global.psparam.hlsl"
 
@@ -9,8 +9,8 @@
 
 #include "Default.hlsl"
 
-float4 TileScale : register(c150);
-float4 TileScale2 : register(c151);
+float4 Scale : register(c150);
+float4 Scale2 : register(c151);
 
 sampler2D diffuseSampler : register(s0);
 sampler2D specularSampler : register(s1);
@@ -22,24 +22,24 @@ sampler2D normalBlendSampler : register(s5);
 
 sampler2D normalDetailSampler : register(s6);
 
-float GetTileScale(int index)
+float GetScale(int index)
 {
     if (index >= 0 && index <= 2)
-        return TileScale[index];
+        return Scale[index];
 
     if (index >= 3 && index <= 6)
-        return TileScale2[index - 3];
+        return Scale2[index - 3];
 
     return 0.0;
 }
 
 float4 SampleTex(DECLARATION_TYPE input, sampler2D tex, int index)
 {
-    float tileScale = GetTileScale(index);
+    float scale = GetScale(index);
 
-    float4 u = tex2D(tex, tileScale == 0.0 ? UV(index) : input.Position.zy * tileScale);
-    float4 v = tex2D(tex, tileScale == 0.0 ? UV(index) : input.Position.xz * tileScale);
-    float4 w = tex2D(tex, tileScale == 0.0 ? UV(index) : input.Position.xy * tileScale);
+    float4 u = tex2D(tex, scale == 0.0 ? UV(index) : input.Position.zy * scale);
+    float4 v = tex2D(tex, scale == 0.0 ? UV(index) : input.Position.xz * scale);
+    float4 w = tex2D(tex, scale == 0.0 ? UV(index) : input.Position.xy * scale);
 
     float3 blend = normalize(input.Normal);
     blend *= blend;
@@ -73,10 +73,19 @@ float4 GetSpecular(DECLARATION_TYPE input)
 float3 GetNormal(DECLARATION_TYPE input, float3x3 tangentToWorldMatrix)
 {
     float3 normal = SampleNormal(input, normalSampler, 2);
-    float3 normalBlend = SampleNormal(input, normalBlendSampler, 5);
-    float3 normalDetail = SampleNormal(input, normalDetailSampler, 6);
 
-    return mul(tangentToWorldMatrix, normalize(lerp(normal.xyz, BlendNormal(normalBlend, normalDetail), input.Color.w)));
+#if defined(HasNormalBlend) && HasNormalBlend
+    float3 normalBlend = SampleNormal(input, normalBlendSampler, 5);
+
+#if defined(HasNormalDetail) && HasNormalDetail
+    float3 normalDetail = SampleNormal(input, normalDetailSampler, 6);
+    normalBlend = BlendNormal(normalBlend, normalDetail);
+#endif
+
+    normal = normalize(lerp(normal, normalBlend, input.Color.w));
+#endif
+
+    return mul(tangentToWorldMatrix, normal);
 }
 
 void PostProcessMaterial(DECLARATION_TYPE input, inout Material material)

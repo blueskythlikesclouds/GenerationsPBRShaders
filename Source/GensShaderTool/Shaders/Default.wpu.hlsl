@@ -38,8 +38,8 @@
 #include "Material/SuperSonic.hlsl"
 #elif (defined(IsTransThin2) && IsTransThin2)
 #include "Material/TransThin.hlsl"
-#elif (defined(IsDetailBlend) && IsDetailBlend)
-#include "Material/DetailBlend.hlsl"
+#elif (defined(IsTriplanarBlend) && IsTriplanarBlend)
+#include "Material/Triplanar.hlsl"
 #endif
 
 float3 ComputeLocalLight(in DECLARATION_TYPE input, in Material material)
