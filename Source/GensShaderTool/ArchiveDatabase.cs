@@ -35,6 +35,8 @@ namespace GensShaderTool
 
         public void LoadSingle(string filePath)
         {
+            var time = File.GetLastWriteTime(filePath);
+
             using var reader = new BinaryValueReader(filePath, Endianness.Little, Encoding.UTF8);
 
             reader.Seek(16, SeekOrigin.Begin);
@@ -44,7 +46,7 @@ namespace GensShaderTool
                 long blockSize = reader.Read<uint>();
                 long dataSize = reader.Read<uint>();
                 long dataOffset = reader.Read<uint>();
-                ulong modifiedTime = reader.Read<ulong>();
+                long ticks = reader.Read<long>();
                 string name = reader.ReadString(StringBinaryFormat.NullTerminated);
 
                 reader.Seek(currentOffset + dataOffset, SeekOrigin.Begin);
@@ -52,7 +54,7 @@ namespace GensShaderTool
                 {
                     Name = name,
                     Data = reader.ReadArray<byte>((int)dataSize),
-                    Time = modifiedTime != 0 ? DateTime.FromFileTime((long)(modifiedTime - 504911232000000000)) : DateTime.MinValue
+                    Time = ticks != 0 ? new DateTime(ticks) : time
                 });
 
                 reader.Seek(currentOffset + blockSize, SeekOrigin.Begin);
@@ -113,7 +115,7 @@ namespace GensShaderTool
                 writer.Write((uint)(blockSize - currentOffset));
                 writer.Write(databaseData.Data.Length);
                 writer.Write((uint)(dataOffset - currentOffset));
-                writer.Write(databaseData.Time != DateTime.MinValue ? (ulong)(databaseData.Time.ToFileTime() + 504911232000000000) : 0);
+                writer.Write(databaseData.Time.Ticks);
                 writer.WriteString(StringBinaryFormat.NullTerminated, databaseData.Name);
                 writer.Align(padding);
                 writer.WriteBytes(databaseData.Data);
