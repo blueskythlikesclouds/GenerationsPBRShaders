@@ -29,20 +29,20 @@ HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, surface);
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(fxLutShader.m_spVertexShader, fxLutShader.m_spPixelShader);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, colorTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(1, RenderDataManager::rgbTablePicture);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(1, RenderDataManager::rgbTablePicture);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(1, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
-    const BOOL isEnableLUT[] = { RenderDataManager::rgbTablePicture != nullptr && 
+    const BOOL isEnableLUT[] = { RenderDataManager::rgbTablePicture && RenderDataManager::rgbTablePicture->m_spPictureData->IsMadeAll() &&
         SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_NONE && !SceneEffect::debug.disableLUT };
 
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantB(8, isEnableLUT, 1);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+    This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
 
     This->SetDefaultTexture(lutTex);
 }

@@ -42,7 +42,7 @@ STRING_HOOK(PulleyRopeSlot, 0x1120684, "specular");
 
 HOOK(void, __fastcall, LoadArchive, 0x69AB10, void* This, void* Edx, void* A3, void* A4, const hh::base::CSharedString& name, void* archiveInfo, void* A7, void* A8)
 {
-    if (strstr(name.m_pStr, "PBR") != nullptr)
+    if (strstr(name.c_str(), "PBR") != nullptr)
         (*(int32_t*)archiveInfo) += 0x0BADF00D; // Priority
 
     return originalLoadArchive(This, Edx, A3, A4, name, archiveInfo, A7, A8);
@@ -50,7 +50,7 @@ HOOK(void, __fastcall, LoadArchive, 0x69AB10, void* This, void* Edx, void* A3, v
 
 HOOK(void, __fastcall, LoadArchiveList, 0x69C270, void* This, void* Edx, void* A3, void* A4, const hh::base::CSharedString& name, void* archiveInfo)
 {
-    if (strstr(name.m_pStr, "PBR") != nullptr)
+    if (strstr(name.c_str(), "PBR") != nullptr)
         (*(int32_t*)archiveInfo) += 0x0BADF00D; // Priority
 
     return originalLoadArchiveList(This, Edx, A3, A4, name, archiveInfo);

@@ -51,7 +51,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     globalUsePBR = RenderDataManager::defaultIBLPicture != nullptr || RenderDataManager::rgbTablePicture != nullptr ||
         shlfData != nullptr || probeData != nullptr;
 
-    if (shlfData && shlfData->m_spData)
+    if (shlfData && shlfData->IsMadeAll())
     {
         hlBINAV2Fix(shlfData->m_spData.get(), shlfData->m_DataSize);
 
@@ -76,24 +76,23 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             data.obb = OBB(affine.matrix(), 0.5f);
             data.inverseMatrix = affine.inverse().matrix().transpose();
-            data.position = Eigen::Vector3f(shlf.position[0], shlf.position[1], shlf.position[2]) / 10.0f;
+            data.position = Eigen::AlignedVector3f(shlf.position[0], shlf.position[1], shlf.position[2]) / 10.0f;
 
             const AABB aabb = getAABBFromOBB(affine.matrix(), 0.5f, 1.0f / 10.0f);
             data.radius = getAABBRadius(aabb);
 
             scheduler->GetPicture(data.picture, shlf.name);
 
-            if (data.picture != nullptr && data.picture->m_spPictureData != nullptr)
-                data.picture->m_spPictureData->Validate();
-
             RenderDataManager::shlfs.push_back(std::make_unique<SHLightFieldData>(std::move(data)));
-            RenderDataManager::nodeBVH.add(NodeType::SHLightField, RenderDataManager::shlfs.back().get(), aabb);
+
+            if (RenderDataManager::shlfs.back()->picture)
+                RenderDataManager::nodeBVH.add(NodeType::SHLightField, RenderDataManager::shlfs.back().get(), aabb);
         }
 
         RenderDataManager::shlfsInFrustum.reserve(RenderDataManager::shlfs.size());
     }
 
-    if (probeData && probeData->m_spData)
+    if (probeData && probeData->IsMadeAll())
     {
         hlBINAV2Fix(probeData->m_spData.get(), probeData->m_DataSize);
 
@@ -114,7 +113,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.name = iblProbe.name;
             data.obb = OBB(matrix, 1);
             data.inverseMatrix = matrix.inverse().transpose();
-            data.position = Eigen::Vector3f(iblProbe.position[0], iblProbe.position[1], iblProbe.position[2]) / 10.0f;
+            data.position = Eigen::AlignedVector3f(iblProbe.position[0], iblProbe.position[1], iblProbe.position[2]) / 10.0f;
             data.bias = iblProbe.bias;
 
             const AABB aabb = getAABBFromOBB(matrix, 1.0f, 1.0f);
@@ -122,11 +121,10 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             scheduler->GetPicture(data.picture, iblProbe.name);
 
-            if (data.picture != nullptr && data.picture->m_spPictureData != nullptr)
-                data.picture->m_spPictureData->Validate();
-
             RenderDataManager::iblProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
-            RenderDataManager::nodeBVH.add(NodeType::IBLProbe, RenderDataManager::iblProbes.back().get(), aabb);
+
+            if (RenderDataManager::iblProbes.back()->picture)
+                RenderDataManager::nodeBVH.add(NodeType::IBLProbe, RenderDataManager::iblProbes.back().get(), aabb);
         }
 
         RenderDataManager::iblProbesInFrustum.reserve(RenderDataManager::iblProbes.size());
@@ -137,7 +135,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     boost::shared_ptr<hh::db::CRawData> rawData;
     database->GetRawData(rawData, "Autodraw.txt", 0);
 
-    if (rawData != nullptr && rawData->m_spData != nullptr)
+    if (rawData && rawData->IsMadeAll())
     {
         char* autodraw = (char*)rawData->m_spData.get();
 
@@ -173,8 +171,6 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             if (!lightMotionData)
                 continue;
 
-            lightMotionData->Validate();
-
             LightMotionData data;
             data.data = lightMotionData;
             data.name = line;
@@ -188,11 +184,11 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     boost::shared_ptr<hh::mr::CLightListData> lightListData;
     mirageWrapper.GetLightListData(lightListData, "light-list", 0);
 
-    if (lightListData != nullptr)
+    if (lightListData && lightListData->IsMadeAll())
     {
         for (auto it = lightListData->m_Lights.m_pBegin; it != lightListData->m_Lights.m_pEnd; it++)
         {
-            if ((*it)->m_Type != hh::mr::eLightType_Omni)
+            if ((*it)->m_Type != hh::mr::eLightType_Point)
                 continue;
 
             LocalLightData data;
@@ -204,7 +200,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             for (auto& motionData : RenderDataManager::lightMotions)
             {
-                if (strstr((*it)->m_TypeAndName.m_pStr, motionData->name.c_str()) == nullptr)
+                if (strstr((*it)->m_TypeAndName.c_str(), motionData->name.c_str()) == nullptr)
                     continue;
 
                 data.lightMotionData = motionData.get();
@@ -216,8 +212,8 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             const float range = (*it)->m_Range.w();
 
             AABB aabb;
-            aabb.min() = (*it)->m_Position - Eigen::Vector3f(range, range, range);
-            aabb.max() = (*it)->m_Position + Eigen::Vector3f(range, range, range);
+            aabb.min() = (*it)->m_Position - Eigen::AlignedVector3f(range, range, range);
+            aabb.max() = (*it)->m_Position + Eigen::AlignedVector3f(range, range, range);
 
             RenderDataManager::nodeBVH.add(NodeType::LocalLight, RenderDataManager::localLights.back().get(), aabb);
         }
@@ -246,6 +242,9 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     {
         SHLightFieldData* shlf = (SHLightFieldData*)node.data;
 
+        if (!shlf->picture->m_spPictureData->IsMadeAll())
+            break;
+
         shlf->distance = (sceneRenderer->m_pCamera->m_Position - shlf->position).squaredNorm();
 
         if (shlf->distance > SceneEffect::culling.shLightFieldCullingRange * SceneEffect::culling.shLightFieldCullingRange)
@@ -260,6 +259,9 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     case NodeType::IBLProbe:
     {
         IBLProbeData* probe = (IBLProbeData*)node.data;
+
+        if (!probe->picture->m_spPictureData->IsMadeAll())
+            break;
 
         probe->distance = (sceneRenderer->m_pCamera->m_Position - probe->position).squaredNorm();
 
@@ -281,7 +283,7 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
         if (localLight->distance > SceneEffect::culling.localLightCullingRange * SceneEffect::culling.localLightCullingRange)
             break;
 
-        if (localLight->lightMotionData != nullptr)
+        if (localLight->lightMotionData && localLight->lightMotionData->data && localLight->lightMotionData->data->IsMadeAll())
         {
             // I have no idea if this is correct at all.
             // Simply passing the data as color does not work right.
@@ -304,25 +306,26 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     }
 }
 
-HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRenderDirectorFxPipeline* This, void* Edx, uint8_t* A2)
+HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRenderDirectorFxPipeline* This, void* Edx, const hh::fnd::SUpdateInfo& updateInfo)
 {
     if (!globalUsePBR)
-        return originalCRenderDirectorFxPipelineUpdate(This, Edx, A2);
-
-    char* updateCommand = *(char**)(A2 + 8);
+        return originalCRenderDirectorFxPipelineUpdate(This, Edx, updateInfo);
 
     Sonic::CRenderDirectorFxPipeline* renderDirector = (Sonic::CRenderDirectorFxPipeline*)((uint32_t)This - 4); // shifted ptr
     Sonic::CFxSceneRenderer* sceneRenderer = (Sonic::CFxSceneRenderer*)renderDirector->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
 
     if (!sceneRenderer->m_pCamera)
-        return originalCRenderDirectorFxPipelineUpdate(This, Edx, A2);
+        return originalCRenderDirectorFxPipelineUpdate(This, Edx, updateInfo);
 
-    if (strcmp(updateCommand, "0") == 0)
+    if (strcmp(updateInfo.Category, "0") == 0)
     {            
         static double lightMotionTime = 0.0f;
 
         for (auto& motionData : RenderDataManager::lightMotions)
         {
+            if (!motionData->data || !motionData->data->IsMadeAll())
+                continue;
+
             const hh::mot::CLightSubMotionData& subMotionData = motionData->data->m_SubMotions[0];
 
             const double subMotionFrameCount = subMotionData.m_EndFrame - subMotionData.m_StartFrame;
@@ -331,49 +334,38 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
             motionData->data->Step(0, (float)currentFrame, motionData->valueData);
         }
 
-        lightMotionTime += *(float*)A2;
+        lightMotionTime += updateInfo.ElapsedTime;
     }
 
-    else if (strcmp(updateCommand, "b") == 0)
+    else if (strcmp(updateInfo.Category, "b") == 0)
     {
-        static float probeUpdateTime = 0.0f;
+        const Frustum frustum((sceneRenderer->m_pCamera->m_Projection * sceneRenderer->m_pCamera->m_View).matrix());
 
-        if (probeUpdateTime > 0.035f)
-        {
-            const Frustum frustum(sceneRenderer->m_pCamera->m_Projection * sceneRenderer->m_pCamera->m_View);
+        const SHLightFieldData* frontShlf =
+            !RenderDataManager::shlfsInFrustum.empty() ? RenderDataManager::shlfsInFrustum.front() : nullptr;
 
-            const SHLightFieldData* frontShlf =
-                !RenderDataManager::shlfsInFrustum.empty() ? RenderDataManager::shlfsInFrustum.front() : nullptr;
+        RenderDataManager::shlfsInFrustum.clear();
+        RenderDataManager::iblProbesInFrustum.clear();
+        RenderDataManager::localLightsInFrustum.clear();
+        RenderDataManager::nodeBVH.traverse(frustum, sceneRenderer, renderDataManagerNodeBVHTraverseCallback);
 
-            RenderDataManager::shlfsInFrustum.clear();
-            RenderDataManager::iblProbesInFrustum.clear();
-            RenderDataManager::localLightsInFrustum.clear();
-            RenderDataManager::nodeBVH.traverse(frustum, sceneRenderer, renderDataManagerNodeBVHTraverseCallback);
+        std::stable_sort(RenderDataManager::shlfsInFrustum.begin(), RenderDataManager::shlfsInFrustum.end(),
+            [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
 
-            std::stable_sort(RenderDataManager::shlfsInFrustum.begin(), RenderDataManager::shlfsInFrustum.end(), 
-                [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
+        std::stable_sort(RenderDataManager::iblProbesInFrustum.begin(), RenderDataManager::iblProbesInFrustum.end(),
+            [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
 
-            std::stable_sort(RenderDataManager::iblProbesInFrustum.begin(), RenderDataManager::iblProbesInFrustum.end(),
-                [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
+        std::stable_sort(RenderDataManager::localLightsInFrustum.begin(), RenderDataManager::localLightsInFrustum.end(),
+            [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
 
-            std::stable_sort(RenderDataManager::localLightsInFrustum.begin(), RenderDataManager::localLightsInFrustum.end(),
-                [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
+        if (RenderDataManager::shlfsInFrustum.empty() && frontShlf != nullptr)
+            RenderDataManager::shlfsInFrustum.push_back(frontShlf);
 
-            if (RenderDataManager::shlfsInFrustum.empty() && frontShlf != nullptr)
-                RenderDataManager::shlfsInFrustum.push_back(frontShlf);
-            else if (RenderDataManager::shlfsInFrustum.empty() && RenderDataManager::shlfs.size() == 1)
-                RenderDataManager::shlfsInFrustum.push_back(RenderDataManager::shlfs[0].get());
-
-            probeUpdateTime = 0.0f;
-        }
-
-        else 
-        {
-            probeUpdateTime += *(float*)A2;
-        }
+        else if (RenderDataManager::shlfsInFrustum.empty() && RenderDataManager::shlfs.size() == 1)
+            RenderDataManager::shlfsInFrustum.push_back(RenderDataManager::shlfs[0].get());
     }
 
-    return originalCRenderDirectorFxPipelineUpdate(This, Edx, A2);
+    return originalCRenderDirectorFxPipelineUpdate(This, Edx, updateInfo);
 }
 
 bool RenderDataManager::enabled = false;

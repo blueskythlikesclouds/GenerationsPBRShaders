@@ -6,7 +6,7 @@ struct SHLightFieldData
 {
     OBB obb;
     Eigen::Matrix4f inverseMatrix;
-    Eigen::Vector3f position;
+    Eigen::AlignedVector3f position;
     uint32_t probeCounts[3];
     float radius;
     float distance;
@@ -18,7 +18,7 @@ struct IBLProbeData
     std::string name;
     OBB obb;
     Eigen::Matrix4f inverseMatrix;
-    Eigen::Vector3f position;
+    Eigen::AlignedVector3f position;
     float bias;
     float radius;
     float distance;
@@ -35,8 +35,8 @@ struct LightMotionData
 struct LocalLightData
 {
     boost::shared_ptr<hh::mr::CLightData> lightData;
-    Eigen::Vector3f position;
-    Eigen::Vector3f color;
+    Eigen::AlignedVector3f position;
+    Eigen::AlignedVector3f color;
     Eigen::Vector4f range;
     float distance;
     LightMotionData* lightMotionData;

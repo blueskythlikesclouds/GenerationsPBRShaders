@@ -8,11 +8,11 @@ bool* const g_ExecuteFrustumCulling = (bool*)0x1A42FFE;
 bool IBLCaptureService::enabled;
 
 std::unique_ptr<DirectX::ScratchImage> IBLCaptureService::result;
-Eigen::Vector3f IBLCaptureService::position;
+Eigen::AlignedVector3f IBLCaptureService::position;
 size_t IBLCaptureService::faceIndex;
 IBLCaptureMode IBLCaptureService::mode;
 
-void IBLCaptureService::capture(const Eigen::Vector3f& position, const size_t resolution, IBLCaptureMode mode)
+void IBLCaptureService::capture(const Eigen::AlignedVector3f& position, const size_t resolution, IBLCaptureMode mode)
 {
     if (result != nullptr)
         return;
@@ -34,24 +34,24 @@ std::unique_ptr<DirectX::ScratchImage> IBLCaptureService::getResultIfReady()
 
 namespace IBLCapture
 {
-    const Eigen::Vector3f TARGETS[] =
+    const Eigen::AlignedVector3f TARGETS[] =
     {
-        Eigen::Vector3f(1.0f,  0.0f,  0.0f),
-        Eigen::Vector3f(-1.0f, 0.0f,  0.0f),
-        Eigen::Vector3f(0.0f,  1.0f,  0.0f),
-        Eigen::Vector3f(0.0f, -1.0f,  0.0f),
-        Eigen::Vector3f(0.0f,  0.0f, -1.0f),
-        Eigen::Vector3f(0.0f,  0.0f,  1.0f)
+        Eigen::AlignedVector3f(1.0f,  0.0f,  0.0f),
+        Eigen::AlignedVector3f(-1.0f, 0.0f,  0.0f),
+        Eigen::AlignedVector3f(0.0f,  1.0f,  0.0f),
+        Eigen::AlignedVector3f(0.0f, -1.0f,  0.0f),
+        Eigen::AlignedVector3f(0.0f,  0.0f, -1.0f),
+        Eigen::AlignedVector3f(0.0f,  0.0f,  1.0f)
     };
 
-    const Eigen::Vector3f UP_DIRECTIONS[] =
+    const Eigen::AlignedVector3f UP_DIRECTIONS[] =
     {
-        Eigen::Vector3f(0.0f,  1.0f,  0.0f),
-        Eigen::Vector3f(0.0f,  1.0f,  0.0f),
-        Eigen::Vector3f(0.0f,  0.0f,  1.0f),
-        Eigen::Vector3f(0.0f,  0.0f, -1.0f),
-        Eigen::Vector3f(0.0f,  1.0f,  0.0f),
-        Eigen::Vector3f(0.0f,  1.0f,  0.0f)
+        Eigen::AlignedVector3f(0.0f,  1.0f,  0.0f),
+        Eigen::AlignedVector3f(0.0f,  1.0f,  0.0f),
+        Eigen::AlignedVector3f(0.0f,  0.0f,  1.0f),
+        Eigen::AlignedVector3f(0.0f,  0.0f, -1.0f),
+        Eigen::AlignedVector3f(0.0f,  1.0f,  0.0f),
+        Eigen::AlignedVector3f(0.0f,  1.0f,  0.0f)
     };
 
     HOOK(void, __fastcall, CCameraUpdate, 0x10FB770, Camera* This, void* Edx, void* pUpdateInfo)
@@ -62,7 +62,7 @@ namespace IBLCapture
             return;
         }
 
-        This->viewMatrix = Eigen::CreateLookAtMatrix<Eigen::Vector3f>(IBLCaptureService::position, 
+        This->viewMatrix = Eigen::CreateLookAtMatrix<Eigen::AlignedVector3f>(IBLCaptureService::position, 
             IBLCaptureService::position + TARGETS[IBLCaptureService::faceIndex], UP_DIRECTIONS[IBLCaptureService::faceIndex]);
 
         This->fieldOfView = DEGREES_TO_RADIANS(90.0f);
@@ -98,10 +98,10 @@ namespace IBLCapture
     HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
     {
         const bool capturing = IBLCaptureService::faceIndex < 6 && IBLCaptureService::result != nullptr;
-        const hh::ygg::ERenderType tmpRenderTypes = This->m_RenderTypes;
+        const hh::ygg::ERenderCategory tmpRenderCategories = This->m_RenderCategories;
 
         if (capturing)
-            This->m_RenderTypes = IBLCaptureService::mode == IBLCaptureMode::DefaultIBL ? hh::ygg::eRenderType_Sky : hh::ygg::eRenderType_Terrain;
+            This->m_RenderCategories = IBLCaptureService::mode == IBLCaptureMode::DefaultIBL ? hh::ygg::eRenderCategory_Sky : hh::ygg::eRenderCategory_Terrain;
         
         originalCFxRenderGameSceneExecute(This);
 
@@ -140,7 +140,7 @@ namespace IBLCapture
 
         IBLCaptureService::faceIndex++;
 
-        This->m_RenderTypes = tmpRenderTypes;
+        This->m_RenderCategories = tmpRenderCategories;
 
         This->m_pScheduler->m_pMisc->m_spSceneRenderer->m_pCamera->m_AspectRatio = 16.0f / 9.0f;
     }

@@ -30,12 +30,14 @@
 #include <Sonic.h>
 #include <Hedgehog.h>
 
+namespace Eigen
+{
+	using AlignedVector3f = AlignedVector3<float>;
+}
+
 #include "Configuration.h"
 #include "Math.h"
 #include "SceneEffect.h"
-
-// boost
-#include <boost/pool/pool_alloc.hpp>
 
 // Other
 #include <INIReader.h>

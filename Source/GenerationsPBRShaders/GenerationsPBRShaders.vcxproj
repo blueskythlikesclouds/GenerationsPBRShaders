@@ -110,7 +110,6 @@
     <ClCompile Include="LightShaftHandler.cpp" />
     <ClCompile Include="NodeBVH.cpp" />
     <ClCompile Include="ObjectVisualPatcher.cpp" />
-    <ClCompile Include="PBROnVanillaFunsies.cpp" />
     <ClCompile Include="RenderDataManager.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="GIHandler.cpp" />
@@ -140,7 +139,6 @@
     <ClInclude Include="LightShaftHandler.h" />
     <ClInclude Include="NodeBVH.h" />
     <ClInclude Include="ObjectVisualPatcher.h" />
-    <ClInclude Include="PBROnVanillaFunsies.h" />
     <ClInclude Include="RenderDataManager.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />

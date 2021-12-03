@@ -25,9 +25,6 @@
     <ClCompile Include="LUTHandler.cpp">
       <Filter>Shader\Shader\Filter</Filter>
     </ClCompile>
-    <ClCompile Include="PBROnVanillaFunsies.cpp">
-      <Filter>Shader\Other</Filter>
-    </ClCompile>
     <ClCompile Include="CompressionHandler.cpp">
       <Filter>Database</Filter>
     </ClCompile>
@@ -87,9 +84,6 @@
     </ClInclude>
     <ClInclude Include="LUTHandler.h">
       <Filter>Shader\Shader\Filter</Filter>
-    </ClInclude>
-    <ClInclude Include="PBROnVanillaFunsies.h">
-      <Filter>Shader\Other</Filter>
     </ClInclude>
     <ClInclude Include="CompressionHandler.h">
       <Filter>Database</Filter>

@@ -77,8 +77,6 @@ uint32_t movePictureDataMidAsmHookReturnAddress = 0x728F78;
 void __stdcall movePictureDataSetupGIStore(char* name, MapType* map,
     hh::mr::CMirageDatabaseWrapper* databaseWrapper, boost::shared_ptr<hh::mr::CPictureData>& pictureData)
 {
-    pictureData->Validate();
-
     // Create the name of the corresponding occlusion texture.
     char* srcSuffix = strstr(name, "-level");
     char* dstSuffix = strstr(name, "_sg-level");
@@ -105,10 +103,7 @@ void __stdcall movePictureDataSetupGIStore(char* name, MapType* map,
         databaseWrapper->GetPictureData(occlusionTex, atlasName, 0);
 
         if (occlusionTex != nullptr)
-        {
-            occlusionTex->Validate();
             occlusionRect = occlusionNode->m_Value.m_Value.rect;
-        }
     }
 
     // Crackheadedly create a stub for presenting the data to the game.
@@ -237,19 +232,12 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
 
     DX_PATCH::IDirect3DTexture9* dxpTex = *(DX_PATCH::IDirect3DTexture9**)((uint32_t)pData + 16);
 
-    static GIStore* prevGIStore = nullptr;
-
     GIStore* giStore = nullptr;
     if (dxpTex)
         dxpTex->QueryInterface(IID(), (void**)&giStore);
 
-    if (prevGIStore != nullptr && giStore == prevGIStore)
-        return;
-
-    prevGIStore = giStore;
-
-    const BOOL isSg = giStore != nullptr && giStore->isSg;
-    const BOOL hasOcclusion = giStore != nullptr && giStore->occlusionTex != nullptr;
+    const BOOL isSg = giStore && giStore->isSg;
+    const BOOL hasOcclusion = giStore && giStore->occlusionTex;
 
     if (hasOcclusion)
     {
@@ -257,7 +245,7 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
         This->m_pD3DDevice->SetPixelShaderConstantF(112, (const float*)&giStore->occlusionRect, 1);
     }
 
-    This->m_pD3DDevice->SetTexture(10, giStore != nullptr ? giStore->giTex->m_pD3DTexture : nullptr);
+    This->m_pD3DDevice->SetTexture(10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
 
     float giParam[] = { pData[0], pData[1], pData[2], pData[3] };
 

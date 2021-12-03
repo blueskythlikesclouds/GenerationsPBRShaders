@@ -64,7 +64,9 @@ void __declspec(naked) CFxBloomGlareExecuteMidAsmHook()
 {
     __asm
     {
+        push ecx
         call isUsePBRBloomShader
+        pop ecx
         cmp al, 0
         jz onFalse
 
@@ -79,7 +81,7 @@ void __declspec(naked) CFxBloomGlareExecuteMidAsmHook()
 
 HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Sonic::CFxBloomGlare* This)
 {
-    if (SceneEffect::bloom.type != BLOOM_TYPE_COLORS || !*(bool*)0x1A4323D) // ms_Enable
+    if (SceneEffect::bloom.type != BLOOM_TYPE_COLORS || !*(bool*)0x1A4323D || !*(bool*)0x1A4358E) // ms_Enable
     {
         originalCFxBloomGlareExecute(This);
         return;
@@ -110,13 +112,13 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
 
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(150, downSampleParam, 1);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, hdrTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, hdrTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(downSampleNShader);
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
-    This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+    This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
 
     //
     // Bright Pass
@@ -129,16 +131,16 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(150, (const float*)0x1A572D0, 1);
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(151, (const float*)0x1A57360, 1);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, colorsBrightPassSrcTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorsBrightPassSrcTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(1, luAvgTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(1, luAvgTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(colorsBloomShader);
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
-    This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+    This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
 
     //
     // Down Sample
@@ -149,9 +151,9 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     {
         colorsBloomTex[i]->GetSurface(dstSurface, 0, 0);
 
-        This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, colorsBloomTex[i - 1]);
+        This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorsBloomTex[i - 1]);
         This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
-        This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+        This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
     }
 
     //
@@ -174,7 +176,7 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
         {
             (j == 0 ? colorsBloomTmpTex[i] : colorsBloomTex[i])->GetSurface(dstSurface, 0, 0);
 
-            This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, j == 0 ? colorsBloomTex[i] : colorsBloomTmpTex[i]);
+            This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, j == 0 ? colorsBloomTex[i] : colorsBloomTmpTex[i]);
             This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
 
             for (int k = 0; k < 1 + (1 << (i + 1)); k++)
@@ -196,7 +198,7 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
                 float srcAlphaDstAlpha[] = { 1.0f, 1.0f / (k + 1.0f), 0, 0 };
                 This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(150, srcAlphaDstAlpha, 1);
 
-                This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, x, y);
+                This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, x, y);
             }
         }
     }
@@ -236,8 +238,8 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
 
         This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(150, textureSize, 1);
 
-        This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, colorsBloomTex[i]);
-        This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+        This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorsBloomTex[i]);
+        This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
     }
 
     This->m_pScheduler->m_pMisc->m_pRenderingInfrastructure->m_RenderingDevice.UnlockRenderState(D3DRS_ALPHABLENDENABLE);

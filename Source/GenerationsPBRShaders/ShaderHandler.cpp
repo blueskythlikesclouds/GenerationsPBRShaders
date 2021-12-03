@@ -230,7 +230,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
         renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
-        This->RenderScene(hh::ygg::eRenderType_Sky, -1);
+        This->RenderScene(hh::ygg::eRenderCategory_Sky, -1);
     }
 
     // Unlock render states we're done with.
@@ -243,7 +243,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //************************************************************//
 
     // Set g_LuminanceSampler
-    device->SetSampler(8, luAvgTex);
+    device->SetTexture(8, luAvgTex);
     device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
@@ -276,11 +276,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (!envBrdfPicture)
         This->m_pScheduler->GetPicture(envBrdfPicture, "env_brdf");
 
-    device->SetSampler(14, RenderDataManager::defaultIBLPicture);
+    device->SetTexture(14, RenderDataManager::defaultIBLPicture);
     device->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
     device->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(15, envBrdfPicture);
+    device->SetTexture(15, envBrdfPicture);
     device->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     device->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
 
@@ -290,12 +290,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Render objects & player separately from terrain so it gets culled better.
     This->RenderScene(
-        hh::ygg::eRenderType_Object | 
-        hh::ygg::eRenderType_ObjectOverlay | hh::ygg::eRenderType_Player,
-        hh::ygg::eRenderSlot_Opaque);
+        hh::ygg::eRenderCategory_Object | 
+        hh::ygg::eRenderCategory_ObjectOverlay | hh::ygg::eRenderCategory_Player,
+        hh::ygg::eRenderLevel_Opaque);
 
-    This->RenderScene(hh::ygg::eRenderType_Terrain,
-        hh::ygg::eRenderSlot_Opaque);
+    This->RenderScene(hh::ygg::eRenderCategory_Terrain,
+        hh::ygg::eRenderLevel_Opaque);
 
     // Done with D3DRS_ALPHATESTENABLE FALSE, unlock it.
     renderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
@@ -305,12 +305,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
     This->RenderScene(
-        hh::ygg::eRenderType_Object | 
-        hh::ygg::eRenderType_ObjectOverlay | hh::ygg::eRenderType_Player,
-        hh::ygg::eRenderSlot_PunchThrough);
+        hh::ygg::eRenderCategory_Object | 
+        hh::ygg::eRenderCategory_ObjectOverlay | hh::ygg::eRenderCategory_Player,
+        hh::ygg::eRenderLevel_PunchThrough);
 
-    This->RenderScene(hh::ygg::eRenderType_Terrain,
-        hh::ygg::eRenderSlot_PunchThrough);
+    This->RenderScene(hh::ygg::eRenderCategory_Terrain,
+        hh::ygg::eRenderLevel_PunchThrough);
 
     // Done with D3DRS_ALPHATESTENABLE TRUE, unlock it.
     renderingDevice->UnlockRenderState(D3DRS_ALPHATESTENABLE);
@@ -339,27 +339,27 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
     renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
-    device->SetSampler(0, This->m_spColorTex);
+    device->SetTexture(0, This->m_spColorTex);
     device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(1, gBuffer1Tex);
+    device->SetTexture(1, gBuffer1Tex);
     device->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(2, gBuffer2Tex);
+    device->SetTexture(2, gBuffer2Tex);
     device->SetSamplerFilter(2, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(2, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(3, gBuffer3Tex);
+    device->SetTexture(3, gBuffer3Tex);
     device->SetSamplerFilter(3, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(3, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(11, This->m_spColorTex);
+    device->SetTexture(11, This->m_spColorTex);
     device->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(12, This->m_spDepthTex);
+    device->SetTexture(12, This->m_spDepthTex);
     device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
@@ -401,12 +401,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->SetSamplerFilter(4, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(4, D3DTADDRESS_WRAP);
-        device->SetSampler(4, blueNoisePicture);
+        device->SetTexture(4, blueNoisePicture);
 
         device->SetShader(fxSSAOShader);
 
         device->SetRenderTarget(0, ssaoSurface);
-        device->RenderQuad(nullptr, 0, 0);
+        device->DrawQuad2D(nullptr, 0, 0);
 
         // Apply blur
         boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
@@ -423,10 +423,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         d3dDevice->SetPixelShaderConstantF(150, sourceSize_depthThreshold, 1);
 
         device->SetRenderTarget(0, ssaoBlurredSurface);
-        device->SetSampler(4, ssaoTex);
+        device->SetTexture(4, ssaoTex);
         device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
         device->SetShader(fxBoxBlurShader);
-        device->RenderQuad(nullptr, 0, 0);
+        device->DrawQuad2D(nullptr, 0, 0);
     }
 
     // Pass 32 omni lights from the view to shaders.
@@ -467,11 +467,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     device->SetShader(fxDeferredPassLightShaders[localLightCount]);
 
     // Set shadowmaps.
-    device->SetSampler(7, shadowMapNoTerrain);
+    device->SetTexture(7, shadowMapNoTerrain);
     device->SetSamplerFilter(7, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(7, D3DTADDRESS_BORDER);
 
-    device->SetSampler(13, shadowMap);
+    device->SetTexture(13, shadowMap);
     device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
@@ -490,7 +490,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             continue;
         }
 
-        device->SetSampler(4 + i, cache->picture);
+        device->SetTexture(4 + i, cache->picture);
         device->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         device->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
 
@@ -517,7 +517,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         d3dDevice->SetPixelShaderConstantF(187, ssaoSize, 1);
 
-        device->SetSampler(8, ssaoBlurredTex);
+        device->SetTexture(8, ssaoBlurredTex);
         device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
@@ -532,7 +532,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
 
     device->SetRenderTarget(0, gBuffer0Surface);
-    device->RenderQuad(nullptr, 0, 0);
+    device->DrawQuad2D(nullptr, 0, 0);
 
     if (SceneEffect::ssao.enable)
         device->UnsetRenderTarget(1);
@@ -550,7 +550,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetRenderTarget(0, rlrSurface);
         device->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
 
-        device->SetSampler(0, gBuffer0Tex);
+        device->SetTexture(0, gBuffer0Tex);
         device->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
 
         // Set parameters
@@ -577,7 +577,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         d3dDevice->SetPixelShaderConstantF(151, stepCount_maxRoughness_rayLength_fade, 1);
         d3dDevice->SetPixelShaderConstantF(152, accuracyThreshold_saturation_brightness, 1);
 
-        device->RenderQuad(nullptr, 0, 0);
+        device->DrawQuad2D(nullptr, 0, 0);
 
         // Apply gaussian blur to it because yes.
         device->SetShader(fxConvolutionFilterShader);
@@ -609,9 +609,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             float direction[] = { -1, 0, 0, 0 };
             d3dDevice->SetPixelShaderConstantF(151, direction, 1);
 
-            device->SetSampler(0, rlrTex);
+            device->SetTexture(0, rlrTex);
 
-            device->RenderQuad(nullptr, 0, 0);
+            device->DrawQuad2D(nullptr, 0, 0);
 
             // Vertical
             device->SetRenderTarget(0, dstSurface);
@@ -620,16 +620,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             direction[1] = -1;
             d3dDevice->SetPixelShaderConstantF(151, direction, 1);
 
-            device->SetSampler(0, rlrTempTex);
+            device->SetTexture(0, rlrTempTex);
 
-            device->RenderQuad(nullptr, 0, 0);
+            device->DrawQuad2D(nullptr, 0, 0);
         }
 
         // Revert sampler filters.
         device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     }
 
-    device->SetSampler(0, gBuffer0Tex);
+    device->SetTexture(0, gBuffer0Tex);
 
     //****************************************************//
     // Deferred specular pass: Add specular lighting to   //
@@ -651,11 +651,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     const int32_t iblProbePassCount = std::max<int32_t>(0, ((int32_t)iblCountInFrustum - 1) / 8);
 
     // Set Default IBL and Env BRDF
-    device->SetSampler(14, RenderDataManager::defaultIBLPicture);
+    device->SetTexture(14, RenderDataManager::defaultIBLPicture);
     device->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
     device->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(15, envBrdfPicture);
+    device->SetTexture(15, envBrdfPicture);
     device->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
     device->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
 
@@ -707,7 +707,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             else
                 probeLodParams[j] = 0.0f;
 
-            device->SetSampler(4 + j, cache->picture);
+            device->SetTexture(4 + j, cache->picture);
             device->SetSamplerFilter(4 + j, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
             device->SetSamplerAddressMode(4 + j, D3DTADDRESS_CLAMP);
         }
@@ -727,7 +727,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         {
             if (SceneEffect::rlr.enable && Configuration::rlrEnable)
             {
-                device->SetSampler(13, rlrTex);
+                device->SetTexture(13, rlrTex);
                 device->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
                 device->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
             }
@@ -739,7 +739,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         else
         {
-            device->SetSampler(13, prevIBLTex);
+            device->SetTexture(13, prevIBLTex);
             device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
             device->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
         }
@@ -750,7 +750,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         // Set render target.
         device->SetRenderTarget(0, isCombinePass ? This->m_spColorSurface : prevIBLSurface);
-        device->RenderQuad(nullptr, 0, 0);
+        device->DrawQuad2D(nullptr, 0, 0);
     }
 
     //*********//
@@ -782,15 +782,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     device->SetShader(fxCopyColorDepthShader);
 
-    device->SetSampler(0, This->m_spColorTex);
+    device->SetTexture(0, This->m_spColorTex);
     device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(1, This->m_spDepthTex);
+    device->SetTexture(1, This->m_spDepthTex);
     device->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
-    device->RenderQuad(nullptr, 0, 0);
+    device->DrawQuad2D(nullptr, 0, 0);
 
     //***************************************************************//
     // Forward rendering: Render transparent objects and water. //
@@ -802,7 +802,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     d3dDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
 
     // Set g_LuminanceSampler
-    device->SetSampler(8, luAvgTex);
+    device->SetTexture(8, luAvgTex);
     device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
 
@@ -825,11 +825,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_ZFUNC);
 
     // Set the framebuffer and depth samplers.
-    device->SetSampler(11, This->m_spCapturedColorTex);
+    device->SetTexture(11, This->m_spCapturedColorTex);
     device->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
 
-    device->SetSampler(12, This->m_spCapturedDepthTex);
+    device->SetTexture(12, This->m_spCapturedDepthTex);
     device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
@@ -839,20 +839,20 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
     // Terrain
-    device->SetSampler(13, shadowMapNoTerrain);
+    device->SetTexture(13, shadowMapNoTerrain);
 
-    This->RenderScene(hh::ygg::eRenderType_Terrain, 
-        hh::ygg::eRenderSlot_Transparent);
+    This->RenderScene(hh::ygg::eRenderCategory_Terrain, 
+        hh::ygg::eRenderLevel_Transparent);
 
     // Objects
-    device->SetSampler(13, shadowMap);
+    device->SetTexture(13, shadowMap);
     device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     device->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
     This->RenderScene(
-        hh::ygg::eRenderType_Object | 
-        hh::ygg::eRenderType_ObjectOverlay | hh::ygg::eRenderType_Player,
-        hh::ygg::eRenderSlot_Transparent);
+        hh::ygg::eRenderCategory_Object | 
+        hh::ygg::eRenderCategory_ObjectOverlay | hh::ygg::eRenderCategory_Player,
+        hh::ygg::eRenderLevel_Transparent);
 
     // XLU Object
     renderingDevice->SetRenderState(D3DRS_SRCBLENDALPHA, D3DBLEND_SRCALPHA);
@@ -861,8 +861,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_SRCBLENDALPHA);
     renderingDevice->LockRenderState(D3DRS_DESTBLENDALPHA);
 
-    This->RenderScene(hh::ygg::eRenderType_ObjectXlu,
-        hh::ygg::eRenderSlot_Opaque | hh::ygg::eRenderSlot_PunchThrough | hh::ygg::eRenderSlot_Transparent);
+    This->RenderScene(hh::ygg::eRenderCategory_ObjectXlu,
+        hh::ygg::eRenderLevel_Opaque | hh::ygg::eRenderLevel_PunchThrough | hh::ygg::eRenderLevel_Transparent);
 
     renderingDevice->UnlockRenderState(D3DRS_SRCBLENDALPHA);
     renderingDevice->UnlockRenderState(D3DRS_DESTBLENDALPHA);
@@ -877,7 +877,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //*******//
 
     // Water doesn't need alpha blending so we keep it false.
-    This->RenderScene(hh::ygg::eRenderType_Terrain, hh::ygg::eRenderSlot_Water);
+    This->RenderScene(hh::ygg::eRenderCategory_Terrain, hh::ygg::eRenderLevel_Water);
 
     // Unlock render states that we're done with.
     renderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
@@ -897,8 +897,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
         renderingDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
 
-        This->RenderScene(hh::ygg::eRenderType_Effect | hh::ygg::eRenderType_SparkleObject | hh::ygg::eRenderType_SparkleFramebuffer,
-            hh::ygg::eRenderSlot_Opaque | hh::ygg::eRenderSlot_PunchThrough | hh::ygg::eRenderSlot_Transparent);
+        This->RenderScene(hh::ygg::eRenderCategory_Effect | hh::ygg::eRenderCategory_SparkleObject | hh::ygg::eRenderCategory_SparkleFramebuffer,
+            hh::ygg::eRenderLevel_Opaque | hh::ygg::eRenderLevel_PunchThrough | hh::ygg::eRenderLevel_Transparent);
     }
 
     //*********************//
@@ -930,7 +930,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(0, D3DTADDRESS_WRAP);
-        device->SetSampler(0, blueNoisePicture);
+        device->SetTexture(0, blueNoisePicture);
 
         boost::shared_ptr<hh::ygg::CYggSurface> volumetricLightSurface;
         volumetricLightTex->GetSurface(volumetricLightSurface, 0, 0);
@@ -938,7 +938,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->UnsetDepthStencil();
         device->SetRenderTarget(0, volumetricLightSurface);
         device->SetShader(SceneEffect::volumetricLighting.ignoreSky ? fxVolumetricLightingIgnoreSkyShader : fxVolumetricLightingShader);
-        device->RenderQuad(nullptr, 0, 0);
+        device->DrawQuad2D(nullptr, 0, 0);
 
         // Apply blur
         renderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
@@ -961,17 +961,17 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         d3dDevice->SetPixelShaderConstantF(150, sourceSize_depthThreshold, 1);
 
-        device->SetSampler(4, volumetricLightTex);
+        device->SetTexture(4, volumetricLightTex);
         device->SetSamplerFilter(4, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
         device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);       
 
-        device->SetSampler(12, This->m_spDepthTex);
+        device->SetTexture(12, This->m_spDepthTex);
         device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
         device->SetRenderTarget(0, This->m_spColorSurface);
         device->SetShader(fxBoxBlurShader);
-        device->RenderQuad(nullptr, 0, 0);
+        device->DrawQuad2D(nullptr, 0, 0);
 
         // Unlock render states we are done with.
         renderingDevice->UnlockRenderState(D3DRS_DESTBLEND);
@@ -1052,10 +1052,10 @@ HOOK(void, __fastcall, CFxToneMappingExecute, Sonic::fpCFxToneMappingExecute, So
     This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, surface);
     This->m_pScheduler->m_pMisc->m_pDevice->UnsetDepthStencil();
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(fxCopyColorShader.m_spVertexShader, fxCopyColorShader.m_spPixelShader);
-    This->m_pScheduler->m_pMisc->m_pDevice->SetSampler(0, This->m_spLuAvgTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, This->m_spLuAvgTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
-    This->m_pScheduler->m_pMisc->m_pDevice->RenderQuad(nullptr, 0, 0);
+    This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
 }
 
 HOOK(void, __fastcall, CGameplayFlowStageOnExit, 0xD05360, void* This)

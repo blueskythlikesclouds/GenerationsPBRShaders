@@ -3,7 +3,6 @@
 #include "CpkBinder.h"
 #include "RenderDataManager.h"
 #include "LUTHandler.h"
-#include "PBROnVanillaFunsies.h"
 #include "SceneEffect.h"
 #include "GIHandler.h"
 #include "IBLCaptureService.h"
@@ -46,10 +45,10 @@ extern "C" void __declspec(dllexport) OnFrame()
         }
     }
 
-    if (index > 0 || (GetAsyncKeyState(VK_F1) & 1) != 0)
+    if (!RenderDataManager::iblProbes.empty() && (index > 0 || (GetAsyncKeyState(VK_F1) & 1) != 0))
         IBLCaptureService::capture(RenderDataManager::iblProbes[index]->position, 128, IBLCaptureMode::IBLProbe);
     else if ((GetAsyncKeyState(VK_F2) & 1) != 0)
-        IBLCaptureService::capture(Eigen::Vector3f::Zero(), 512, IBLCaptureMode::DefaultIBL);
+        IBLCaptureService::capture(Eigen::AlignedVector3f::Zero(), 512, IBLCaptureMode::DefaultIBL);
 #endif
 }
 
@@ -88,7 +87,7 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
 #endif
 }
 
-extern "C" void __declspec(dllexport) PostInit()
+extern "C" void __declspec(dllexport) PostInit(ModInfo* info)
 {
     if (GetModuleHandle(TEXT("BetterFxPipeline.dll")) == nullptr ||
         GetModuleHandle(TEXT("GenerationsD3D9Ex.dll")) == nullptr)

@@ -13,7 +13,7 @@ class Node
 public:
     NodeType type{};
     void* data{};
-    Eigen::Vector3f center;
+    Eigen::AlignedVector3f center;
     float radius{};
     std::unique_ptr<Node> left;
     std::unique_ptr<Node> right;
@@ -28,7 +28,7 @@ class NodeBVH
         NodeType type {};
         void* data {};
         AABB aabb;
-        Eigen::Vector3f center;
+        Eigen::AlignedVector3f center;
     };
 
     std::vector<BuildCacheItem> buildCache;

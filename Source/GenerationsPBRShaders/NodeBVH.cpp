@@ -10,7 +10,7 @@ std::unique_ptr<Node> NodeBVH::build(const std::vector<const BuildCacheItem*>& i
     for (auto& item : items)
         aabb.extend(item->aabb);
 
-    const Eigen::Vector3f center = aabb.center();
+    const Eigen::AlignedVector3f center = aabb.center();
 
     std::unique_ptr<Node> node = std::make_unique<Node>();
     node->center = center;
