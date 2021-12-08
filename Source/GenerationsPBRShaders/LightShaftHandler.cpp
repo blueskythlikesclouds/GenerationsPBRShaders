@@ -15,7 +15,7 @@ HOOK(void, __fastcall, CFxLightShaftExecute, 0x11B1610, Sonic::CFxJob* This)
     const Eigen::AlignedVector3f sunPosBackup = *sunPosition;
 
     *sunPosition += 
-        This->m_pScheduler->m_pMisc->m_spSceneRenderer->m_pCamera->m_Position;
+        Sonic::CGameDocument::GetInstance()->GetWorld()->GetCamera()->m_MyCamera.m_Position;
 
     originalCFxLightShaftExecute(This);
 

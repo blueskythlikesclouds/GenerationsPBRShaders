@@ -234,7 +234,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
 void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
 {
-    Sonic::CFxSceneRenderer* sceneRenderer = (Sonic::CFxSceneRenderer*)userData;
+    Sonic::CCamera* pCamera = (Sonic::CCamera*)userData;
 
     switch (node.type)
     {
@@ -245,7 +245,7 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
         if (!shlf->picture->m_spPictureData->IsMadeAll())
             break;
 
-        shlf->distance = (sceneRenderer->m_pCamera->m_Position - shlf->position).squaredNorm();
+        shlf->distance = (pCamera->m_MyCamera.m_Position - shlf->position).squaredNorm();
 
         if (shlf->distance > SceneEffect::culling.shLightFieldCullingRange * SceneEffect::culling.shLightFieldCullingRange)
             break;
@@ -263,7 +263,7 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
         if (!probe->picture->m_spPictureData->IsMadeAll())
             break;
 
-        probe->distance = (sceneRenderer->m_pCamera->m_Position - probe->position).squaredNorm();
+        probe->distance = (pCamera->m_MyCamera.m_Position - probe->position).squaredNorm();
 
         if (probe->distance > SceneEffect::culling.iblProbeCullingRange * SceneEffect::culling.iblProbeCullingRange)
             break;
@@ -278,7 +278,7 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     {
         LocalLightData* localLight = (LocalLightData*)node.data;
 
-        localLight->distance = (sceneRenderer->m_pCamera->m_Position - localLight->position).squaredNorm();
+        localLight->distance = (pCamera->m_MyCamera.m_Position - localLight->position).squaredNorm();
 
         if (localLight->distance > SceneEffect::culling.localLightCullingRange * SceneEffect::culling.localLightCullingRange)
             break;
@@ -311,13 +311,7 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
     if (!globalUsePBR)
         return originalCRenderDirectorFxPipelineUpdate(This, Edx, updateInfo);
 
-    Sonic::CRenderDirectorFxPipeline* renderDirector = (Sonic::CRenderDirectorFxPipeline*)((uint32_t)This - 4); // shifted ptr
-    Sonic::CFxSceneRenderer* sceneRenderer = (Sonic::CFxSceneRenderer*)renderDirector->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
-
-    if (!sceneRenderer->m_pCamera)
-        return originalCRenderDirectorFxPipelineUpdate(This, Edx, updateInfo);
-
-    if (strcmp(updateInfo.Category, "0") == 0)
+    if (updateInfo.Category == "0")
     {            
         static double lightMotionTime = 0.0f;
 
@@ -337,9 +331,10 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
         lightMotionTime += updateInfo.ElapsedTime;
     }
 
-    else if (strcmp(updateInfo.Category, "b") == 0)
+    else if (updateInfo.Category == "b")
     {
-        const Frustum frustum((sceneRenderer->m_pCamera->m_Projection * sceneRenderer->m_pCamera->m_View).matrix());
+        const boost::shared_ptr<Sonic::CCamera> spCamera = Sonic::CGameDocument::GetInstance()->GetWorld()->GetCamera();
+        const Frustum frustum((spCamera->m_MyCamera.m_Projection * spCamera->m_MyCamera.m_View).matrix());
 
         const SHLightFieldData* frontShlf =
             !RenderDataManager::shlfsInFrustum.empty() ? RenderDataManager::shlfsInFrustum.front() : nullptr;
@@ -347,7 +342,7 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
         RenderDataManager::shlfsInFrustum.clear();
         RenderDataManager::iblProbesInFrustum.clear();
         RenderDataManager::localLightsInFrustum.clear();
-        RenderDataManager::nodeBVH.traverse(frustum, sceneRenderer, renderDataManagerNodeBVHTraverseCallback);
+        RenderDataManager::nodeBVH.traverse(frustum, spCamera.get(), renderDataManagerNodeBVHTraverseCallback);
 
         std::stable_sort(RenderDataManager::shlfsInFrustum.begin(), RenderDataManager::shlfsInFrustum.end(),
             [](const auto& lhs, const auto& rhs) { return lhs->distance < rhs->distance;  });
