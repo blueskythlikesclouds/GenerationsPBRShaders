@@ -328,13 +328,13 @@ HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRende
             motionData->data->Step(0, (float)currentFrame, motionData->valueData);
         }
 
-        lightMotionTime += updateInfo.ElapsedTime;
+        lightMotionTime += updateInfo.DeltaTime;
     }
 
     else if (updateInfo.Category == "b")
     {
         const boost::shared_ptr<Sonic::CCamera> spCamera = Sonic::CGameDocument::GetInstance()->GetWorld()->GetCamera();
-        const Frustum frustum((spCamera->m_MyCamera.m_Projection * spCamera->m_MyCamera.m_View).matrix());
+        const Frustum frustum(spCamera->m_MyCamera.m_Projection * spCamera->m_MyCamera.m_View.matrix());
 
         const SHLightFieldData* frontShlf =
             !RenderDataManager::shlfsInFrustum.empty() ? RenderDataManager::shlfsInFrustum.front() : nullptr;

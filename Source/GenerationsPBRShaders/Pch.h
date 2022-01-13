@@ -11,6 +11,9 @@
 #include <DirectXTex.h>
 #endif
 
+// d3d9
+#include <d3d9.h>
+
 // std
 #include <stdint.h>
 #include <array>
@@ -27,9 +30,6 @@
 // BlueBlur
 #include <BlueBlur.h>
 
-#include <Sonic.h>
-#include <Hedgehog.h>
-
 namespace Eigen
 {
 	using AlignedVector3f = AlignedVector3<float>;
@@ -41,5 +41,6 @@ namespace Eigen
 
 // Other
 #include <INIReader.h>
+#include <Helpers.h>
 
 extern bool globalUsePBR;
