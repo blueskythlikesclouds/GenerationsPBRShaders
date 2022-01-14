@@ -405,7 +405,7 @@ namespace GensShaderTool
             code = code.Replace("tex(sampDif", "texSRGB(sampDif");
             code = code.Replace("tex(s0,", "texSRGB(s0,");
 
-            // Scale ForceAlphaColor/SmokeColor by luminance.
+            // Scale ForceAlphaColor/SmokeColor/mrgMaterialColor by luminance.
             if (debugName.Contains("Spark", StringComparison.Ordinal) || debugName.Contains("Particle", StringComparison.Ordinal))
                 code = code.Replace("g_ForceAlphaColor", "(g_ForceAlphaColor * float4(GetToneMapLuminance().xxx, 1))");
 
@@ -417,6 +417,9 @@ namespace GensShaderTool
                 // Prevent the smoke color saturation.
                 code = code.Replace("oC0.xyz = saturate", "oC0.xyz =");
             }
+
+            if (debugName.Contains("SysHavok", StringComparison.Ordinal))
+                code = code.Replace("mrgMaterialColor", "(mrgMaterialColor * float4(GetToneMapLuminance().xxx, 1))");
 
             // Ignore shadowmaps for the time being.
             code = code.Replace("texProj(g_VerticalShadowMap", "1; //");
