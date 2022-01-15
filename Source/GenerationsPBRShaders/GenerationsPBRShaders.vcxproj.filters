@@ -55,6 +55,9 @@
     <ClCompile Include="IBLCaptureService.cpp">
       <Filter>Database\Probe</Filter>
     </ClCompile>
+    <ClCompile Include="PermutationHandler.cpp">
+      <Filter>Shader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -117,6 +120,9 @@
     </ClInclude>
     <ClInclude Include="IBLCaptureService.h">
       <Filter>Database\Probe</Filter>
+    </ClInclude>
+    <ClInclude Include="PermutationHandler.h">
+      <Filter>Shader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

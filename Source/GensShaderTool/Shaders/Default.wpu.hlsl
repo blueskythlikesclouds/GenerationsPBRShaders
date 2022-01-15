@@ -135,7 +135,7 @@ void main(in DECLARATION_TYPE input,
     const float2 giCoord = input.TexCoord0.zw * mrgGIAtlasParam.xy + mrgGIAtlasParam.zw;
     const float2 occlusionCoord = input.TexCoord0.zw * mrgOcclusionAtlasParam.xy + mrgOcclusionAtlasParam.zw;
 
-    [branch] if (mrgIsSG)
+    if (mrgIsSG)
     {
         const float2 sggiCoord[4] =
         {
@@ -150,18 +150,18 @@ void main(in DECLARATION_TYPE input,
         int i;
 
         [unroll] for (i = 0; i < 4; i++)
-            sggi[i] = tex2Dlod(g_GISampler, float4(sggiCoord[i], 0, 0));
+            sggi[i] = tex2D(g_GISampler, sggiCoord[i]);
 
-        [branch] if (mrgHasOcclusion)
+        if (mrgHasOcclusion)
         {
             [unroll] for (i = 0; i < 4; i++)
                 sggi[i].rgb = UnpackHDR(sggi[i]);
 
-            material.Shadow = tex2Dlod(g_OcclusionSampler, float4(occlusionCoord, 0, 0)).x;
+            material.Shadow = tex2D(g_OcclusionSampler, occlusionCoord).x;
         }
         else 
         {
-            material.Shadow = tex2Dlod(g_GISampler, float4(occlusionCoord, 0, 0)).a;
+            material.Shadow = tex2D(g_GISampler, occlusionCoord).a;
         }
 
         const float3 axis[4] =
@@ -192,12 +192,12 @@ void main(in DECLARATION_TYPE input,
     }
     else
     {
-        float4 gi = tex2Dlod(g_GISampler, float4(giCoord, 0, 0));
+        float4 gi = tex2D(g_GISampler, giCoord);
 
-        [branch] if (mrgHasOcclusion)
+        if (mrgHasOcclusion)
         {
             material.IndirectDiffuse = UnpackHDR(gi);
-            material.Shadow = tex2Dlod(g_OcclusionSampler, float4(occlusionCoord, 0, 0)).x;
+            material.Shadow = tex2D(g_OcclusionSampler, occlusionCoord).x;
         }
         else
         {

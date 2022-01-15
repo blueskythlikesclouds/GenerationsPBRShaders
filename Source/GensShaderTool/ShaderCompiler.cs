@@ -8,6 +8,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Amicitia.IO.Binary;
+using Amicitia.IO.Streams;
 using GensShaderTool.Extensions;
 using SharpGen.Runtime;
 using Vortice.D3DCompiler;
@@ -31,6 +33,128 @@ namespace GensShaderTool
             "ConstTexCoord"
         };
 
+        internal static unsafe (byte[] CompiledBytes, List<Blob> IndividualCompiledBytes) PreprocessAndCompilePermuted(
+            byte[] hlslByteData, string sourceName, ShaderMacro[] defines, Include include, string entryPoint, string target, ShaderFlags flags)
+        {
+            Blob blob;
+            Blob errorBlob;
+
+            fixed (void* byteData = hlslByteData)
+                Compiler.Preprocess((IntPtr)byteData, hlslByteData.Length, sourceName, defines, include, out blob, out errorBlob);
+
+            if (errorBlob != null)
+                throw new Exception(errorBlob.ConvertToString());
+
+            var preprocessed = blob.ConvertToString();
+
+            var booleans = new List<(string Name, int Register)>();
+
+            for (int i = 0; i < preprocessed.Length;)
+            {
+                int index = preprocessed.IndexOf("register", i, StringComparison.Ordinal);
+                if (index == -1)
+                    break;
+
+                int declarationBegin = preprocessed.LastIndexOfAny(new[] { ';', '\n', '\r' }, index) + 1;
+                int declarationEnd = preprocessed.IndexOf(';', index);
+                int typeIndex = preprocessed.IndexOf("bool", declarationBegin, StringComparison.Ordinal);
+                if (typeIndex < declarationEnd)
+                {
+                    int nameIndex = typeIndex + 5;
+                    int separatorIndex = preprocessed.IndexOf(':', nameIndex);
+
+                    string name = preprocessed.Substring(nameIndex, separatorIndex - nameIndex).Trim();
+                    if (preprocessed.IndexOf(name, declarationEnd, StringComparison.Ordinal) != -1)
+                    {
+                        int registerIndex = preprocessed.IndexOf('b', index + 9);
+                        int paranthesisIndex = preprocessed.IndexOf(')', registerIndex);
+                        int register = int.Parse(preprocessed.Substring(registerIndex + 1, paranthesisIndex - registerIndex - 1));
+
+                        booleans.Add((name, register));
+
+                        preprocessed = preprocessed.Substring(0, declarationBegin) +
+                                       new string(' ', declarationEnd - declarationBegin + 1) +
+                                       preprocessed.Substring(declarationEnd + 1);
+                    }
+                }
+
+                i = index + 1;
+            }
+
+            booleans.Sort((x, y) => x.Register.CompareTo(y.Register));
+
+            var macros = new ShaderMacro[booleans.Count];
+            for (int i = 0; i < macros.Length; i++)
+                macros[i].Name = booleans[i].Name;
+
+            var blobs = new List<Blob>();
+            var permutations = new int[1 << booleans.Count];
+
+            var preprocessedByteData = Encoding.UTF8.GetBytes(preprocessed);
+            fixed (void* byteData = preprocessedByteData)
+            {
+                for (int i = 0; i < 1 << booleans.Count; i++)
+                {
+                    for (int j = 0; j < macros.Length; j++)
+                        macros[j].Definition = (i & (1 << j)) != 0 ? "true" : "false";
+
+                    var result = Compiler.Compile((IntPtr)byteData, preprocessedByteData.Length, sourceName, macros,
+                        null, entryPoint, target, flags, EffectFlags.None, out blob, out errorBlob);
+
+                    if (result.Failure)
+                        throw new Exception(errorBlob.ConvertToString());
+
+                    var blobIndex = blobs.FindIndex(x => x.AsSpan().SequenceEqual(blob.AsSpan()));
+
+                    if (blobIndex == -1)
+                    {
+                        blobIndex = blobs.Count;
+                        blobs.Add(blob);
+                    }
+
+                    permutations[i] = blobIndex;
+                }
+            }
+
+            if (blobs.Count == 1)
+                return (blobs[0].GetBytes(), blobs);
+
+            using var memoryStream = new MemoryStream();
+
+            BINA.Write(memoryStream, writer =>
+            {
+                writer.Write(booleans.Count);
+                writer.WriteOffset(() =>
+                {
+                    foreach (var boolean in booleans)
+                    {
+                        writer.WriteStringOffset(StringBinaryFormat.NullTerminated, boolean.Name);
+                        writer.Write(boolean.Register);
+                    }
+                });
+                writer.WriteOffset(() =>
+                {
+                    foreach (int permutation in permutations)
+                        writer.Write(permutation);
+                });
+                writer.Write(blobs.Count);
+                writer.WriteOffset(() =>
+                {
+                    foreach (var alsoBlob in blobs)
+                    {
+                        writer.Write((int)alsoBlob.BufferSize);
+                        writer.WriteOffset(() =>
+                        {
+                            writer.WriteArray(alsoBlob.AsSpan());
+                        });
+                        writer.Write(0); // Reserved for GPU shader
+                    }
+                });
+            });
+
+            return (memoryStream.ToArray(), blobs);
+        }   
+
         public static void Compile( string hlslFilePath, ArchiveDatabase archiveDatabase,
             IReadOnlyList<IShaderInfo> shaders, ShaderParameterSet globalParameterSet, ShaderFlags flags = ShaderFlags.None )
         {
@@ -39,6 +163,7 @@ namespace GensShaderTool
             string hlslFileName = Path.GetFileName(hlslFilePath);
             string hlslDirectoryPath = Path.GetDirectoryName(hlslFilePath);
             string hlslFileData = File.ReadAllText(hlslFilePath);
+            var hlslByteData = Encoding.UTF8.GetBytes(hlslFileData);
 
             var shaderLists = new List<ShaderList>();
             var permutations = new List<ShaderConverterPermutation>();
@@ -206,14 +331,12 @@ namespace GensShaderTool
 
                 string name = nameBuilder.ToString();
 
-                var result = Compiler.Compile(hlslFileData, defines.ToArray(), new ShaderCompilerInclude(cache, hlslDirectoryPath), "main", hlslFilePath,
-                    $"{typeChar}s_3_0", ShaderFlags.PackMatrixRowMajor | flags, out var blob, out var errorBlob);
-
-                if (result.Failure)
-                    throw new Exception(errorBlob.ConvertToString());
+                using var include = new ShaderCompilerInclude(cache, hlslDirectoryPath);
+                var result = PreprocessAndCompilePermuted(hlslByteData, hlslFilePath, defines.ToArray(), include,
+                    "main", $"{typeChar}s_3_0", ShaderFlags.PackMatrixRowMajor | flags);
 
                 archiveDatabase.Add(
-                    new DatabaseData { Name = $"{name}.w{typeChar}u", Data = blob.GetBytes() }, ConflictPolicy.Replace);
+                    new DatabaseData { Name = $"{name}.w{typeChar}u", Data = result.CompiledBytes }, ConflictPolicy.Replace);
 
                 bool anyLocal = false;
                 bool anyGlobal = false;
@@ -237,25 +360,29 @@ namespace GensShaderTool
 
                 var samplerMap = samplerMaps[permutation.Shader];
 
-                var parameterSet = ShaderParameterConverter.ReadConstantTable(new MemoryStream(blob.GetBytes()));
-
                 var mainParameterSet = mainParameterSets[permutation.Shader];
 
                 lock (mainParameterSet)
                 {
-                    MoveParameters(parameterSet.BoolParameters, mainParameterSet.BoolParameters);
-
-                    MoveParameters(parameterSet.IntParameters, mainParameterSet.IntParameters);
-
-                    MoveParameters(parameterSet.SingleParameters, mainParameterSet.SingleParameters);
-
-                    MoveParameters(parameterSet.SamplerParameters, mainParameterSet.SamplerParameters, parameter =>
+                    foreach (var blob in result.IndividualCompiledBytes)
                     {
-                        if (!samplerMap.TryGetValue(parameter.Name, out var info))
-                            return;
+                        var parameterSet =
+                            ShaderParameterConverter.ReadConstantTable(new MemoryStream(blob.GetBytes()));
 
-                        parameter.Name = info.Unit;
-                    });
+                        MoveParameters(parameterSet.BoolParameters, mainParameterSet.BoolParameters);
+
+                        MoveParameters(parameterSet.IntParameters, mainParameterSet.IntParameters);
+
+                        MoveParameters(parameterSet.SingleParameters, mainParameterSet.SingleParameters);
+
+                        MoveParameters(parameterSet.SamplerParameters, mainParameterSet.SamplerParameters, parameter =>
+                        {
+                            if (!samplerMap.TryGetValue(parameter.Name, out var info))
+                                return;
+
+                            parameter.Name = info.Unit;
+                        });
+                    }
                 }
 
                 var shader = new Shader();
@@ -332,13 +459,8 @@ namespace GensShaderTool
 
         public static byte[] Compile(string hlslData, ShaderType type, ShaderFlags flags = ShaderFlags.None)
         {
-            var result = Compiler.Compile(hlslData, null, null, "main", null, type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0", flags,
-                out var blob, out var errorBlob);
-
-            if (result.Failure)
-                throw new Exception(errorBlob.ConvertToString());
-
-            return blob.GetBytes();
+            return PreprocessAndCompilePermuted(Encoding.UTF8.GetBytes(hlslData), null, null, null, "main",
+                type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0", flags).CompiledBytes;
         }
 
         public static byte[] CompileFromFile(string sourceFilePath, ShaderType type, ShaderFlags flags = ShaderFlags.None)
@@ -348,13 +470,9 @@ namespace GensShaderTool
 
         public static void Compile(string hlslData, ShaderType type, string destinationFilePath, ShaderFlags flags = ShaderFlags.None)
         {
-            var result = Compiler.Compile(hlslData, null, null, "main", null, type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0", flags,
-                out var blob, out var errorBlob);
-
-            if (result.Failure)
-                throw new Exception(errorBlob.ConvertToString());
-
-            Compiler.WriteBlobToFile(blob, destinationFilePath, true);
+            File.WriteAllBytes(destinationFilePath,
+                PreprocessAndCompilePermuted(Encoding.UTF8.GetBytes(hlslData), null, null, null, "main",
+                    type == ShaderType.Vertex ? "vs_3_0" : "ps_3_0", flags).CompiledBytes);
         }
 
         public static void CompileFromFile(string sourceFilePath, ShaderType type, string destinationFilePath, ShaderFlags flags = ShaderFlags.None)
@@ -374,12 +492,10 @@ namespace GensShaderTool
         }
     }
 
-    public class ShaderCompilerInclude : Include
+    public class ShaderCompilerInclude : CallbackBase, Include
     {
         private readonly ShaderCompileIncludeCache mCache;
         private readonly Stack<string> mDirectoryPaths;
-
-        public ShadowContainer Shadow { get; set; }
 
         public Stream Open(IncludeType type, string fileName, Stream parentStream)
         {
@@ -401,11 +517,6 @@ namespace GensShaderTool
         {
             mDirectoryPaths.Pop();
             stream.Close();
-        }
-
-        public void Dispose()
-        {
-            Shadow.Dispose();
         }
 
         public ShaderCompilerInclude(ShaderCompileIncludeCache cache, string directoryPath)

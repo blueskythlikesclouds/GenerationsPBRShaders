@@ -1,4 +1,5 @@
 ﻿#include "RenderDataManager.h"
+#include "ShaderHandler.h"
 #include "IBLProbe.h"
 #include "SHLightField.h"
 #include "StageId.h"
@@ -230,6 +231,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         mirageWrapper.GetPictureData(envBrdfPicture, "env_brdf", 0);
         globalUsePBR |= envBrdfPicture != nullptr;
     }
+
+    // Force compilation of shaders if necessary.
+    shaderCompilerWarmUpIndex = 0;
 }
 
 void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
@@ -308,6 +312,25 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
 
 HOOK(bool, __fastcall, CRenderDirectorFxPipelineUpdate, 0x1105F20, Sonic::CRenderDirectorFxPipeline* This, void* Edx, const hh::fnd::SUpdateInfo& updateInfo)
 {
+#if 1
+    if (updateInfo.Category == "b")
+    {
+        static float fps = 60.0f;
+        static float time = 0.0f;
+        if (time > 0.25f)
+        {
+            fps = 1.0f / updateInfo.DeltaTime;
+            time = 0.0f;
+        }
+        else
+        {
+            time += updateInfo.DeltaTime;
+        }
+
+        DebugDrawText::log(format("FPS: %d", (int)fps));
+    }
+#endif
+
     if (!globalUsePBR)
         return originalCRenderDirectorFxPipelineUpdate(This, Edx, updateInfo);
 

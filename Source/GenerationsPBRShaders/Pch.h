@@ -43,4 +43,8 @@ namespace Eigen
 #include <INIReader.h>
 #include <Helpers.h>
 
+// Parameter Editor
+#define DEBUG_DRAW_TEXT_DLL_IMPORT
+#include <DllMods/Source/GenerationsParameterEditor/Include/DebugDrawText.h>
+
 extern bool globalUsePBR;

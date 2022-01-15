@@ -8,6 +8,7 @@
 #include "IBLCaptureService.h"
 #include "LightShaftHandler.h"
 #include "ObjectVisualPatcher.h"
+#include "PermutationHandler.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
 #include "StageId.h"
@@ -81,6 +82,7 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
+    PermutationHandler::applyPatches();
 
 #ifdef ENABLE_IBL_CAPTURE_SERVICE
     IBLCaptureService::applyPatches();

@@ -41,6 +41,9 @@ boost::shared_ptr<hh::ygg::CYggTexture> volumetricLightTex;
 boost::shared_ptr<hh::ygg::CYggPicture> envBrdfPicture;
 boost::shared_ptr<hh::ygg::CYggPicture> blueNoisePicture;
 
+// Loop through all deferred shaders in first frames to warm them up. Fixes in-game stutter.
+size_t shaderCompilerWarmUpIndex = 0;
+
 constexpr uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 {
     uint32_t mipLevels = 1;
@@ -451,12 +454,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         localLightData[i * 8 + 6] = data->color.z() / (float)(4 * M_PI);
         localLightData[i * 8 + 7] = 1.0f / rangeSqr;
     }
-    
-    if (localLightCount > 0)
-        d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, 2 * localLightCount);
 
     if (SceneEffect::debug.disableLocalLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
         localLightCount = 0;
+
+    // Force the shader of the specific index if we are warming up shaders.
+    if (!RenderDataManager::localLights.empty() && shaderCompilerWarmUpIndex < 2 * fxDeferredPassLightShaders.size())
+        localLightCount = shaderCompilerWarmUpIndex % fxDeferredPassLightShaders.size();
+    
+    if (localLightCount > 0)
+        d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, 2 * localLightCount);
 
     //***************************************************//
     // Deferred light pass: Add direct lighting and SHLF //
@@ -502,6 +509,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set SSAO.
     BOOL enableSSAO[] = { SceneEffect::ssao.enable };
+
+    // Force enable/disable if we are warming up shaders.
+    if (shaderCompilerWarmUpIndex < 2 * fxDeferredPassLightShaders.size())
+        enableSSAO[0] = (shaderCompilerWarmUpIndex / fxDeferredPassLightShaders.size()) == 1;
+
     d3dDevice->SetPixelShaderConstantB(7, enableSSAO, 1);
 
     if (SceneEffect::ssao.enable)
@@ -648,6 +660,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (SceneEffect::debug.disableIBLProbe)
         iblCountInFrustum = 0;
 
+    // Force the shader of the specific index if we are warming up shaders.
+    if (!RenderDataManager::iblProbes.empty() && shaderCompilerWarmUpIndex < fxDeferredPassIBLCombineShaders.size())
+        iblCountInFrustum = 8 + shaderCompilerWarmUpIndex;
+
     const int32_t iblProbePassCount = std::max<int32_t>(0, ((int32_t)iblCountInFrustum - 1) / 8);
 
     // Set Default IBL and Env BRDF
@@ -693,7 +709,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         for (size_t j = 0; j < iblCount; j++)
         {
-            const IBLProbeData* cache = RenderDataManager::iblProbesInFrustum[currProbeIndex++];
+            const IBLProbeData* cache;
+
+            // Use the first IBL in the list if we go out of bounds while warming up the shaders.
+            if (currProbeIndex >= RenderDataManager::iblProbesInFrustum.size())
+                cache = RenderDataManager::iblProbes[0].get();
+
+            else
+                cache = RenderDataManager::iblProbesInFrustum[currProbeIndex++];
 
             d3dDevice->SetPixelShaderConstantF(111 + j * 3, cache->inverseMatrix.data(), 3);
 
@@ -1028,6 +1051,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     This->SetBuffer("captured_colortex", capturedColorTex == nullptr ? colorTex : capturedColorTex);
     This->SetBuffer("depthtex", This->m_spDepthTex);
     This->SetBuffer("captured_depthtex", This->m_spCapturedDepthTex);
+
+    if (shaderCompilerWarmUpIndex < 2 * fxDeferredPassLightShaders.size() && (!RenderDataManager::localLights.empty() || !RenderDataManager::iblProbes.empty()))
+    {
+        DebugDrawText::log(format("Compiling shaders... (pass: %d/%d)", shaderCompilerWarmUpIndex + 1, 2 * fxDeferredPassLightShaders.size()));
+        shaderCompilerWarmUpIndex++;
+    }
 }
 
 HOOK(void, __fastcall, CRenderingDeviceSetViewMatrix, hh::mr::fpCRenderingDeviceSetViewMatrix,
