@@ -90,7 +90,7 @@ namespace GensShaderTool
             var blobs = new List<Blob>();
             var permutations = new int[1 << booleans.Count];
 
-            var preprocessedByteData = Encoding.UTF8.GetBytes(preprocessed);
+            var preprocessedByteData = Encoding.UTF8.GetBytes(preprocessed + char.MinValue);
             fixed (void* byteData = preprocessedByteData)
             {
                 for (int i = 0; i < 1 << booleans.Count; i++)
@@ -163,7 +163,7 @@ namespace GensShaderTool
             string hlslFileName = Path.GetFileName(hlslFilePath);
             string hlslDirectoryPath = Path.GetDirectoryName(hlslFilePath);
             string hlslFileData = File.ReadAllText(hlslFilePath);
-            var hlslByteData = Encoding.UTF8.GetBytes(hlslFileData);
+            var hlslByteData = Encoding.UTF8.GetBytes(hlslFileData + char.MinValue);
 
             var shaderLists = new List<ShaderList>();
             var permutations = new List<ShaderConverterPermutation>();

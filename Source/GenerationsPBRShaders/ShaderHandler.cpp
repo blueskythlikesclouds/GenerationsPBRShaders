@@ -162,6 +162,12 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     };
     d3dDevice->SetPixelShaderConstantF(106, debugParam, 3);
 
+    BOOL isUseDebugParam[] = { false };
+    for (size_t i = 0; i < 10; i++)
+        isUseDebugParam[0] |= debugParam[i] >= 0.0f;
+
+    d3dDevice->SetPixelShaderConstantB(7, isUseDebugParam, 1);
+
     // Set g_HDRParam_SGGIParam
     float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::sggi.startSmoothness - SceneEffect::sggi.endSmoothness);
     float hdrParam_sggiParam[] = { 1.0f / (*(float*)0x1A572D0 + 0.001f), 0, -(1.0f - SceneEffect::sggi.startSmoothness) * sggiScale, sggiScale };
@@ -180,8 +186,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     {
         // Unset mrgIsUseDeferred
         BOOL isUseDeferred[] = { false };
-        d3dDevice->SetPixelShaderConstantB(7, isUseDeferred, 1);
-        d3dDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
+        d3dDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
+        d3dDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
         return originalCFxRenderGameSceneExecute(This);
     }
@@ -252,8 +258,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Enable mrgIsUseDeferred so shaders output data to GBuffer render targets.
     BOOL isUseDeferred[] = { true };
-    d3dDevice->SetPixelShaderConstantB(7, isUseDeferred, 1);
-    d3dDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
+    d3dDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
+    d3dDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
     // Setup GI & occlusion flags.
     device->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -509,7 +515,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set SSAO.
     BOOL enableSSAO[] = { SceneEffect::ssao.enable };
-    d3dDevice->SetPixelShaderConstantB(7, enableSSAO, 1);
+    d3dDevice->SetPixelShaderConstantB(8, enableSSAO, 1);
 
     if (SceneEffect::ssao.enable)
     {
@@ -764,7 +770,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         // Set g_IsEnablePrevIBL
         // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
-        d3dDevice->SetPixelShaderConstantB(7, isEnablePrevIBL, 1);
+        d3dDevice->SetPixelShaderConstantB(8, isEnablePrevIBL, 1);
 
         // Set render target.
         device->SetRenderTarget(0, isCombinePass ? This->m_spColorSurface : prevIBLSurface);
@@ -816,8 +822,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // We're doing forward rendering now. Set the deferred bool to false.
     isUseDeferred[0] = false;
-    d3dDevice->SetPixelShaderConstantB(7, isUseDeferred, 1);
-    d3dDevice->SetVertexShaderConstantB(7, isUseDeferred, 1);
+    d3dDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
+    d3dDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
 
     // Set g_LuminanceSampler
     device->SetTexture(8, luAvgTex);

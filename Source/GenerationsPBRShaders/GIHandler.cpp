@@ -261,8 +261,8 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
     if (!hasOcclusion)
         This->m_pD3DDevice->SetPixelShaderConstantF(112, pData, 1);
 
-    This->m_pD3DDevice->SetPixelShaderConstantB(8, &isSg, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantB(9, &hasOcclusion, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantB(9, &isSg, 1);
+    This->m_pD3DDevice->SetPixelShaderConstantB(10, &hasOcclusion, 1);
 }
 
 bool GIHandler::enabled = false;

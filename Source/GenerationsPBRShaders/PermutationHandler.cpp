@@ -277,7 +277,11 @@ namespace
     VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetVertexShaderConstantB, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount)
     {
         vertexShaderHandler.setPermutations(StartRegister, pConstantData, BoolCount);
-        //return originalDxpDeviceSetVertexShaderConstantB(This, Edx, StartRegister, pConstantData, BoolCount);
+
+        // TODO: Get rid of this when you fix vertex shader translation
+        if (StartRegister == 0)
+            return originalDxpDeviceSetVertexShaderConstantB(This, Edx, StartRegister, pConstantData, BoolCount);
+
         return S_OK;
     }
 
