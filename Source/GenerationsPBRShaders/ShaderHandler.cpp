@@ -459,8 +459,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         localLightCount = 0;
 
     // Force the shader of the specific index if we are warming up shaders.
-    if (!RenderDataManager::localLights.empty() && shaderCompilerWarmUpIndex < 2 * fxDeferredPassLightShaders.size())
-        localLightCount = shaderCompilerWarmUpIndex % fxDeferredPassLightShaders.size();
+    if (!RenderDataManager::localLights.empty() && shaderCompilerWarmUpIndex < fxDeferredPassLightShaders.size())
+        localLightCount = shaderCompilerWarmUpIndex;
     
     if (localLightCount > 0)
         d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, 2 * localLightCount);
@@ -509,11 +509,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set SSAO.
     BOOL enableSSAO[] = { SceneEffect::ssao.enable };
-
-    // Force enable/disable if we are warming up shaders.
-    if (shaderCompilerWarmUpIndex < 2 * fxDeferredPassLightShaders.size())
-        enableSSAO[0] = (shaderCompilerWarmUpIndex / fxDeferredPassLightShaders.size()) == 1;
-
     d3dDevice->SetPixelShaderConstantB(7, enableSSAO, 1);
 
     if (SceneEffect::ssao.enable)
@@ -1052,9 +1047,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     This->SetBuffer("depthtex", This->m_spDepthTex);
     This->SetBuffer("captured_depthtex", This->m_spCapturedDepthTex);
 
-    if (shaderCompilerWarmUpIndex < 2 * fxDeferredPassLightShaders.size() && (!RenderDataManager::localLights.empty() || !RenderDataManager::iblProbes.empty()))
+    if (shaderCompilerWarmUpIndex < fxDeferredPassLightShaders.size() && (!RenderDataManager::localLights.empty() || !RenderDataManager::iblProbes.empty()))
     {
-        DebugDrawText::log(format("Compiling shaders... (pass: %d/%d)", shaderCompilerWarmUpIndex + 1, 2 * fxDeferredPassLightShaders.size()));
+        DebugDrawText::log(format("Compiling shaders... (pass: %d/%d)", shaderCompilerWarmUpIndex + 1, fxDeferredPassLightShaders.size()));
         shaderCompilerWarmUpIndex++;
     }
 }
