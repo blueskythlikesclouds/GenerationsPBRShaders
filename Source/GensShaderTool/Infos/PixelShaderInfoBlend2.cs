@@ -35,14 +35,14 @@ namespace GensShaderTool.Infos
             if ( ( samplerBits & 1 ) == 0 )
                 return false;
 
-            ulong upperBound = BitHelper.Unpack( samplerBits, 4, 6 );
+            ushort upperBound = BitHelper.Unpack( samplerBits, 4, 6 );
 
             // Upper bound should always exist
             if ( upperBound == 0 )
                 return false;
 
-            // Upper bound must coexist with lower bound
-            if ( ( samplerBits & upperBound ) != upperBound )
+            // Upper bound must be the same as the lower bound
+            if ( ( samplerBits & 0b111 ) != upperBound )
                 return false;
 
             // Have correct techniques

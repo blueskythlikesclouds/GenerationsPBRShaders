@@ -21,7 +21,6 @@ namespace GensShaderTool.Infos
             new SamplerInfo( "normalSampler", "normal", "n" ),
             new SamplerInfo( "falloffSampler", "falloff", "f" ),
             new SamplerInfo( "emissionSampler", "emission", "E" ),
-            new SamplerInfo( "transparencySampler", "transparency", "a" ),
         };
 
         public virtual IReadOnlyList<string> Definitions { get; } = Array.Empty<string>();

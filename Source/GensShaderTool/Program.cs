@@ -111,7 +111,7 @@ namespace GensShaderTool
                     new PixelShaderInfoMCommon(), new PixelShaderInfoMBlend(), new PixelShaderInfoWater01(),
                     new PixelShaderInfoWater05(), new PixelShaderInfoRing2(),
                     new PixelShaderInfoEmission(), new PixelShaderInfoGlass2(), new PixelShaderInfoMEmission(),
-                    new PixelShaderInfoChrGlass(), new PixelShaderInfoDry(), new PixelShaderInfoFalloff2(), new PixelShaderInfoMFalloff(),
+                    new PixelShaderInfoChrGlass(), new PixelShaderInfoDry(),
                     new PixelShaderInfoChrEmission(), new PixelShaderInfoMChrEmission(),
                     new PixelShaderInfoPointMarker(), new PixelShaderInfoSuperSonic(), new PixelShaderInfoChrEyeSuper(),
                     new PixelShaderInfoTransThin(), new PixelShaderInfoTriplanarBlend()

@@ -21,6 +21,7 @@ float4 g_HDRParam_SGGIParam : register(c109);
 float4 g_ESMParam : register(c110);
 
 bool g_UsePBR : register(b6);
+bool g_IsUseDebugParam : register(b7);
 
 #if defined(GLOBAL_PSPARAM_HLSL_INCLUDED) || defined(GLOBAL_VSPARAM_HLSL_INCLUDED)
 

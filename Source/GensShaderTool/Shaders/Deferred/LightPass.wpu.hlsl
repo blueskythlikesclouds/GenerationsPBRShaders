@@ -10,7 +10,7 @@ sampler3D g_SHLightFieldSamplers[3] : register(s4);
 sampler g_ShadowMapNoTerrainSampler : register(s7);
 sampler g_SSAOSampler : register(s8);
 
-bool g_IsEnableSSAO : register(b7);
+bool g_IsEnableSSAO : register(b8);
 
 void ComputeSHLightField(inout Material material, in float3 position)
 {

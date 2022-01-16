@@ -25,9 +25,9 @@ float4 mrgGIAtlasParam : register(c111);
 
 float4 mrgOcclusionAtlasParam : register(c112);
 
-bool mrgIsUseDeferred : register(b7);
-bool mrgIsSG : register(b8);
-bool mrgHasOcclusion : register(b9);
+bool mrgIsUseDeferred : register(b8);
+bool mrgIsSG : register(b9);
+bool mrgHasOcclusion : register(b10);
 
 sampler2D g_LuminanceSampler : register(s8);
 sampler2D g_OcclusionSampler : register(s9);

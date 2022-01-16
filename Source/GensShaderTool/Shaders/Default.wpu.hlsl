@@ -28,8 +28,6 @@
 #include "Material/ChrGlass.hlsl"
 #elif defined(IsDry) && IsDry
 #include "Material/Dry.hlsl"
-#elif (defined(IsFalloff2) && IsFalloff2) || (defined(IsMFalloff) && IsMFalloff)
-#include "Material/Falloff.hlsl"
 #elif (defined(IsChrEmission) && IsChrEmission) || (defined(IsMChrEmission) && IsMChrEmission)
 #include "Material/ChrEmission.hlsl"
 #elif (defined(IsPointMarker) && IsPointMarker)
@@ -85,7 +83,7 @@ void main(in DECLARATION_TYPE input,
     float3x3 worldToTangentMatrix = float3x3(normalize(input.Tangent.xyz), normalize(input.Binormal.xyz), normalize(input.Normal.xyz));
     float3x3 tangentToWorldMatrix = transpose(worldToTangentMatrix);
 
-    material.Normal = normalize(g_DebugParam[0].y >= 0 ? input.Normal.xyz : GetNormal(input, tangentToWorldMatrix));
+    material.Normal = normalize(g_IsUseDebugParam && g_DebugParam[0].y >= 0 ? input.Normal.xyz : GetNormal(input, tangentToWorldMatrix));
 #else
     material.Normal = normalize(input.Normal);
 #endif
@@ -113,11 +111,14 @@ void main(in DECLARATION_TYPE input,
 
     PostProcessMaterial(input, material);
 
-    if (g_DebugParam[0].x >= 0) material.Albedo = 1.0;
-    if (g_DebugParam[0].z >= 0) material.Reflectance = g_DebugParam[0].z;
-    if (g_DebugParam[0].w >= 0) material.Roughness = g_DebugParam[0].w;
-    if (g_DebugParam[1].x >= 0) material.AmbientOcclusion = g_DebugParam[1].x;
-    if (g_DebugParam[1].y >= 0) material.Metalness = g_DebugParam[1].y;
+    if (g_IsUseDebugParam)
+    {
+        if (g_DebugParam[0].x >= 0) material.Albedo = 1.0;
+        if (g_DebugParam[0].z >= 0) material.Reflectance = g_DebugParam[0].z;
+        if (g_DebugParam[0].w >= 0) material.Roughness = g_DebugParam[0].w;
+        if (g_DebugParam[1].x >= 0) material.AmbientOcclusion = g_DebugParam[1].x;
+        if (g_DebugParam[1].y >= 0) material.Metalness = g_DebugParam[1].y;
+    }
 
     material.F0 = lerp(material.Reflectance, material.Albedo, material.Metalness);
 
@@ -206,12 +207,15 @@ void main(in DECLARATION_TYPE input,
         }
     }
 
-    if (g_DebugParam[1].z >= 0)
+    if (g_IsUseDebugParam)
     {
-        material.IndirectDiffuse = float3(g_DebugParam[1].zw, g_DebugParam[2].x);
-        material.IndirectSpecular = 0;
+        if (g_DebugParam[1].z >= 0)
+        {
+            material.IndirectDiffuse = float3(g_DebugParam[1].zw, g_DebugParam[2].x);
+            material.IndirectSpecular = 0;
+        }
+        if (g_DebugParam[2].y >= 0) material.Shadow = g_DebugParam[2].y;
     }
-    if (g_DebugParam[2].y >= 0) material.Shadow = g_DebugParam[2].y;
 
     material.IndirectDiffuse *= g_GI0Scale.rgb;
     material.IndirectSpecular *= g_GI0Scale.rgb;

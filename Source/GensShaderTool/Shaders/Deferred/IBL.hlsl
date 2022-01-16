@@ -15,7 +15,7 @@ sampler2D g_PrevIBLSampler : register(s13);
 samplerCUBE g_DefaultIBLSampler : register(s14);
 sampler2D g_EnvBRDFSampler : register(s15);
 
-bool g_IsEnablePrevIBL : register(b7);
+bool g_IsEnablePrevIBL : register(b8);
 
 float4 ComputeIndirectIBLProbe(float3 position, float roughness, float3 reflectionDirection,
     samplerCUBE iblProbeTex, float3x4 iblProbeMatrix, float3 iblProbePosition, float iblProbeBias, float iblProbeLod)
