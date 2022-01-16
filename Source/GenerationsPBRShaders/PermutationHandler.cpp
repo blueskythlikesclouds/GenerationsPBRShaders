@@ -1,5 +1,7 @@
 ﻿#include "PermutationHandler.h"
 
+//#define PERMUTATION_HANDLER_LAZY_LOADING
+
 struct Permutation
 {
     const char* name;
@@ -15,18 +17,32 @@ struct PermutedShaderFunctionHandle
         IDirect3DPixelShader9* d3dPixelShader;
     };
 
+    void createVertexShader(IDirect3DDevice9* device)
+    {
+        device->CreateVertexShader(function, &d3dVertexShader);
+    }
+
     IDirect3DVertexShader9* getVertexShader(IDirect3DDevice9* device)
     {
+#ifdef PERMUTATION_HANDLER_LAZY_LOADING
         if (!d3dVertexShader)
-            device->CreateVertexShader(function, &d3dVertexShader);
+            createVertexShader(device);
+#endif
 
         return d3dVertexShader;
     }
 
+    void createPixelShader(IDirect3DDevice9* device)
+    {
+        device->CreatePixelShader(function, &d3dPixelShader);
+    }
+
     IDirect3DPixelShader9* getPixelShader(IDirect3DDevice9* device)
     {
+#ifdef PERMUTATION_HANDLER_LAZY_LOADING
         if (!d3dPixelShader)
-            device->CreatePixelShader(function, &d3dPixelShader);
+            createPixelShader(device);
+#endif
 
         return d3dPixelShader;
     }
@@ -88,7 +104,23 @@ public:
         {
             hlBINAV2Fix(memory, dataSize);
             container = (PermutationContainer*)hlBINAV2GetData(memory);
+
+#ifndef PERMUTATION_HANDLER_LAZY_LOADING
+            for (size_t i = 0; i < container->shaderCount; i++)
+            {
+                if (isPixelShader)
+                    container->shaders[i].handle.createPixelShader(d3dDevice());
+                else
+                    container->shaders[i].handle.createVertexShader(d3dDevice());
+            }
         }
+        else if (isPixelShader)
+            handle.createPixelShader(d3dDevice());
+        else
+            handle.createVertexShader(d3dDevice());
+#else
+        }
+#endif
     }
 
     virtual HRESULT QueryInterface(REFIID riid, void** ppvObj)
