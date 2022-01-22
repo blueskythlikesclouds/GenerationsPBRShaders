@@ -1,126 +1,62 @@
 ﻿#include "PermutationHandler.h"
 
-//#define PERMUTATION_HANDLER_LAZY_LOADING
-
-struct Permutation
-{
-    const char* name;
-    size_t registerIndex;
-};
-
-struct PermutedShaderFunctionHandle
-{
-    const DWORD* function;
-    union
-    {
-        IDirect3DVertexShader9* d3dVertexShader;
-        IDirect3DPixelShader9* d3dPixelShader;
-    };
-
-    void createVertexShader(IDirect3DDevice9* device)
-    {
-        device->CreateVertexShader(function, &d3dVertexShader);
-    }
-
-    IDirect3DVertexShader9* getVertexShader(IDirect3DDevice9* device)
-    {
-#ifdef PERMUTATION_HANDLER_LAZY_LOADING
-        if (!d3dVertexShader)
-            createVertexShader(device);
-#endif
-
-        return d3dVertexShader;
-    }
-
-    void createPixelShader(IDirect3DDevice9* device)
-    {
-        device->CreatePixelShader(function, &d3dPixelShader);
-    }
-
-    IDirect3DPixelShader9* getPixelShader(IDirect3DDevice9* device)
-    {
-#ifdef PERMUTATION_HANDLER_LAZY_LOADING
-        if (!d3dPixelShader)
-            createPixelShader(device);
-#endif
-
-        return d3dPixelShader;
-    }
-
-    void release() const
-    {
-        if (d3dVertexShader)
-            d3dVertexShader->Release();
-    }
-};
-
-struct PermutedShaderFunction
-{
-    size_t byteSize;
-    PermutedShaderFunctionHandle handle;
-};
-
-struct PermutationContainer
-{
-    size_t permutationCount;
-    const Permutation* permutations;
-    size_t* permutationMap;
-    size_t shaderCount;
-    PermutedShaderFunction* shaders;
-};
-
 class PermutedShader
 {
 public:
     ULONG refCount;
     DX_PATCH::IDirect3DDevice9* dxpDevice;
 
-    union
-    {
-        PermutedShaderFunctionHandle handle;
-        struct
-        {
-            void* memory;
-            PermutationContainer* container;
-        };
-    };
-
-    bool isPermuted;
+    uint8_t* metadata;
+    std::vector<IUnknown*> d3dShaders;
 
     IDirect3DDevice9* d3dDevice() const
     {
         return *(IDirect3DDevice9**)((char*)dxpDevice + 8);
     }
 
-    PermutedShader(DX_PATCH::IDirect3DDevice9* dxpDevice, const DWORD* data, const size_t dataSize, const bool isPixelShader) : refCount(1), dxpDevice(dxpDevice),
-        isPermuted(hlBINAHasV2Header(data))
+    PermutedShader(DX_PATCH::IDirect3DDevice9* dxpDevice, char* data, const size_t dataSize, const bool isPixelShader) : refCount(1), dxpDevice(dxpDevice), metadata(nullptr)
     {
-        memset(&handle, 0, sizeof(handle));
+        const bool hasMetadata = *(int*)data != 0xFFFF0300 && *(int*)data != 0xFFFE0300;
 
-        memory = operator new(dataSize);
-        memcpy(memory, data, dataSize);
-
-        if (isPermuted)
+        if (hasMetadata)
         {
-            hlBINAV2Fix(memory, dataSize);
-            container = (PermutationContainer*)hlBINAV2GetData(memory);
+            const uint8_t boolCount = *(uint8_t*)data;
+            d3dShaders.reserve(1 << boolCount);
 
-#ifndef PERMUTATION_HANDLER_LAZY_LOADING
-            for (size_t i = 0; i < container->shaderCount; i++)
+            const size_t metadataSize = 1 + boolCount + (1 << boolCount);
+            metadata = (uint8_t*)malloc(metadataSize);
+            memcpy(metadata, data, metadataSize);
+
+            for (size_t i = (metadataSize + 3) & ~3; i < dataSize;)
             {
+                const uint32_t functionSize = *(uint32_t*)(data + i);
+                const DWORD* function = (const DWORD*)(data + i + 4);
+
+                IUnknown* d3dShader = nullptr;
+
                 if (isPixelShader)
-                    container->shaders[i].handle.createPixelShader(d3dDevice());
+                    d3dDevice()->CreatePixelShader(function, (IDirect3DPixelShader9**)&d3dShader);
                 else
-                    container->shaders[i].handle.createVertexShader(d3dDevice());
+                    d3dDevice()->CreateVertexShader(function, (IDirect3DVertexShader9**)&d3dShader);
+
+                d3dShaders.push_back(d3dShader);
+
+                i += 4 + functionSize;
             }
         }
-        else if (isPixelShader)
-            handle.createPixelShader(d3dDevice());
         else
-            handle.createVertexShader(d3dDevice());
-#else
+        {
+            IUnknown* d3dShader = nullptr;
+
+            if (isPixelShader)
+                d3dDevice()->CreatePixelShader((const DWORD*)data, (IDirect3DPixelShader9**)&d3dShader);
+            else
+                d3dDevice()->CreateVertexShader((const DWORD*)data, (IDirect3DVertexShader9**)&d3dShader);
+
+            d3dShaders.push_back(d3dShader);
         }
-#endif
+
+        d3dShaders.shrink_to_fit();
     }
 
     virtual HRESULT QueryInterface(REFIID riid, void** ppvObj)
@@ -145,16 +81,10 @@ public:
 
     virtual ~PermutedShader()
     {
-        if (isPermuted)
-        {
-            for (size_t i = 0; i < container->shaderCount; i++)
-                container->shaders[i].handle.release();
-        }
+        free(metadata);
 
-        else
-            handle.release();
-
-        operator delete(memory);
+        for (auto& shader : d3dShaders)
+            shader->Release();
     }
 
     virtual HRESULT GetDevice(DX_PATCH::IDirect3DDevice9** ppDevice)
@@ -186,29 +116,30 @@ public:
         if (!dirty || !shader)
             return;
 
-        PermutedShaderFunctionHandle* handle;
+        IUnknown* d3dShader;
 
-        if (shader->isPermuted)
+        if (shader->metadata)
         {
             size_t index = 0;
 
-            for (size_t i = 0; i < shader->container->permutationCount; i++)
+            const uint8_t boolCount = shader->metadata[0];
+            for (int i = 0; i < boolCount; i++)
             {
-                if (permutations & (1 << shader->container->permutations[i].registerIndex))
+                if (permutations & (1 << shader->metadata[1 + i]))
                     index |= 1 << i;
             }
 
-            handle = &shader->container->shaders[shader->container->permutationMap[index]].handle;
+            d3dShader = shader->d3dShaders[shader->metadata[1 + boolCount + index]];
         }
 
         else
-            handle = &shader->handle;
+            d3dShader = shader->d3dShaders[0];
 
         if (isPixelShader)
-            shader->d3dDevice()->SetPixelShader(handle->getPixelShader(shader->d3dDevice()));
+            shader->d3dDevice()->SetPixelShader((IDirect3DPixelShader9*)d3dShader);
 
         else
-            shader->d3dDevice()->SetVertexShader(handle->getVertexShader(shader->d3dDevice()));
+            shader->d3dDevice()->SetVertexShader((IDirect3DVertexShader9*)d3dShader);
 
         dirty = false;
     }
@@ -296,7 +227,7 @@ namespace
 
     VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, CreateVertexShader, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DVertexShader9** ppShader, DWORD FunctionSize)
     {
-        *ppShader = reinterpret_cast<DX_PATCH::IDirect3DVertexShader9*>(new PermutedShader(This, pFunction, FunctionSize, false));
+        *ppShader = reinterpret_cast<DX_PATCH::IDirect3DVertexShader9*>(new PermutedShader(This, (char*)pFunction, FunctionSize, false));
         return S_OK;
     }
 
@@ -319,7 +250,7 @@ namespace
 
     VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, CreatePixelShader, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DPixelShader9** ppShader, DWORD FunctionSize)
     {
-        *ppShader = reinterpret_cast<DX_PATCH::IDirect3DPixelShader9*>(new PermutedShader(This, pFunction, FunctionSize, true));
+        *ppShader = reinterpret_cast<DX_PATCH::IDirect3DPixelShader9*>(new PermutedShader(This, (char*)pFunction, FunctionSize, true));
         return S_OK;
     }
 

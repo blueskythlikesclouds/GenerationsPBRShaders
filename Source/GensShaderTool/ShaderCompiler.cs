@@ -33,6 +33,38 @@ namespace GensShaderTool
             "ConstTexCoord"
         };
 
+        internal static unsafe byte[] StripParameterInfo(Blob blob)
+        {
+            byte* byteCode = (byte*)blob.BufferPointer;
+
+            byte* comments = byteCode;
+            long commentsSize = 0;
+
+            while (comments < byteCode + blob.BufferSize)
+            {
+                int instruction = *(int*)comments;
+
+                if ((instruction & 0xFFFF) == 0xFFFE)
+                {
+                    commentsSize = (((instruction >> 16) & 0x7FFF) + 1) * 4;
+                    break;
+                }
+
+                comments += sizeof(int);
+            }
+
+            var bytes = new byte[blob.BufferSize - commentsSize];
+
+            fixed (byte* destination = bytes)
+            {
+                long prologueSize = comments - byteCode;
+                Unsafe.CopyBlock(destination, byteCode, (uint)prologueSize);
+                Unsafe.CopyBlock(destination + prologueSize, comments + commentsSize, (uint)(blob.BufferSize - commentsSize - prologueSize));
+            }
+
+            return bytes;
+        }
+
         internal static unsafe (byte[] CompiledBytes, List<Blob> IndividualCompiledBytes) PreprocessAndCompilePermuted(
             byte[] hlslByteData, string sourceName, ShaderMacro[] defines, Include include, string entryPoint, string target, ShaderFlags flags)
         {
@@ -117,40 +149,30 @@ namespace GensShaderTool
             }
 
             if (blobs.Count == 1)
-                return (blobs[0].GetBytes(), blobs);
+                return (StripParameterInfo(blobs[0]), blobs);
 
             using var memoryStream = new MemoryStream();
-
-            BINA.Write(memoryStream, writer =>
             {
-                writer.Write(booleans.Count);
-                writer.WriteOffset(() =>
+                using var writer = new BinaryObjectWriter(memoryStream, StreamOwnership.Retain, Endianness.Little);
+
+                writer.Write((byte)booleans.Count);
+
+                foreach (var boolean in booleans)
+                    writer.Write((byte)boolean.Register);
+
+                foreach (int permutation in permutations)
+                    writer.Write((byte)permutation);
+
+                writer.Align(4);
+
+                foreach (var shaderBlob in blobs)
                 {
-                    foreach (var boolean in booleans)
-                    {
-                        writer.WriteStringOffset(StringBinaryFormat.NullTerminated, boolean.Name);
-                        writer.Write(boolean.Register);
-                    }
-                });
-                writer.WriteOffset(() =>
-                {
-                    foreach (int permutation in permutations)
-                        writer.Write(permutation);
-                });
-                writer.Write(blobs.Count);
-                writer.WriteOffset(() =>
-                {
-                    foreach (var alsoBlob in blobs)
-                    {
-                        writer.Write((int)alsoBlob.BufferSize);
-                        writer.WriteOffset(() =>
-                        {
-                            writer.WriteArray(alsoBlob.AsSpan());
-                        });
-                        writer.Write(0); // Reserved for GPU shader
-                    }
-                });
-            });
+                    var stripped = StripParameterInfo(shaderBlob);
+
+                    writer.Write(stripped.Length);
+                    writer.WriteArray(stripped);
+                }
+            }
 
             return (memoryStream.ToArray(), blobs);
         }   

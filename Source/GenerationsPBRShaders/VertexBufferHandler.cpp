@@ -19,11 +19,11 @@
 HOOK(DX_PATCH::IDirect3DVertexBuffer9*, __cdecl, CreateVertexBuffer, 0x7479A0,
     DX_PATCH::IDirect3DDevice9* dxpDevice, const uint8_t* data, uint32_t stride, uint32_t count)
 {
-    DX_PATCH::IDirect3DVertexBuffer9* dxpVertexBuffer;
+    DX_PATCH::IDirect3DVertexBuffer9* dxpVertexBuffer = nullptr;
     dxpDevice->CreateVertexBuffer(stride * count, D3DUSAGE_WRITEONLY, 0, D3DPOOL_MANAGED, &dxpVertexBuffer, nullptr);
 
-    uint8_t* outputData;
-    dxpVertexBuffer->Lock(0, stride * count, (void**)&outputData, 0);
+    uint8_t* outputData = nullptr;
+    dxpVertexBuffer->Lock(0, 0, (void**)&outputData, 0);
 
     // TODO: Use vertex format itself to do the swapping.
     switch (stride)

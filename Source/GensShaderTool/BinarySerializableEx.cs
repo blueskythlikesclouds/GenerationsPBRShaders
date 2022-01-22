@@ -33,27 +33,8 @@ namespace GensShaderTool
 
         public static void Save( this IBinarySerializable binarySerializable, BinaryObjectWriter writer )
         {
-            writer.Seek( 24, SeekOrigin.Begin );
-            writer.PushOffsetOrigin();
-            writer.WriteObject( binarySerializable );
-            writer.Flush();
-            writer.PopOffsetOrigin();
-            writer.Seek( 0, SeekOrigin.End );
-            writer.Align( 4 );
-            long relocPos = writer.Position;
-            writer.Write( writer.OffsetHandler.OffsetPositions.Count() );
-            foreach ( long position in writer.OffsetHandler.OffsetPositions )
-                writer.Write( ( uint ) ( position - 0x18 ) );
-
-            writer.Write( 0 );
-            long length = writer.Position;
-            writer.Seek( 0, SeekOrigin.Begin );
-            writer.Write( ( uint ) length );
-            writer.Write( binarySerializable is ShaderList ? 0 : 2 );
-            writer.Write( ( uint ) ( relocPos - 0x18 ) );
-            writer.Write( 0x18 );
-            writer.Write( ( uint ) relocPos );
-            writer.Write( ( uint ) ( length - 4 ) );
+            SampleChunk.Write(writer, binarySerializable is ShaderList ? 0 : 2,
+                () => writer.WriteObject(binarySerializable));
         }
 
         public static void Save(this IBinarySerializable binarySerializable, Stream stream)
