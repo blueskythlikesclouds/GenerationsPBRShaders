@@ -145,13 +145,7 @@ const Eigen::AlignedVector3f AABB_CORNERS[8] =
 
 inline float getAABBRadius(const AABB& aabb)
 {
-    float radius = 0;
-
-    const Eigen::AlignedVector3f center = aabb.center();
-    for (size_t i = 0; i < 8; i++)
-        radius = std::max<float>(radius, (center - aabb.corner((AABB::CornerType)i)).norm());
-
-    return radius;
+    return (aabb.min() - aabb.max()).norm() / 2.0f;
 }
 
 inline AABB getAABBFromOBB(const Eigen::Matrix4f& matrix, const float bounds, const float scale)
