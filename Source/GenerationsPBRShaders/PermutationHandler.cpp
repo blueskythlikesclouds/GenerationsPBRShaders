@@ -1,5 +1,18 @@
 ﻿#include "PermutationHandler.h"
 
+using DxpDevice = DX_PATCH::IDirect3DDevice9;
+
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawPrimitive, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawIndexedPrimitive, void* Edx, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawPrimitiveUP, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawIndexedPrimitiveUP, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, CreateVertexShader, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DVertexShader9** ppShader, DWORD FunctionSize);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetVertexShader, void* Edx, DX_PATCH::IDirect3DVertexShader9* pShader);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetVertexShaderConstantB, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, CreatePixelShader, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DPixelShader9** ppShader, DWORD FunctionSize);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetPixelShader, void* Edx, DX_PATCH::IDirect3DPixelShader9* pShader);
+VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetPixelShaderConstantB, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount);
+
 class PermutedShader
 {
 public:
@@ -7,12 +20,7 @@ public:
     DX_PATCH::IDirect3DDevice9* dxpDevice;
 
     uint8_t* metadata;
-    std::vector<IUnknown*> d3dShaders;
-
-    IDirect3DDevice9* d3dDevice() const
-    {
-        return *(IDirect3DDevice9**)((char*)dxpDevice + 8);
-    }
+    std::vector<DX_PATCH::IUnknown9*> d3dShaders;
 
     PermutedShader(DX_PATCH::IDirect3DDevice9* dxpDevice, char* data, const size_t dataSize, const bool isPixelShader) : refCount(1), dxpDevice(dxpDevice), metadata(nullptr)
     {
@@ -32,12 +40,12 @@ public:
                 const uint32_t functionSize = *(uint32_t*)(data + i);
                 const DWORD* function = (const DWORD*)(data + i + 4);
 
-                IUnknown* d3dShader = nullptr;
+                DX_PATCH::IUnknown9* d3dShader = nullptr;
 
                 if (isPixelShader)
-                    d3dDevice()->CreatePixelShader(function, (IDirect3DPixelShader9**)&d3dShader);
+                    originalDxpDeviceCreatePixelShader(dxpDevice, nullptr, function, (DX_PATCH::IDirect3DPixelShader9**)&d3dShader, functionSize);
                 else
-                    d3dDevice()->CreateVertexShader(function, (IDirect3DVertexShader9**)&d3dShader);
+                    originalDxpDeviceCreateVertexShader(dxpDevice, nullptr, function, (DX_PATCH::IDirect3DVertexShader9**)&d3dShader, functionSize);
 
                 d3dShaders.push_back(d3dShader);
 
@@ -46,12 +54,12 @@ public:
         }
         else
         {
-            IUnknown* d3dShader = nullptr;
+            DX_PATCH::IUnknown9* d3dShader = nullptr;
 
             if (isPixelShader)
-                d3dDevice()->CreatePixelShader((const DWORD*)data, (IDirect3DPixelShader9**)&d3dShader);
+                originalDxpDeviceCreatePixelShader(dxpDevice, nullptr, (const DWORD*)data, (DX_PATCH::IDirect3DPixelShader9**)&d3dShader, dataSize);
             else
-                d3dDevice()->CreateVertexShader((const DWORD*)data, (IDirect3DVertexShader9**)&d3dShader);
+                originalDxpDeviceCreateVertexShader(dxpDevice, nullptr, (const DWORD*)data, (DX_PATCH::IDirect3DVertexShader9**)&d3dShader, dataSize);
 
             d3dShaders.push_back(d3dShader);
         }
@@ -116,7 +124,7 @@ public:
         if (!dirty || !shader)
             return;
 
-        IUnknown* d3dShader;
+        DX_PATCH::IUnknown9* d3dShader;
 
         if (shader->metadata)
         {
@@ -136,10 +144,10 @@ public:
             d3dShader = shader->d3dShaders[0];
 
         if (isPixelShader)
-            shader->d3dDevice()->SetPixelShader((IDirect3DPixelShader9*)d3dShader);
+            originalDxpDeviceSetPixelShader(shader->dxpDevice, nullptr, (DX_PATCH::IDirect3DPixelShader9*)d3dShader);
 
         else
-            shader->d3dDevice()->SetVertexShader((IDirect3DVertexShader9*)d3dShader);
+            originalDxpDeviceSetVertexShader(shader->dxpDevice, nullptr, (DX_PATCH::IDirect3DVertexShader9*)d3dShader);
 
         dirty = false;
     }
@@ -188,108 +196,103 @@ public:
     }
 };
 
-namespace
+PermutedShaderHandler<false> vertexShaderHandler;
+PermutedShaderHandler<true> pixelShaderHandler;
+
+void validateShaderPermutations()
 {
-    using DxpDevice = DX_PATCH::IDirect3DDevice9;
+    vertexShaderHandler.validate();
+    pixelShaderHandler.validate();
+}
 
-    PermutedShaderHandler<false> vertexShaderHandler;
-    PermutedShaderHandler<true> pixelShaderHandler;
+HRESULT __fastcall implOfDxpDeviceDrawPrimitive(DxpDevice* This, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
+{
+    validateShaderPermutations();
+    return originalDxpDeviceDrawPrimitive(This, Edx, PrimitiveType, StartVertex, PrimitiveCount);
+}
 
-    void validateShaderPermutations()
-    {
-        vertexShaderHandler.validate();
-        pixelShaderHandler.validate();
-    }
+HRESULT __fastcall implOfDxpDeviceDrawIndexedPrimitive(DxpDevice* This, void* Edx, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
+{
+    validateShaderPermutations();
+    return originalDxpDeviceDrawIndexedPrimitive(This, Edx, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawPrimitive, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount)
-    {
-        validateShaderPermutations();
-        return originalDxpDeviceDrawPrimitive(This, Edx, PrimitiveType, StartVertex, PrimitiveCount);
-    }
+HRESULT __fastcall implOfDxpDeviceDrawPrimitiveUP(DxpDevice* This, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+{
+    validateShaderPermutations();
+    return originalDxpDeviceDrawPrimitiveUP(This, Edx, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawIndexedPrimitive, void* Edx, D3DPRIMITIVETYPE PrimitiveType, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
-    {
-        validateShaderPermutations();
-        return originalDxpDeviceDrawIndexedPrimitive(This, Edx, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
-    }
+HRESULT __fastcall implOfDxpDeviceDrawIndexedPrimitiveUP(DxpDevice* This, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
+{
+    validateShaderPermutations();
+    return originalDxpDeviceDrawIndexedPrimitiveUP(This, Edx, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawPrimitiveUP, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT PrimitiveCount, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
-    {
-        validateShaderPermutations();
-        return originalDxpDeviceDrawPrimitiveUP(This, Edx, PrimitiveType, PrimitiveCount, pVertexStreamZeroData, VertexStreamZeroStride);
-    }
+HRESULT __fastcall implOfDxpDeviceCreateVertexShader(DxpDevice* This, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DVertexShader9** ppShader, DWORD FunctionSize)
+{
+    *ppShader = reinterpret_cast<DX_PATCH::IDirect3DVertexShader9*>(new PermutedShader(This, (char*)pFunction, FunctionSize, false));
+    return S_OK;
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, DrawIndexedPrimitiveUP, void* Edx, D3DPRIMITIVETYPE PrimitiveType, UINT MinVertexIndex, UINT NumVertices, UINT PrimitiveCount, const void* pIndexData, D3DFORMAT IndexDataFormat, const void* pVertexStreamZeroData, UINT VertexStreamZeroStride)
-    {
-        validateShaderPermutations();
-        return originalDxpDeviceDrawIndexedPrimitiveUP(This, Edx, PrimitiveType, MinVertexIndex, NumVertices, PrimitiveCount, pIndexData, IndexDataFormat, pVertexStreamZeroData, VertexStreamZeroStride);
-    }
+HRESULT __fastcall implOfDxpDeviceSetVertexShader(DxpDevice* This, void* Edx, DX_PATCH::IDirect3DVertexShader9* pShader)
+{
+    vertexShaderHandler.setShader(reinterpret_cast<PermutedShader*>(pShader));
+    return S_OK;
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, CreateVertexShader, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DVertexShader9** ppShader, DWORD FunctionSize)
-    {
-        *ppShader = reinterpret_cast<DX_PATCH::IDirect3DVertexShader9*>(new PermutedShader(This, (char*)pFunction, FunctionSize, false));
-        return S_OK;
-    }
+HRESULT __fastcall implOfDxpDeviceSetVertexShaderConstantB(DxpDevice* This, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount)
+{
+    vertexShaderHandler.setPermutations(StartRegister, pConstantData, BoolCount);
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetVertexShader, void* Edx, DX_PATCH::IDirect3DVertexShader9* pShader)
-    {
-        vertexShaderHandler.setShader(reinterpret_cast<PermutedShader*>(pShader));
-        return S_OK;
-    }
+    // TODO: Get rid of this when you fix vertex shader translation
+    if (StartRegister == 0)
+        return originalDxpDeviceSetVertexShaderConstantB(This, Edx, StartRegister, pConstantData, BoolCount);
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetVertexShaderConstantB, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount)
-    {
-        vertexShaderHandler.setPermutations(StartRegister, pConstantData, BoolCount);
+    return S_OK;
+}
 
-        // TODO: Get rid of this when you fix vertex shader translation
-        if (StartRegister == 0)
-            return originalDxpDeviceSetVertexShaderConstantB(This, Edx, StartRegister, pConstantData, BoolCount);
+HRESULT __fastcall implOfDxpDeviceCreatePixelShader(DxpDevice* This, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DPixelShader9** ppShader, DWORD FunctionSize)
+{
+    *ppShader = reinterpret_cast<DX_PATCH::IDirect3DPixelShader9*>(new PermutedShader(This, (char*)pFunction, FunctionSize, true));
+    return S_OK;
+}
 
-        return S_OK;
-    }
+HRESULT __fastcall implOfDxpDeviceSetPixelShader(DxpDevice* This, void* Edx, DX_PATCH::IDirect3DPixelShader9* pShader)
+{
+    pixelShaderHandler.setShader(reinterpret_cast<PermutedShader*>(pShader));
+    return S_OK;
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, CreatePixelShader, void* Edx, const DWORD* pFunction, DX_PATCH::IDirect3DPixelShader9** ppShader, DWORD FunctionSize)
-    {
-        *ppShader = reinterpret_cast<DX_PATCH::IDirect3DPixelShader9*>(new PermutedShader(This, (char*)pFunction, FunctionSize, true));
-        return S_OK;
-    }
+HRESULT __fastcall implOfDxpDeviceSetPixelShaderConstantB(DxpDevice* This, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount)
+{
+    pixelShaderHandler.setPermutations(StartRegister, pConstantData, BoolCount);
+    //return originalDxpDeviceSetPixelShaderConstantB(This, Edx, StartRegister, pConstantData, BoolCount);
+    return S_OK;
+}
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetPixelShader, void* Edx, DX_PATCH::IDirect3DPixelShader9* pShader)
-    {
-        pixelShaderHandler.setShader(reinterpret_cast<PermutedShader*>(pShader));
-        return S_OK;
-    }
+HOOK(bool, __fastcall, InitializeGraphicsDevice, 0x6F53E0, void* This, void* Edx, void* A2)
+{
+    const bool success = originalInitializeGraphicsDevice(This, Edx, A2);
+    if (!success)
+        return false;
 
-    VTABLE_HOOK(HRESULT, __fastcall, DxpDevice, SetPixelShaderConstantB, void* Edx, UINT StartRegister, const BOOL* pConstantData, UINT BoolCount)
-    {
-        pixelShaderHandler.setPermutations(StartRegister, pConstantData, BoolCount);
-        //return originalDxpDeviceSetPixelShaderConstantB(This, Edx, StartRegister, pConstantData, BoolCount);
-        return S_OK;
-    }
+    DX_PATCH::IDirect3DDevice9* dxpDevice = *(DX_PATCH::IDirect3DDevice9**)((char*)This + 100);
 
-    HOOK(bool, __fastcall, InitializeGraphicsDevice, 0x6F53E0, void* This, void* Edx, void* A2)
-    {
-        const bool success = originalInitializeGraphicsDevice(This, Edx, A2);
-        if (!success)
-            return false;
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawPrimitive, 82);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawIndexedPrimitive, 83);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawPrimitiveUP, 84);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawIndexedPrimitiveUP, 85);
 
-        DX_PATCH::IDirect3DDevice9* dxpDevice = *(DX_PATCH::IDirect3DDevice9**)((char*)This + 100);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, CreateVertexShader, 92);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetVertexShader, 93);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetVertexShaderConstantB, 99);
 
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawPrimitive, 82);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawIndexedPrimitive, 83);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawPrimitiveUP, 84);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, DrawIndexedPrimitiveUP, 85);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, CreatePixelShader, 107);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetPixelShader, 108);
+    INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetPixelShaderConstantB, 114);
 
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, CreateVertexShader, 92);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetVertexShader, 93);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetVertexShaderConstantB, 99);
-
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, CreatePixelShader, 107);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetPixelShader, 108);
-        INSTALL_VTABLE_HOOK(DxpDevice, dxpDevice, SetPixelShaderConstantB, 114);
-
-        return true;
-    }
+    return true;
 }
 
 void PermutationHandler::applyPatches()
