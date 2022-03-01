@@ -16,19 +16,27 @@ public class ShaderCompiler
 
     private class ShaderCompilerPermutation
     {
+        public string Data;
+        public string DirectoryPath;
+
         public string Name;
-        public Shader Shader;
+        public IShader Shader;
         public D3DShaderMacro[] Macros;
     }
 
-    public static void Compile(string sourceFilePath, ArchiveDatabase archiveDatabase, IReadOnlyList<Shader> shaders)
+    public static void Compile(ArchiveDatabase destArchiveDatabase, IReadOnlyList<(string SourceFilePath, IShader Shader)> shaders)
     {
         var permutations = new List<ShaderCompilerPermutation>();
 
-        Parallel.ForEach(shaders, shader =>
+        Parallel.ForEach(shaders, tuple =>
         {
+            var (srcFilePath, shader) = tuple;
+
+            string directoryPath = Path.GetDirectoryName(srcFilePath);
+            string srcData = File.ReadAllText(srcFilePath);
+
             var stringBuilder = StringBuilderCache.Acquire();
-            var pixelShader = shader as PixelShader;
+            var pixelShader = shader as IPixelShader;
 
             // Create parameter data from shader if necessary
             ShaderParameterData parameterData = null;
@@ -48,13 +56,13 @@ public class ShaderCompiler
                 {
                     parameterData.Samplers.AddRange(pixelShader.Samplers.Select(x => new ShaderParameter
                     {
-                        Name = x.Name,
+                        Name = x.Unit,
                         Index = (byte)(x.Index |
                                        (x.Index << 4)), // upper 4 bits correspond to the index in mrgTexcoordIndex
                     }));
                 }
 
-                archiveDatabase.Add(new DatabaseData
+                destArchiveDatabase.Add(new DatabaseData
                 {
                     Name = shader.Name + shader.ParameterExtension,
                     Data = parameterData.Save()
@@ -74,7 +82,7 @@ public class ShaderCompiler
                 if (parameterData != null)
                     shaderData.ParameterNames.Add(shader.Name);
 
-                archiveDatabase.Add(
+                destArchiveDatabase.Add(
                     new DatabaseData
                     {
                         Data = shaderData.Save(),
@@ -83,6 +91,8 @@ public class ShaderCompiler
 
                 var compilerPermutation = new ShaderCompilerPermutation
                 {
+                    Data = srcData,
+                    DirectoryPath = directoryPath,
                     Name = shader.Name,
                     Shader = shader,
                     Macros = shader.Macros.Append(D3DShaderMacro.Terminator).ToArray()
@@ -112,6 +122,8 @@ public class ShaderCompiler
                             if (pixelShader != null && !pixelShader.ValidateSamplers(samplers))
                                 continue;
 
+                            var macros = new List<D3DShaderMacro>(shader.Macros);
+
                             var shaderName = ShaderUtilities.GenerateShaderName(
                                 stringBuilder, shader, samplers, features, permutation);
 
@@ -129,7 +141,7 @@ public class ShaderCompiler
 
                                     var pixelShaderPermutationData = new PixelShaderPermutationData
                                     {
-                                        Name = permutation,
+                                        Name = permutation.Name,
                                         ShaderName = shaderName,
                                         SubPermutations = PixelShaderSubPermutations.All
                                     };
@@ -140,7 +152,7 @@ public class ShaderCompiler
                                         pixelShaderPermutationData.VertexShaderPermutations.Add(
                                             new VertexShaderPermutationData
                                             {
-                                                Name = alsoPermutation,
+                                                Name = alsoPermutation.Name,
                                                 ShaderName = ShaderUtilities.GenerateShaderName(stringBuilder,
                                                     vertexShaderPair.Shader, 0, vertexShaderPair.Features, alsoPermutation),
                                                 SubPermutations = VertexShaderSubPermutations.All
@@ -148,6 +160,35 @@ public class ShaderCompiler
                                     }
 
                                     shaderListData.PixelShaderPermutations.Add(pixelShaderPermutationData);
+                                }
+
+                                // Add feature macros
+                                for (int i = 0; i < vertexShaderPair.Shader.Features.Count; i++)
+                                {
+                                    if ((vertexShaderPair.Features & (1 << i)) != 0)
+                                        macros.Add(new D3DShaderMacro("HasFeature" + vertexShaderPair.Shader.Features[i].BitName));
+                                }
+                            }
+                            
+                            // Add permutation macro
+                            macros.Add(new D3DShaderMacro("IsPermutation" + permutation.BitName));
+
+                            // Add feature macros
+                            for (int i = 0; i < shader.Features.Count; i++)
+                            {
+                                if ((features & (1 << i)) != 0)
+                                    macros.Add(new D3DShaderMacro("HasFeature" + shader.Features[i].BitName));
+                            }
+
+                            // Add sampler macros
+                            if (pixelShader != null)
+                            {
+                                for (int i = 0; i < pixelShader.Samplers.Count; i++)
+                                {
+                                    if ((samplers & (1 << i)) != 0)
+                                        continue;
+
+                                    macros.Add(new D3DShaderMacro("HasSampler" + pixelShader.Samplers[i].BitName));
                                 }
                             }
 
@@ -184,44 +225,17 @@ public class ShaderCompiler
 
                                 stringBuilder.Append(shader.Extension);
 
-                                archiveDatabase.Add(
+                                destArchiveDatabase.Add(
                                     new DatabaseData
                                     {
                                         Data = shaderData.Save(),
                                         Name = stringBuilder.ToString()
                                     });
 
-                                // Generate macros
-                                var macros = new List<D3DShaderMacro>(shader.Macros);
-
-                                // Add permutation macro
-                                macros.Add(new D3DShaderMacro("is_permutation_" + permutation));
-
-                                // Add feature macros
-                                for (int i = 0; i < shader.Features.Count; i++)
-                                {
-                                    if ((features & (1 << i)) != 0)
-                                        macros.Add(new D3DShaderMacro("has_feature_" + shader.Features[i]));
-                                }
-
-                                // Add sampler macros
-                                if (pixelShader != null)
-                                {
-                                    for (int i = 0; i < pixelShader.Samplers.Count; i++)
-                                    {
-                                        if ((samplers & (1 << i)) == 0)
-                                            continue;
-
-                                        string macro = "has_sampler_" + pixelShader.Samplers[i].Name;
-
-                                        // Sampler names might be duplicated. In that case,
-                                        // we need to suffix it with an index to prevent conflicts.
-                                        for (int j = 1; macros.Any(x => x.Name.Equals(macro)); j++)
-                                            macro = $"has_sampler_{pixelShader.Samplers[i].Name}{j}";
-
-                                        macros.Add(new D3DShaderMacro(macro));
-                                    }
-                                }
+                                // Keep track of the current macro count as
+                                // we are going to revert it to its original state
+                                // down the line
+                                int countBeforeSubPermutations = macros.Count;
 
                                 // Add sub-permutation macros
                                 for (int i = 0; i < subPermutationNames.Length; i++)
@@ -234,6 +248,8 @@ public class ShaderCompiler
 
                                 var compilerPermutation = new ShaderCompilerPermutation
                                 {
+                                    Data = srcData,
+                                    DirectoryPath = directoryPath,
                                     Name = shaderData.CodeName,
                                     Shader = shader,
                                     Macros = macros.ToArray()
@@ -241,12 +257,15 @@ public class ShaderCompiler
 
                                 lock (((IList)permutations).SyncRoot)
                                     permutations.Add(compilerPermutation);
+
+                                // Revert macro list to its original state
+                                macros.RemoveRange(countBeforeSubPermutations, macros.Count - countBeforeSubPermutations);
                             }
                         }
 
                         if (shaderListData != null)
                         {
-                            archiveDatabase.Add(new DatabaseData
+                            destArchiveDatabase.Add(new DatabaseData
                             {
                                 Data = shaderListData.Save(),
                                 Name = ShaderUtilities.GenerateShaderListName(stringBuilder, shader, samplers, features)
@@ -259,20 +278,20 @@ public class ShaderCompiler
             StringBuilderCache.Release(stringBuilder);
         });
 
-        var sourceData = File.ReadAllText(sourceFilePath);
-
         int permutationIndex = 0;
 
         Parallel.ForEach(permutations, permutation =>
         {
             Console.WriteLine("({0}/{1}) {2}", Interlocked.Increment(ref permutationIndex), permutations.Count, permutation.Name);
 
+            using var include = new D3DInclude(permutation.DirectoryPath);
+
             int result = D3DCompiler.Compile(
-                sourceData,
-                sourceData.Length,
-                sourceFilePath,
+                permutation.Data,
+                permutation.Data.Length,
+                null,
                 permutation.Macros,
-                new IntPtr(1), // D3D_COMPILE_STANDARD_FILE_INCLUDE 
+                include.Pointer,
                 permutation.Shader.EntryPoint,
                 permutation.Shader.Target,
                 0,
@@ -281,9 +300,13 @@ public class ShaderCompiler
                 out var errorBlob);
 
             if (result < 0)
-                throw new Exception(errorBlob?.ConvertToString() ?? string.Empty);
+            {
+                string message = errorBlob.ConvertToString();
+                Console.WriteLine(message);
+                throw new Exception(message);
+            }
 
-            archiveDatabase.Add(new DatabaseData
+            destArchiveDatabase.Add(new DatabaseData
             {
                 Data = blob.ToArray(),
                 Name = permutation.Name + permutation.Shader.CodeExtension

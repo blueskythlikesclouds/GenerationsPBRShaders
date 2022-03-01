@@ -1,15 +1,15 @@
 ﻿namespace GensShaderTool.Shaders;
 
-public class Sampler
+public class Sampler<T> : Bit<T>, ISampler where T : Enum 
 {
-    public byte Index { get; set; }
-    public string Name { get; set; }
-    public string Token { get; }
+    public byte Index { get; }
+    public string Unit { get; }
+    public string Suffix { get; }
 
-    public Sampler(byte index, string name, string token)
+    public Sampler(T value, byte index, string unit, string suffix) : base(value)
     {
         Index = index;
-        Name = name;
-        Token = token;
+        Unit = unit;
+        Suffix = suffix;
     }
 }
