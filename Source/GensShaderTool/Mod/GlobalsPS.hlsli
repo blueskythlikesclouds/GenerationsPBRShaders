@@ -2,26 +2,101 @@
 #define GLOBALS_PS_HLSLI_INCLUDED
 
 Texture2D<float> g_VerticalShadowMapTexture : register(t7);
-Texture2D<float4> g_INDEXEDLIGHTMAPTexture : register(t8);
-Texture2D<float4> g_TerrainDiffusemapMaskTexture : register(t9);
 Texture2D<float4> g_GITexture : register(t10);
 Texture2D<float4> g_FramebufferTexture : register(t11);
 Texture2D<float> g_DepthTexture : register(t12);
 Texture2D<float> g_ShadowMapTexture : register(t13);
-Texture2D<float4> g_ShadowMapJitterTexture : register(t14);
 Texture2D<float4> g_ReflectionMapTexture : register(t14);
 Texture2D<float4> g_ReflectionMap2Texture : register(t15);
 
-SamplerComparisonState g_VerticalShadowMapSampler : register(s7);
-SamplerState g_INDEXEDLIGHTMAPSampler : register(s8);
-SamplerState g_TerrainDiffusemapMaskSampler : register(s9);
-SamplerState g_GISampler : register(s10);
-SamplerState g_FramebufferSampler : register(s11);
-SamplerState g_DepthSampler : register(s12);
-SamplerComparisonState g_ShadowMapSampler : register(s13);
-SamplerState g_ShadowMapJitterSampler : register(s14);
-SamplerState g_ReflectionMapSampler : register(s14);
-SamplerState g_ReflectionMap2Sampler : register(s15);
+Texture2D<float> g_LuminanceTexture : register(t16);
+Texture2DArray<float3> g_SGGITexture : register(t17);
+Texture2D<float> g_OcclusionTexture : register(t18);
+Texture3D<float4> g_SHLightFieldTextures[3] : register(t19);
+Texture2D<float2> g_EnvBRDFTexture : register(t22);
+TextureCube<float4> g_DefaultIBLTexture : register(t23);
+TextureCubeArray<float4> g_IBLProbeTextures : register(t24);
+
+SamplerState g_LinearClampSampler : register(s10);
+SamplerState g_PointClampSampler : register(s11);
+SamplerState g_ShadowMapSampler : register(s13);
+
+cbuffer cb_RenderData : register(b3)
+{
+    struct SHLightFieldParam
+    {
+        float3x4 Matrices[3];
+        float4 Params[3];
+    } g_SHLightField;
+
+    struct IBLParam
+    {
+        float3x4 Matrices[24];
+        float4 Params[24];
+        float Indices[24];
+        float LodParams[24];
+        float LodParam;
+    } g_IBL;
+}
+
+cbuffer cb_SceneEffect : register(b2)
+{
+    struct DebugParam
+    {
+        bool Enable;
+        bool UseWhiteAlbedo;
+        bool UseFlatNormal;
+        bool IsEnableLUT;
+        float ReflectanceOverride;
+        float RoughnessOverride;
+        float AmbientOcclusionOverride;
+        float MetalnessOverride;
+        float3 GIColorOverride;
+        float GIShadowOverride;
+    } g_Debug;
+
+    struct SGGIParam
+    {
+        float RoughnessMultiply;
+        float RoughnessAdd;
+    } g_SGGI;
+
+    struct ShadowMapParam
+    {
+        float ESMFactor;
+        float2 Size;
+    } g_ShadowMap;
+
+    struct RLRParam
+    {
+        float StepCount;
+        float MaxRoughness;
+        float RayLength;
+        float Fade;
+        float AccuracyThreshold;
+        float Saturation;
+        float Brightness;
+    } g_RLR;
+
+    struct SSAOParam
+    {
+        float SampleCount;
+        float RcpSampleCount;
+        float Radius;
+        float DistanceFade;
+        float Strength;
+    } g_SSAO;
+
+    struct VolumetricLightingParam
+    {
+        float SampleCount;
+        float RcpSampleCount;
+        float G;
+        float InScatteringScale;
+    } g_VolumetricLighting;
+
+    float g_RcpMiddleGray;
+}
 
 cbuffer cb_AlphaTest : register(b1)
 {

@@ -22,8 +22,8 @@ public abstract class PostEffectShader : IShader
         return true;
     }
 
-    public ShaderFeaturePair GetFeaturePair(int features)
+    public ShaderVariation GetVariation(int features, int permutations)
     {
-        return ShaderFeaturePair.Invalid;
+        return ShaderVariation.Invalid;
     }
 }

@@ -1,5 +1,4 @@
 #include "../Shared.hlsli"
-#include "../Utilities.hlsli"
 
 #define GLOBALS_PS_APPEND_PARAMETERS_BEGIN
 #include "../GlobalsPS.hlsli"
@@ -18,14 +17,14 @@ SamplerState sampSpecular : register(s1);
 SamplerState sampNormal : register(s2);
 SamplerState sampTransparency : register(s3);
 
-void LoadParams(in PixelDeclaration input, inout ShaderParams params)
+void LoadParams(inout ShaderParams params, in PixelDeclaration input)
 {
     float4 diffuse = texDiffuse.Sample(sampDiffuse, UV(0));
 
-    params.Albedo = SrgbToLinear(diffuse.rgb);
-    params.Alpha = diffuse.a;
+    params.Albedo = SrgbToLinear(diffuse.rgb) * input.Color.rgb;
+    params.Alpha = diffuse.a * input.Color.a;
 
-#if defined(HasSamplerSpecular)
+#ifdef HasSamplerSpecular
     ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), HasExplicitMetalness, params);
 #else
     ConvertPBRFactorToParams(PBRFactor, params);
@@ -33,11 +32,11 @@ void LoadParams(in PixelDeclaration input, inout ShaderParams params)
 
     params.NormalMap = texNormal.Sample(sampNormal, UV(2)).xy;
 
-#if defined(HasSamplerTransparency)
+#ifdef HasSamplerTransparency
     params.Alpha *= texTransparency.Sample(sampTransparency, UV(3)).a;
 #endif
 }
 
-void ModifyParams(in PixelDeclaration input, inout ShaderParams params) {}
+void ModifyParams(inout ShaderParams params, in PixelDeclaration input) {}
 
 #include "../DefaultPS.hlsli"

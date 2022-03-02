@@ -1,20 +1,25 @@
 #ifndef DEFAULT_PS_HLSLI_INCLUDED
 #define DEFAULT_PS_HLSLI_INCLUDED
 
-#include "Shared.hlsli"
+#include "SHLightField.hlsli"
+#include "IBLProbe.hlsli"
+#include "SharedPS.hlsli"
 
-#include "GlobalsShared.hlsli"
-#ifndef GLOBALS_PS_HLSLI_INCLUDED
-#include "GlobalsPS.hlsli"
-#endif
+cbuffer cb_GITexture : register(b4)
+{
+    float4 g_GIAtlasParam;
+    float4 g_OcclusionAtlasParam;
+    bool g_IsSG;
+    bool g_HasOcclusion;
+}
 
 void main(in PixelDeclaration input,
 
-#if defined(IsPermutationDeferred)
-    out float4 outColor : SV_TARGET0,
-    out float4 gBuffer0 : SV_TARGET1,
-    out float4 gBuffer1 : SV_TARGET2,
-    out float4 gBuffer2 : SV_TARGET3
+#ifdef IsPermutationDeferred
+    out float4 gBuffer0 : SV_TARGET0,
+    out float4 gBuffer1 : SV_TARGET1,
+    out float4 gBuffer2 : SV_TARGET2,
+    out float4 gBuffer3 : SV_TARGET3
 #else
     out float4 outColor : SV_TARGET0
 #endif
@@ -22,13 +27,13 @@ void main(in PixelDeclaration input,
     )
 {
     ShaderParams params = CreateShaderParams();
-    LoadParams(input, params);
+    LoadParams(params, input);
 
     params.Normal = normalize(input.Normal);
 
-#if defined(HasFeatureNormalMapping)
+#ifdef HasFeatureNormalMapping
 
-    if (!g_IsUseDebugParam || !g_UseFlatNormal)
+    if (!g_Debug.Enable || !g_Debug.UseFlatNormal)
     {
         params.Normal =
             normalize(input.Tangent) * params.NormalMap.x +
@@ -38,12 +43,123 @@ void main(in PixelDeclaration input,
 
 #endif
 
-    ModifyParams(input, params);
+    ComputeShadingParams(params, input.Position);
+    ModifyParams(params, input);
 
-    // TODO
+    if (g_Debug.Enable)
+    {
+        if (g_Debug.UseWhiteAlbedo) params.Albedo = 1.0;
+        if (g_Debug.ReflectanceOverride >= 0) params.Reflectance = g_Debug.ReflectanceOverride;
+        if (g_Debug.RoughnessOverride) params.Roughness = g_Debug.RoughnessOverride;
+        if (g_Debug.AmbientOcclusionOverride) params.AmbientOcclusion = g_Debug.AmbientOcclusionOverride;
+        if (g_Debug.MetalnessOverride) params.Metalness = g_Debug.MetalnessOverride;
+    }
 
-    outColor.rgb = params.Normal * 0.5 + 0.5;
-    outColor.a = 1.0;
+#ifdef NoGI
+    float sggiBlendFactor = 0.0;
+    float iblBlendFactor = 1.0;
+
+#ifndef IsPermutationDeferred
+    ComputeSHLightField(params, input.Position);
+#endif
+
+#else
+    float sggiBlendFactor = saturate(params.Roughness * g_SGGI.RoughnessMultiply + g_SGGI.RoughnessAdd);
+    float iblBlendFactor = lerp(1.0 - sggiBlendFactor, 1.0, params.Metalness);
+
+    const float2 giCoord = input.TexCoord0.zw * g_GIAtlasParam.xy + g_GIAtlasParam.zw;
+    const float2 occlusionCoord = input.TexCoord0.zw * g_OcclusionAtlasParam.xy + g_OcclusionAtlasParam.zw;
+
+    if (g_IsSG)
+    {
+        float3 sggi[4];
+
+        int i;
+
+        for (i = 0; i < 4; i++)
+            sggi[i] = g_SGGITexture.Sample(g_LinearClampSampler, float3(giCoord, i));
+
+        params.Shadow = g_OcclusionTexture.Sample(g_LinearClampSampler, occlusionCoord);
+
+        const float3 axis[4] =
+        {
+            float3(0, 0.57735, 1),
+            float3(0, 0.57735, -1),
+            float3(1, 0.57735, 0),
+            float3(-1, 0.57735, 0)
+        };
+
+        params.IndirectDiffuse = 0;
+
+        for (i = 0; i < 4; i++)
+            params.IndirectDiffuse += ComputeSggiDiffuse(params, sggi[i], axis[i]);
+
+        params.IndirectDiffuse *= ComputeSggiDiffuseFactor();
+
+        float4 r6;
+        float sggiSpecularFactor = ComputeSggiSpecularFactor(params, r6);
+
+        params.IndirectSpecular = 0;
+
+        for (i = 0; i < 4; i++)
+            params.IndirectSpecular += ComputeSggiSpecular(params, sggi[i], axis[i], r6);
+
+        params.IndirectSpecular *= sggiSpecularFactor;
+        params.IndirectSpecular *= sggiBlendFactor;
+    }
+    else
+    {
+        float4 gi = g_GITexture.Sample(g_LinearClampSampler, giCoord);
+
+        if (g_HasOcclusion)
+        {
+            params.IndirectDiffuse = gi.rgb;
+            params.Shadow = g_OcclusionTexture.Sample(g_LinearClampSampler, occlusionCoord);
+        }
+
+        else
+        {
+            params.IndirectDiffuse = gi.rgb * gi.rgb;
+            params.Shadow = gi.a;
+        }
+    }
+
+    if (g_Debug.Enable)
+    {
+        if (g_Debug.GIColorOverride.r >= 0)
+        {
+            params.IndirectDiffuse = g_Debug.GIColorOverride;
+            params.IndirectSpecular = 0;
+        }
+        if (g_Debug.GIShadowOverride >= 0) params.Shadow = g_Debug.GIShadowOverride;
+    }
+
+    params.IndirectDiffuse *= g_GI0Scale.rgb;
+    params.IndirectSpecular *= g_GI0Scale.rgb;
+#endif
+
+#ifndef IsPermutationDeferred
+    ComputeIndirectIBLProbes(params, input.Position, iblBlendFactor);
+
+    params.Shadow = ComputeShadow(g_ShadowMapTexture, g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMap.Size, g_ShadowMap.ESMFactor);
+
+    bool cdr = false;
+#ifdef HasSamplerCdr
+    cdr = true;
+#endif
+
+    outColor.rgb = ComputeDirectLighting(params, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.xyz, cdr) * params.Shadow;
+    outColor.rgb += ComputeIndirectLighting(params, g_EnvBRDFTexture, g_LinearClampSampler);
+    outColor.rgb += params.Emission;
+    outColor.rgb = outColor.rgb * input.LightScattering.x + g_LightScatteringColor.rgb * input.LightScattering.y;
+    outColor.a = params.Alpha;
+
+#else
+    StoreParams(params, gBuffer0, gBuffer1, gBuffer2, gBuffer3);
+#endif
+
+    if (g_EnableAlphaTest)
+        clip(params.Alpha - g_AlphaThreshold);
 }
 
 #endif

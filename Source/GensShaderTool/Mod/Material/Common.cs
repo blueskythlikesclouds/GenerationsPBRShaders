@@ -36,9 +36,16 @@ public class Common : DefaultPS<DefaultPSFeatures, CommonSamplers>
         return samplers.HasFlag(CommonSamplers.Diffuse); // Always have diffuse
     }
 
-    public override ShaderFeaturePair GetVertexShader(CommonSamplers samplers, DefaultPSFeatures features, Permutation<DefaultPSPermutation> permutation)
+    public override ShaderVariation GetVertexShader(CommonSamplers samplers, DefaultPSFeatures features, Permutation<DefaultPSPermutations> permutation)
     {
-        return ShaderHandle<DefaultVS>.Reference.GetFeaturePair(
-            samplers.HasFlag(CommonSamplers.Normal) ? DefaultVSFeatures.NormalMapping : default);
+        return ShaderHandle<DefaultVS>.Reference.GetPair(
+
+            samplers.HasFlag(CommonSamplers.Normal)
+                ? DefaultVSFeatures.NormalMapping :
+                default,
+
+            permutation.EnumValue == DefaultPSPermutations.Deferred
+                ? DefaultVSPermutations.Deferred
+                : DefaultVSPermutations.None);
     }
 }

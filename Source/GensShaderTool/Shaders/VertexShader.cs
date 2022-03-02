@@ -1,8 +1,8 @@
 ﻿namespace GensShaderTool.Shaders;
 
-public abstract class VertexShader<TFeatures, TPermutation> : Shader<TFeatures, TPermutation>, IVertexShader
+public abstract class VertexShader<TFeatures, TPermutations> : Shader<TFeatures, TPermutations>, IVertexShader
     where TFeatures : Enum
-    where TPermutation : Enum
+    where TPermutations : Enum
 {
     public override string Target => "vs_3_0";
 

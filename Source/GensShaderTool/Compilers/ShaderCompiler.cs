@@ -129,10 +129,10 @@ public class ShaderCompiler
 
                             if (pixelShader != null)
                             {
-                                var vertexShaderPair =
+                                var vertexShader =
                                     pixelShader.GetVertexShader(samplers, features, permutation);
 
-                                if (vertexShaderPair.Shader == null)
+                                if (vertexShader.Shader == null)
                                     continue;
 
                                 if (pixelShader.Permutations.Count != 0)
@@ -147,14 +147,17 @@ public class ShaderCompiler
                                     };
 
                                     // Generate vertex shader permutations
-                                    foreach (var alsoPermutation in vertexShaderPair.Shader.Permutations)
+                                    foreach (var alsoPermutation in vertexShader.Shader.Permutations)
                                     {
+                                        if ((vertexShader.Permutations & alsoPermutation.BitValue) == 0)
+                                            continue;
+
                                         pixelShaderPermutationData.VertexShaderPermutations.Add(
                                             new VertexShaderPermutationData
                                             {
                                                 Name = alsoPermutation.Name,
                                                 ShaderName = ShaderUtilities.GenerateShaderName(stringBuilder,
-                                                    vertexShaderPair.Shader, 0, vertexShaderPair.Features, alsoPermutation),
+                                                    vertexShader.Shader, 0, vertexShader.Features, alsoPermutation),
                                                 SubPermutations = VertexShaderSubPermutations.All
                                             });
                                     }
@@ -163,10 +166,10 @@ public class ShaderCompiler
                                 }
 
                                 // Add feature macros
-                                for (int i = 0; i < vertexShaderPair.Shader.Features.Count; i++)
+                                for (int i = 0; i < vertexShader.Shader.Features.Count; i++)
                                 {
-                                    if ((vertexShaderPair.Features & (1 << i)) != 0)
-                                        macros.Add(new D3DShaderMacro("HasFeature" + vertexShaderPair.Shader.Features[i].BitName));
+                                    if ((vertexShader.Features & (1 << i)) != 0)
+                                        macros.Add(new D3DShaderMacro("HasFeature" + vertexShader.Shader.Features[i].BitName));
                                 }
                             }
                             
@@ -186,9 +189,7 @@ public class ShaderCompiler
                                 for (int i = 0; i < pixelShader.Samplers.Count; i++)
                                 {
                                     if ((samplers & (1 << i)) != 0)
-                                        continue;
-
-                                    macros.Add(new D3DShaderMacro("HasSampler" + pixelShader.Samplers[i].BitName));
+                                        macros.Add(new D3DShaderMacro("HasSampler" + pixelShader.Samplers[i].BitName));
                                 }
                             }
 
@@ -294,7 +295,7 @@ public class ShaderCompiler
                 include.Pointer,
                 permutation.Shader.EntryPoint,
                 permutation.Shader.Target,
-                0,
+                0, /*1 << 15*/
                 0,
                 out var blob,
                 out var errorBlob);

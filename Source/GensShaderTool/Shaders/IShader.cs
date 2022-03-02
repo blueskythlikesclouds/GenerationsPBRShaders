@@ -21,5 +21,5 @@ public interface IShader
     IReadOnlyList<D3DShaderMacro> Macros => Array.Empty<D3DShaderMacro>();
 
     bool ValidatePermutation(int features, IPermutation permutation);
-    ShaderFeaturePair GetFeaturePair(int features);
+    ShaderVariation GetVariation(int features, int permutations);
 }

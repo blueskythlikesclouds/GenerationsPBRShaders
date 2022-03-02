@@ -1,8 +1,8 @@
 ﻿namespace GensShaderTool.Shaders;
 
-public abstract class PixelShader<TFeatures, TPermutation, TSamplers> : Shader<TFeatures, TPermutation>, IPixelShader
+public abstract class PixelShader<TFeatures, TPermutations, TSamplers> : Shader<TFeatures, TPermutations>, IPixelShader
     where TFeatures : Enum
-    where TPermutation : Enum
+    where TPermutations : Enum
     where TSamplers : Enum
 {
     public override string Target => "ps_3_0";
@@ -18,9 +18,9 @@ public abstract class PixelShader<TFeatures, TPermutation, TSamplers> : Shader<T
         return true;
     }
 
-    public virtual ShaderFeaturePair GetVertexShader(TSamplers samplers, TFeatures features, Permutation<TPermutation> permutation)
+    public virtual ShaderVariation GetVertexShader(TSamplers samplers, TFeatures features, Permutation<TPermutations> permutation)
     {
-        return ShaderFeaturePair.Invalid;
+        return ShaderVariation.Invalid;
     }
 
     protected TSamplers ConvertSamplers(int samplers)
@@ -33,6 +33,6 @@ public abstract class PixelShader<TFeatures, TPermutation, TSamplers> : Shader<T
     bool IPixelShader.ValidateSamplers(int samplers) =>
         ValidateSamplers(ConvertSamplers(samplers));
 
-    ShaderFeaturePair IPixelShader.GetVertexShader(int samplers, int features, IPermutation permutation) =>
+    ShaderVariation IPixelShader.GetVertexShader(int samplers, int features, IPermutation permutation) =>
         GetVertexShader(ConvertSamplers(samplers), ConvertFeatures(features), ConvertPermutation(permutation));
 }   

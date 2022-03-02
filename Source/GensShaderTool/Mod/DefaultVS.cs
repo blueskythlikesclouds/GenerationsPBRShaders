@@ -9,20 +9,21 @@ public enum DefaultVSFeatures
     NormalMapping = 1 << 3,
 }
 
-public enum DefaultVSPermutation
+[Flags]
+public enum DefaultVSPermutations
 {
-    None,
-    Deferred
+    None = 1 << 0,
+    Deferred = 1 << 1
 }
 
-public class DefaultVS : D3D11VertexShader<DefaultVSFeatures, DefaultVSPermutation>
+public class DefaultVS : D3D11VertexShader<DefaultVSFeatures, DefaultVSPermutations>
 {
     public override string Name => "Default2";
 
-    public override IReadOnlyList<Permutation<DefaultVSPermutation>> Permutations => new Permutation<DefaultVSPermutation>[]
+    public override IReadOnlyList<Permutation<DefaultVSPermutations>> Permutations => new Permutation<DefaultVSPermutations>[]
     {
-        new(DefaultVSPermutation.None, "none", string.Empty),
-        new(DefaultVSPermutation.Deferred, "defferedlight", "d") 
+        new(DefaultVSPermutations.None, "none", string.Empty),
+        new(DefaultVSPermutations.Deferred, "defferedlight", "d") 
     };
 
     public override IReadOnlyList<Feature<DefaultVSFeatures>> Features => new Feature<DefaultVSFeatures>[]
@@ -33,7 +34,7 @@ public class DefaultVS : D3D11VertexShader<DefaultVSFeatures, DefaultVSPermutati
         new(DefaultVSFeatures.NormalMapping, "n")
     };
 
-    public override bool ValidatePermutation(DefaultVSFeatures features, Permutation<DefaultVSPermutation> permutation)
+    public override bool ValidatePermutation(DefaultVSFeatures features, Permutation<DefaultVSPermutations> permutation)
     {
         // Eye must exist alone as we don't use normals for eyes and require vertex colors.
         if (features.HasFlag(DefaultVSFeatures.EyeNormal) && features != DefaultVSFeatures.EyeNormal)
