@@ -41,59 +41,22 @@ cbuffer cb_RenderData : register(b3)
 
 cbuffer cb_SceneEffect : register(b2)
 {
-    struct DebugParam
-    {
-        bool Enable;
-        bool UseWhiteAlbedo;
-        bool UseFlatNormal;
-        bool IsEnableLUT;
-        float ReflectanceOverride;
-        float RoughnessOverride;
-        float AmbientOcclusionOverride;
-        float MetalnessOverride;
-        float3 GIColorOverride;
-        float GIShadowOverride;
-    } g_Debug;
+    bool g_DebugParamEnable;
+    bool g_UseWhiteAlbedo;
+    bool g_UseFlatNormal;
+    bool g_IsEnableLUT;
+    float g_ReflectanceOverride;
+    float g_RoughnessOverride;
+    float g_AmbientOcclusionOverride;
+    float g_MetalnessOverride;
+    float3 g_GIColorOverride;
+    float g_GIShadowOverride;
 
-    struct SGGIParam
-    {
-        float RoughnessMultiply;
-        float RoughnessAdd;
-    } g_SGGI;
+    float g_SGGIRoughnessMultiply;
+    float g_SGGIRoughnessAdd;
 
-    struct ShadowMapParam
-    {
-        float ESMFactor;
-        float2 Size;
-    } g_ShadowMap;
-
-    struct RLRParam
-    {
-        float StepCount;
-        float MaxRoughness;
-        float RayLength;
-        float Fade;
-        float AccuracyThreshold;
-        float Saturation;
-        float Brightness;
-    } g_RLR;
-
-    struct SSAOParam
-    {
-        float SampleCount;
-        float RcpSampleCount;
-        float Radius;
-        float DistanceFade;
-        float Strength;
-    } g_SSAO;
-
-    struct VolumetricLightingParam
-    {
-        float SampleCount;
-        float RcpSampleCount;
-        float G;
-        float InScatteringScale;
-    } g_VolumetricLighting;
+    float g_ESMFactor;
+    float2 g_ShadowMapSize;
 
     float g_RcpMiddleGray;
 }

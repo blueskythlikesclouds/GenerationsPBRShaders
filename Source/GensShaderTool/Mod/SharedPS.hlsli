@@ -38,6 +38,11 @@ ShaderParams LoadParams(float2 texCoord)
     params.Normal = gBuffer3.xyz * 2.0 - 1.0;
     params.Type = uint(gBuffer3.w * TYPE_MAX);
 
+    if (params.Type == TYPE_CDR)
+        params.Cdr = gBuffer0.rgb;
+    else
+        params.Emission = gBuffer0.rgb;
+
     return params;
 }
 

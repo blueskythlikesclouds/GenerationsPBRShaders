@@ -23,18 +23,21 @@ void main(in PixelDeclaration input,
 #else
     out float4 outColor : SV_TARGET0
 #endif
-
     )
 {
     ShaderParams params = CreateShaderParams();
     LoadParams(params, input);
 
+    if (g_EnableAlphaTest)
+        clip(params.Alpha - g_AlphaThreshold);
+
     params.Normal = normalize(input.Normal);
 
 #ifdef HasFeatureNormalMapping
 
-    if (!g_Debug.Enable || !g_Debug.UseFlatNormal)
+    if (!g_DebugParamEnable || !g_UseFlatNormal)
     {
+        params.Normal = params.Normal * 2 - 1;
         params.Normal =
             normalize(input.Tangent) * params.NormalMap.x +
             normalize(input.Binormal) * params.NormalMap.y +
@@ -46,13 +49,13 @@ void main(in PixelDeclaration input,
     ComputeShadingParams(params, input.Position);
     ModifyParams(params, input);
 
-    if (g_Debug.Enable)
+    if (g_DebugParamEnable)
     {
-        if (g_Debug.UseWhiteAlbedo) params.Albedo = 1.0;
-        if (g_Debug.ReflectanceOverride >= 0) params.Reflectance = g_Debug.ReflectanceOverride;
-        if (g_Debug.RoughnessOverride) params.Roughness = g_Debug.RoughnessOverride;
-        if (g_Debug.AmbientOcclusionOverride) params.AmbientOcclusion = g_Debug.AmbientOcclusionOverride;
-        if (g_Debug.MetalnessOverride) params.Metalness = g_Debug.MetalnessOverride;
+        if (g_UseWhiteAlbedo) params.Albedo = 1.0;
+        if (g_ReflectanceOverride >= 0) params.Reflectance = g_ReflectanceOverride;
+        if (g_RoughnessOverride) params.Roughness = g_RoughnessOverride;
+        if (g_AmbientOcclusionOverride) params.AmbientOcclusion = g_AmbientOcclusionOverride;
+        if (g_MetalnessOverride) params.Metalness = g_MetalnessOverride;
     }
 
 #ifdef NoGI
@@ -64,7 +67,7 @@ void main(in PixelDeclaration input,
 #endif
 
 #else
-    float sggiBlendFactor = saturate(params.Roughness * g_SGGI.RoughnessMultiply + g_SGGI.RoughnessAdd);
+    float sggiBlendFactor = saturate(params.Roughness * g_SGGIRoughnessMultiply + g_SGGIRoughnessAdd);
     float iblBlendFactor = lerp(1.0 - sggiBlendFactor, 1.0, params.Metalness);
 
     const float2 giCoord = input.TexCoord0.zw * g_GIAtlasParam.xy + g_GIAtlasParam.zw;
@@ -124,14 +127,14 @@ void main(in PixelDeclaration input,
         }
     }
 
-    if (g_Debug.Enable)
+    if (g_DebugParamEnable)
     {
-        if (g_Debug.GIColorOverride.r >= 0)
+        if (g_GIColorOverride.r >= 0)
         {
-            params.IndirectDiffuse = g_Debug.GIColorOverride;
+            params.IndirectDiffuse = g_GIColorOverride;
             params.IndirectSpecular = 0;
         }
-        if (g_Debug.GIShadowOverride >= 0) params.Shadow = g_Debug.GIShadowOverride;
+        if (g_GIShadowOverride >= 0) params.Shadow = g_GIShadowOverride;
     }
 
     params.IndirectDiffuse *= g_GI0Scale.rgb;
@@ -141,7 +144,7 @@ void main(in PixelDeclaration input,
 #ifndef IsPermutationDeferred
     ComputeIndirectIBLProbes(params, input.Position, iblBlendFactor);
 
-    params.Shadow = ComputeShadow(g_ShadowMapTexture, g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMap.Size, g_ShadowMap.ESMFactor);
+    params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapSize, g_ESMFactor);
 
     bool cdr = false;
 #ifdef HasSamplerCdr
@@ -157,9 +160,6 @@ void main(in PixelDeclaration input,
 #else
     StoreParams(params, gBuffer0, gBuffer1, gBuffer2, gBuffer3);
 #endif
-
-    if (g_EnableAlphaTest)
-        clip(params.Alpha - g_AlphaThreshold);
 }
 
 #endif

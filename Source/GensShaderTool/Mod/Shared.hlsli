@@ -587,7 +587,7 @@ float VisSchlick(float roughness, float cosLo, float cosLi)
     return 0.25 / (schlickV * schlickL);
 }
 
-float3 ComputeDirectLightingRaw(in ShaderParams params, float3 lightDirection, float3 lightColor)
+float3 ComputeDirectLighting(in ShaderParams params, float3 lightDirection, float3 lightColor, bool cdr = false)
 {
     float3 halfwayDirection = normalize(params.ViewDirection + lightDirection);
 
@@ -603,17 +603,11 @@ float3 ComputeDirectLightingRaw(in ShaderParams params, float3 lightDirection, f
     float3 diffuseBRDF = kd * (params.Albedo / PI) * lightColor;
     float3 specularBRDF = (D * Vis) * F * lightColor;
 
-    return diffuseBRDF + specularBRDF;
-}
-
-float3 ComputeDirectLighting(in ShaderParams material, float3 lightDirection, float3 lightColor, bool cdr = false)
-{
-    float3 directLighting = ComputeDirectLightingRaw(material, lightDirection, lightColor);
-
+    float3 directLighting = diffuseBRDF + specularBRDF;
     if (cdr)
-        directLighting *= material.Cdr;
+        directLighting *= params.Cdr;
     else
-        directLighting *= saturate(dot(lightDirection, material.Normal));
+        directLighting *= saturate(dot(lightDirection, params.Normal));
 
     return directLighting;
 }

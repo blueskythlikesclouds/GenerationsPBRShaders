@@ -1,5 +1,7 @@
 ﻿#include "GIHandler.h"
 
+#include "ConstantBuffer.h"
+
 struct FixedString
 {
     char* str;
@@ -221,6 +223,16 @@ HOOK(NodeType*, __fastcall, FindAtlasSubTexture, findAtlasSubTexture, MapType* T
     return result != This->end() && !key.equals(result->m_Value.m_Key) ? This->end() : result;
 }
 
+struct CBGITexture
+{
+    FLOAT giAtlasParam[4];
+    FLOAT occlusionAtlasParam[4];
+    BOOL isSg;
+    BOOL hasOcclusion;
+};
+
+ConstantBuffer<CBGITexture, 4, true> cbGITexture;
+
 HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderingDeviceSetAtlasParameterData,
     hh::mr::CRenderingDevice* This, void* Edx, float* const pData)
 {
@@ -236,33 +248,20 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
     if (dxpTex)
         dxpTex->QueryInterface(IID(), (void**)&giStore);
 
-    const BOOL isSg = giStore && giStore->isSg;
-    const BOOL hasOcclusion = giStore && giStore->occlusionTex;
+    memcpy(cbGITexture.giAtlasParam, pData, sizeof(cbGITexture.giAtlasParam));
+    cbGITexture.isSg = giStore && giStore->isSg;
+    cbGITexture.hasOcclusion = giStore && giStore->occlusionTex;
 
-    if (hasOcclusion)
+    if (cbGITexture.hasOcclusion)
     {
-        This->m_pD3DDevice->SetTexture(9, giStore->occlusionTex->m_pD3DTexture);
-        This->m_pD3DDevice->SetPixelShaderConstantF(112, (const float*)&giStore->occlusionRect, 1);
+        This->m_pD3DDevice->SetTexture(18, giStore->occlusionTex->m_pD3DTexture);
+        memcpy(cbGITexture.occlusionAtlasParam, &giStore->occlusionRect, sizeof(cbGITexture.occlusionAtlasParam));
     }
 
-    This->m_pD3DDevice->SetTexture(10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
+    cbGITexture.update(This->m_pD3DDevice);
 
-    float giParam[] = { pData[0], pData[1], pData[2], pData[3] };
-
-    if (isSg)
-    {
-        giParam[0] /= 2.0f;
-        giParam[1] /= 2.0f;
-    }
-
-    This->m_pD3DDevice->SetVertexShaderConstantF(186, giParam, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantF(111, giParam, 1);
-
-    if (!hasOcclusion)
-        This->m_pD3DDevice->SetPixelShaderConstantF(112, pData, 1);
-
-    This->m_pD3DDevice->SetPixelShaderConstantB(9, &isSg, 1);
-    This->m_pD3DDevice->SetPixelShaderConstantB(10, &hasOcclusion, 1);
+    This->m_pD3DDevice->SetTexture(cbGITexture.isSg ? 17 : 10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
+    //This->m_pD3DDevice->SetVertexShaderConstantF(186, pData, 1);
 }
 
 bool GIHandler::enabled = false;

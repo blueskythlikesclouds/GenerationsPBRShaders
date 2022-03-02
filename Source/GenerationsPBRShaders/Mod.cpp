@@ -8,7 +8,6 @@
 #include "IBLCaptureService.h"
 #include "LightShaftHandler.h"
 #include "ObjectVisualPatcher.h"
-#include "PermutationHandler.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
 #include "StageId.h"
@@ -82,7 +81,6 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
-    PermutationHandler::applyPatches();
 
 #ifdef ENABLE_IBL_CAPTURE_SERVICE
     IBLCaptureService::applyPatches();
@@ -92,11 +90,13 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
 extern "C" void __declspec(dllexport) PostInit(ModInfo* info)
 {
     if (GetModuleHandle(TEXT("BetterFxPipeline.dll")) == nullptr ||
-        GetModuleHandle(TEXT("GenerationsD3D9Ex.dll")) == nullptr)
+        GetModuleHandle(TEXT("GenerationsD3D11.dll")) == nullptr)
     {
-        MessageBox(nullptr, TEXT("This mod requires latest versions of Better FxPipeline and Direct3D 9 Ex enabled."), TEXT("PBR Shaders"), MB_OK | MB_ICONERROR);
+        MessageBox(nullptr, TEXT("This mod requires latest versions of Better FxPipeline and Direct3D 11 enabled."), TEXT("PBR Shaders"), MB_OK | MB_ICONERROR);
         exit(-1);
     }
+
+    GenerationsD3D11::SetFunctionPointers();
 
     // Do these in PostInit to not conflict with other mods.
     LUTHandler::applyPatches();

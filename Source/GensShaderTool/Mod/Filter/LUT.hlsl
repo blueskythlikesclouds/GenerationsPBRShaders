@@ -13,7 +13,7 @@ float4 main(in float4 svPosition : SV_POSITION, in float2 texCoord : TEXCOORD) :
 
     float4 color = LinearToSrgb(g_SourceTexture.Sample(g_SourceSampler, texCoord));
 
-    if (g_Debug.IsEnableLUT)
+    if (g_IsEnableLUT)
     {
         float cell = color.b * (g_LUTParam.y - 1);
 

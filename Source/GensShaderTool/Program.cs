@@ -7,16 +7,19 @@ using GensShaderTool.Mod.Material;
     return (Path.Combine(@"D:\Repositories\GenerationsPBRShaders\Source\GensShaderTool\Mod", filePath + ".hlsl"), ShaderHandle<T>.Reference);
 }
 
-var archiveDatabase = new ArchiveDatabase(@"D:\Steam\steamapps\common\Sonic Generations\disk\bb3\shader_r.ar.00");
+var archiveDatabase = new ArchiveDatabase();
 
 ShaderCompiler.Compile(archiveDatabase, new[]
 {
     Shader<DefaultVS>("DefaultVS"),
 
     Shader<Common>("Material/Common"),
-    Shader<MCommon>("Material/Common"),
+    Shader<MCommon>("Material/Common"), 
+    
+    Shader<Blend>("Material/Blend"),
+    Shader<MBlend>("Material/Blend"),
 
     Shader<LUT>("Filter/LUT"),
 });
 
-archiveDatabase.Save(@"D:\Steam\steamapps\common\Sonic Generations\mods\Sunset Heights\disk\bb3\shader_r.ar.00");
+archiveDatabase.Save(@"D:\Steam\steamapps\common\Sonic Generations\mods\PBR Shaders\disk\bb3\shader_pbr.ar.00");

@@ -110,7 +110,6 @@
     <ClCompile Include="LightShaftHandler.cpp" />
     <ClCompile Include="NodeBVH.cpp" />
     <ClCompile Include="ObjectVisualPatcher.cpp" />
-    <ClCompile Include="PermutationHandler.cpp" />
     <ClCompile Include="RenderDataManager.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="GIHandler.cpp" />
@@ -132,6 +131,7 @@
   <ItemGroup>
     <ClInclude Include="BloomHandler.h" />
     <ClInclude Include="Configuration.h" />
+    <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="CpkBinder.h" />
     <ClInclude Include="CompressionHandler.h" />
     <ClInclude Include="IBLCaptureService.h" />
@@ -140,7 +140,6 @@
     <ClInclude Include="LightShaftHandler.h" />
     <ClInclude Include="NodeBVH.h" />
     <ClInclude Include="ObjectVisualPatcher.h" />
-    <ClInclude Include="PermutationHandler.h" />
     <ClInclude Include="RenderDataManager.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />

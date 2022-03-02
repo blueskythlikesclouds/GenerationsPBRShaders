@@ -285,13 +285,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (!envBrdfPicture)
         This->m_pScheduler->GetPicture(envBrdfPicture, "env_brdf");
 
-    device->SetTexture(14, RenderDataManager::defaultIBLPicture);
-    device->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-    device->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
-
-    device->SetTexture(15, envBrdfPicture);
-    device->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
+    d3dDevice->SetTexture(22, envBrdfPicture->m_spPictureData->m_pD3DTexture);
+    d3dDevice->SetTexture(23, RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture);
 
     // We're rendering opaque meshes first, so disable alpha testing.
     renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
