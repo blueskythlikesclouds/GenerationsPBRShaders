@@ -104,6 +104,7 @@
   <ItemGroup>
     <ClCompile Include="BloomHandler.cpp" />
     <ClCompile Include="Configuration.cpp" />
+    <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="CpkBinder.cpp" />
     <ClCompile Include="CompressionHandler.cpp" />
     <ClCompile Include="IBLCaptureService.cpp" />

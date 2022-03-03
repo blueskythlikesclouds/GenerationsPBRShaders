@@ -1,14 +1,15 @@
 ﻿#include "ShaderHandler.h"
+
+#include "ConstantBuffer.h"
 #include "RenderDataManager.h"
 
 //
 // TODO: Split literally everything here to multiple files.
 //
 
-std::array<hh::mr::SShaderPair, 1 + 32> fxDeferredPassLightShaders;
+hh::mr::SShaderPair fxDeferredPassLightShader;
 hh::mr::SShaderPair fxRLRShader;
-std::array<hh::mr::SShaderPair, 1 + 8> fxDeferredPassIBLCombineShaders;
-hh::mr::SShaderPair fxDeferredPassIBLProbeShader;
+hh::mr::SShaderPair fxDeferredPassIBLShader;
 hh::mr::SShaderPair fxConvolutionFilterShader;
 
 hh::mr::SShaderPair fxCopyColorShader;
@@ -41,9 +42,6 @@ boost::shared_ptr<hh::ygg::CYggTexture> volumetricLightTex;
 boost::shared_ptr<hh::ygg::CYggPicture> envBrdfPicture;
 boost::shared_ptr<hh::ygg::CYggPicture> blueNoisePicture;
 
-// Loop through all deferred shaders in first frames to warm them up. Fixes in-game stutter.
-size_t shaderCompilerWarmUpIndex = 0;
-
 constexpr uint32_t CalculateMipCount(uint32_t width, uint32_t height)
 {
     uint32_t mipLevels = 1;
@@ -66,25 +64,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 {
     originalCFxRenderGameSceneInitialize(This);
 
-    for (size_t i = 0; i < 1 + 32; i++)
-    {
-        char name[32];
-        sprintf(name, "FxDeferredPassLight_%d", i);
-
-        This->m_pScheduler->GetShader(fxDeferredPassLightShaders[i], "FxFilterPT", name);
-    }
-
+    This->m_pScheduler->GetShader(fxDeferredPassLightShader, "FxFilterPT", "FxDeferredPassLight");
     This->m_pScheduler->GetShader(fxRLRShader, "FxFilterPT", "FxRLR");
 
-    for (size_t i = 0; i < 1 + 8; i++)
-    {
-        char name[32];
-        sprintf(name, "FxDeferredPassIBLCombine_%d", i);
-
-        This->m_pScheduler->GetShader(fxDeferredPassIBLCombineShaders[i], "FxFilterPT", name);
-    }
-
-    This->m_pScheduler->GetShader(fxDeferredPassIBLProbeShader, "FxFilterPT", "FxDeferredPassIBLProbe");
+    This->m_pScheduler->GetShader(fxDeferredPassIBLShader, "FxFilterPT", "FxDeferredPassIBL");
 
     This->m_pScheduler->GetShader(fxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
 
@@ -138,59 +121,128 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     hh::ygg::CYggDevice* device = This->m_pScheduler->m_pMisc->m_pDevice;
     Sonic::CFxSceneRenderer* sceneRenderer = (Sonic::CFxSceneRenderer*)This->m_pScheduler->m_pMisc->m_spSceneRenderer.get();
 
-    // Set g_DebugParam
+    // Set parameters
     const bool overrideGIColor = SceneEffect::debug.giColorOverride.minCoeff() >= 0.0f;
     const bool giOnly = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY;
     const bool iblOnly = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY;
 
-    float debugParam[] =
-    {
-        SceneEffect::debug.useWhiteAlbedo || giOnly ? 1.0f : -1.0f,
-        iblOnly || SceneEffect::debug.useFlatNormal ? 1.0f : -1.0f,
-        iblOnly ? 1.0f : std::min<float>(1.0f, SceneEffect::debug.reflectanceOverride),
-        iblOnly ? 0.0f : SceneEffect::debug.smoothnessOverride >= 0.0f ? std::max<float>(0.01f, 1 - SceneEffect::debug.smoothnessOverride) : -1.0f,
-
-        giOnly || iblOnly ? 1.0f : std::min<float>(1.0f, SceneEffect::debug.ambientOcclusionOverride),
-        giOnly || iblOnly ? 0.0f : std::min<float>(1.0f, SceneEffect::debug.metalnessOverride),
-        overrideGIColor ? SceneEffect::debug.giColorOverride.x() : -1.0f,
-        overrideGIColor ? SceneEffect::debug.giColorOverride.y() : -1.0f,
-
-        overrideGIColor ? SceneEffect::debug.giColorOverride.z() : -1.0f,
-        std::min<float>(1.0f, SceneEffect::debug.giShadowMapOverride),
-        0,
-        0
-    };
-    d3dDevice->SetPixelShaderConstantF(106, debugParam, 3);
-
-    BOOL isUseDebugParam[] = { false };
-    for (size_t i = 0; i < 10; i++)
-        isUseDebugParam[0] |= debugParam[i] >= 0.0f;
-
-    d3dDevice->SetPixelShaderConstantB(7, isUseDebugParam, 1);
-
-    // Set g_HDRParam_SGGIParam
-    float sggiScale = 1.0f / std::max<float>(0.001f, SceneEffect::sggi.startSmoothness - SceneEffect::sggi.endSmoothness);
-    float hdrParam_sggiParam[] = { 1.0f / (*(float*)0x1A572D0 + 0.001f), 0, -(1.0f - SceneEffect::sggi.startSmoothness) * sggiScale, sggiScale };
-    d3dDevice->SetPixelShaderConstantF(109, hdrParam_sggiParam, 1);
-
-    float esmParam[] = 
-        { (float)shadowMap->m_CreationParams.Width, 1.0f / (float)shadowMap->m_CreationParams.Width, SceneEffect::esm.factor, 0 };
-
-    d3dDevice->SetPixelShaderConstantF(110, esmParam, 1);
-
-    // Set g_UsePBR
-    BOOL usePBR[] = { globalUsePBR };
-    d3dDevice->SetPixelShaderConstantB(6, usePBR, 1);
+    sceneEffectCB.reflectanceOverride = iblOnly ? 1.0f : std::min<float>(1.0f, SceneEffect::debug.reflectanceOverride),
+    sceneEffectCB.roughnessOverride = iblOnly ? 0.0f : SceneEffect::debug.smoothnessOverride >= 0.0f ? std::max<float>(0.01f, 1 - SceneEffect::debug.smoothnessOverride) : -1.0f;
+    sceneEffectCB.ambientOcclusionOverride = giOnly || iblOnly ? 1.0f : std::min<float>(1.0f, SceneEffect::debug.ambientOcclusionOverride);
+    sceneEffectCB.metalnessOverride = giOnly || iblOnly ? 0.0f : std::min<float>(1.0f, SceneEffect::debug.metalnessOverride);
+    sceneEffectCB.giColorOverride[0] = overrideGIColor ? SceneEffect::debug.giColorOverride.x() : -1.0f;
+    sceneEffectCB.giColorOverride[1] = overrideGIColor ? SceneEffect::debug.giColorOverride.y() : -1.0f,
+    sceneEffectCB.giColorOverride[2] = overrideGIColor ? SceneEffect::debug.giColorOverride.z() : -1.0f;
+    sceneEffectCB.giShadowOverride = std::min<float>(1.0f, SceneEffect::debug.giShadowMapOverride);
+    sceneEffectCB.rcpMiddleGray = 1.0f / (*(float*)0x1A572D0 + 0.001f);
+    sceneEffectCB.sggiParam[1] = 1.0f / std::max<float>(0.001f, SceneEffect::sggi.startSmoothness - SceneEffect::sggi.endSmoothness);
+    sceneEffectCB.sggiParam[0] = -(1.0f - SceneEffect::sggi.startSmoothness) * sceneEffectCB.sggiParam[1];
+    sceneEffectCB.esmFactor = SceneEffect::esm.factor;
+    sceneEffectCB.shadowMapSize[0] = (float)shadowMap->m_CreationParams.Width;
+    sceneEffectCB.shadowMapSize[1] = 1.0f / (float)shadowMap->m_CreationParams.Width;
+    sceneEffectCB.useWhiteAlbedo = SceneEffect::debug.useWhiteAlbedo || giOnly;
+    sceneEffectCB.useFlatNormal = iblOnly || SceneEffect::debug.useFlatNormal;
+    sceneEffectCB.usePBR = globalUsePBR;
+    sceneEffectCB.upload(d3dDevice);
 
     if (!globalUsePBR)
-    {
-        // Unset mrgIsUseDeferred
-        BOOL isUseDeferred[] = { false };
-        d3dDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
-        d3dDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
-
         return originalCFxRenderGameSceneExecute(This);
+
+    if (!blueNoisePicture)
+        This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
+
+    if (!envBrdfPicture)
+        This->m_pScheduler->GetPicture(envBrdfPicture, "env_brdf");
+
+    // Set g_BlueNoiseTexture
+    d3dDevice->SetTexture(16, blueNoisePicture ? blueNoisePicture->m_pD3DTexture : nullptr);
+
+    // Set g_LuminanceTexture
+    d3dDevice->SetTexture(17, luAvgTex ? luAvgTex->m_pD3DTexture : nullptr);
+
+    // Set g_EnvBRDFTexture
+    d3dDevice->SetTexture(20, envBrdfPicture && !giOnly ? envBrdfPicture->m_spPictureData->m_pD3DTexture : nullptr);
+
+    // Set g_DefaultIBLTexture
+    d3dDevice->SetTexture(24, RenderDataManager::defaultIBLPicture && !SceneEffect::debug.disableDefaultIBL
+                                  ? RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture
+                                  : nullptr);
+
+    // Set g_LinearClampSampler
+    device->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
+
+    // Set g_PointClampSampler
+    device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
+
+    // Set g_PointBorderSampler
+    device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    device->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
+
+    // Set g_PointRepeatSampler
+    device->SetSamplerFilter(15, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    device->SetSamplerAddressMode(15, D3DTADDRESS_WRAP);
+
+    // Set SHLFs in the frustum.
+    for (size_t i = 0; i < 3; i++)
+    {
+        const SHLightFieldData* cache = !RenderDataManager::shlfsInFrustum.empty() ?
+            RenderDataManager::shlfsInFrustum[std::min(i, RenderDataManager::shlfsInFrustum.size() - 1)] : nullptr;
+
+        if (cache == nullptr || SceneEffect::debug.disableSHLightField)
+            continue;
+
+        d3dDevice->SetTexture(19 + i, cache->picture->m_spPictureData->m_pD3DTexture);
+
+        memcpy(&renderDataCB.shLightFieldMatrices[i], cache->inverseMatrix.data(), sizeof(Eigen::Matrix34f));
+        renderDataCB.shLightFieldParams[i].x() = (1.0f / cache->probeCounts[0]) * 0.5f;
+        renderDataCB.shLightFieldParams[i].y() = (1.0f / cache->probeCounts[1]) * 0.5f;
+        renderDataCB.shLightFieldParams[i].z() = (1.0f / cache->probeCounts[2]) * 0.5f;
     }
+
+    // Set IBLs in the frustum.
+    renderDataCB.iblProbeCount = std::min<size_t>(RenderDataManager::iblProbesInFrustum.size(),
+        std::min<size_t>(Configuration::maxProbeCount, SceneEffect::debug.maxProbeCount));
+
+    if (SceneEffect::debug.disableIBLProbe)
+        renderDataCB.iblProbeCount = 0;
+
+    for (size_t i = 0; i < renderDataCB.iblProbeCount; i++)
+    {
+        const IBLProbeData* cache = RenderDataManager::iblProbesInFrustum[i];
+
+        memcpy(&renderDataCB.iblProbeMatrices[i], cache->inverseMatrix.data(), sizeof(Eigen::Matrix34f));
+        memcpy(&renderDataCB.iblProbeParams[i], cache->position.data(), sizeof(Eigen::AlignedVector3f));
+        renderDataCB.iblProbeParams[i].w() = (float)cache->pictureIndex;
+        renderDataCB.iblProbeLodParams[i] = 3.0f;
+    }
+
+    renderDataCB.defaultIblLodParam = 3.0f;
+
+    // Set local lights in the frustum.
+    renderDataCB.localLightCount = std::min<size_t>(32, RenderDataManager::localLightsInFrustum.size());
+
+    if (SceneEffect::debug.disableLocalLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
+        renderDataCB.localLightCount = 0;
+
+    for (size_t i = 0; i < renderDataCB.localLightCount; i++)
+    {
+        const LocalLightData* data = RenderDataManager::localLightsInFrustum[i];
+
+        const float rangeSqr = data->range.w() * data->range.w();
+
+        renderDataCB.localLightData[i * 8 + 0] = data->position.x();
+        renderDataCB.localLightData[i * 8 + 1] = data->position.y();
+        renderDataCB.localLightData[i * 8 + 2] = data->position.z();
+        renderDataCB.localLightData[i * 8 + 3] = rangeSqr;
+        renderDataCB.localLightData[i * 8 + 4] = data->color.x() / (float)(4 * M_PI);
+        renderDataCB.localLightData[i * 8 + 5] = data->color.y() / (float)(4 * M_PI);
+        renderDataCB.localLightData[i * 8 + 6] = data->color.z() / (float)(4 * M_PI);
+        renderDataCB.localLightData[i * 8 + 7] = 1.0f / rangeSqr;
+    }
+
+    renderDataCB.upload(d3dDevice);
 
     // Prepare and set render targets. Clear their contents.
     boost::shared_ptr<hh::ygg::CYggSurface> gBuffer0Surface;
@@ -251,22 +303,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pre-pass: Render opaque/punch-through objects and terrain. //
     //************************************************************//
 
-    // Set g_LuminanceSampler
-    device->SetTexture(8, luAvgTex);
-    device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
-
-    // Enable mrgIsUseDeferred so shaders output data to GBuffer render targets.
-    BOOL isUseDeferred[] = { true };
-    d3dDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
-    d3dDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
-
-    // Setup GI & occlusion flags.
-    device->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(9, D3DTADDRESS_CLAMP);
-    device->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
-
     // Enable Z buffer.
     renderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
     renderingDevice->LockRenderState(D3DRS_ZENABLE);
@@ -280,13 +316,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Disable alpha blending since we're rendering opaque/punch-through meshes.
     renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
     renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
-
-    // Set Default IBL and Env BRDF
-    if (!envBrdfPicture)
-        This->m_pScheduler->GetPicture(envBrdfPicture, "env_brdf");
-
-    d3dDevice->SetTexture(22, envBrdfPicture->m_spPictureData->m_pD3DTexture);
-    d3dDevice->SetTexture(23, RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture);
 
     // We're rendering opaque meshes first, so disable alpha testing.
     renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -344,71 +373,25 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
     device->SetTexture(0, This->m_spColorTex);
-    device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
-
     device->SetTexture(1, gBuffer1Tex);
-    device->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
-
     device->SetTexture(2, gBuffer2Tex);
-    device->SetSamplerFilter(2, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(2, D3DTADDRESS_CLAMP);
-
     device->SetTexture(3, gBuffer3Tex);
-    device->SetSamplerFilter(3, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(3, D3DTADDRESS_CLAMP);
-
     device->SetTexture(11, This->m_spColorTex);
-    device->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
-
     device->SetTexture(12, This->m_spDepthTex);
-    device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
     if (SceneEffect::ssao.enable)
     {
-        if (!blueNoisePicture)
-            This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
-        
         boost::shared_ptr<hh::ygg::CYggSurface> ssaoSurface;
         ssaoTex->GetSurface(ssaoSurface, 0, 0);
 
-        float blueNoiseTileSize[] =
-        {
-            (float)ssaoTex->m_CreationParams.Width / 64,
-            (float)ssaoTex->m_CreationParams.Height / 64,
-            0,
-            0
-        };
-
-        float sampleCount_invSampleCount_radius_distanceFade[] =
-        {
-            (float)SceneEffect::ssao.sampleCount,
-            1.0f / (float)SceneEffect::ssao.sampleCount,
-            SceneEffect::ssao.radius,
-            SceneEffect::ssao.distanceFade
-        };
-
-        float strength[] =
-        {
-            SceneEffect::ssao.strength,
-            0,
-            0,
-            0
-        };
-
-        d3dDevice->SetPixelShaderConstantF(150, blueNoiseTileSize, 1);
-        d3dDevice->SetPixelShaderConstantF(151, sampleCount_invSampleCount_radius_distanceFade, 1);
-        d3dDevice->SetPixelShaderConstantF(152, strength, 1);
-
-        device->SetSamplerFilter(4, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-        device->SetSamplerAddressMode(4, D3DTADDRESS_WRAP);
-        device->SetTexture(4, blueNoisePicture);
+        filterCB.ssaoSampleCount = SceneEffect::ssao.sampleCount;
+        filterCB.ssaoRcpSampleCount = 1.0f / (float)SceneEffect::ssao.sampleCount;
+        filterCB.ssaoRadius = SceneEffect::ssao.radius;
+        filterCB.ssaoDistanceFade = SceneEffect::ssao.distanceFade;
+        filterCB.ssaoStrength = SceneEffect::ssao.strength;
+        filterCB.upload(d3dDevice);
 
         device->SetShader(fxSSAOShader);
-
         device->SetRenderTarget(0, ssaoSurface);
         device->DrawQuad2D(nullptr, 0, 0);
 
@@ -416,121 +399,35 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
         ssaoBlurredTex->GetSurface(ssaoBlurredSurface, 0, 0);
 
-        float sourceSize_depthThreshold[] = 
-        {
-            1.0f / (float)ssaoTex->m_CreationParams.Width,
-            1.0f / (float)ssaoTex->m_CreationParams.Height,
-            SceneEffect::ssao.depthThreshold,
-            0
-        };
-
-        d3dDevice->SetPixelShaderConstantF(150, sourceSize_depthThreshold, 1);
+        filterCB.boxBlurSourceSize[0] = 1.0f / (float)ssaoTex->m_CreationParams.Width;
+        filterCB.boxBlurSourceSize[1] = 1.0f / (float)ssaoTex->m_CreationParams.Height;
+        filterCB.boxBlurDepthThreshold = SceneEffect::ssao.depthThreshold;
+        filterCB.upload(d3dDevice);
 
         device->SetRenderTarget(0, ssaoBlurredSurface);
         device->SetTexture(4, ssaoTex);
-        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
         device->SetShader(fxBoxBlurShader);
         device->DrawQuad2D(nullptr, 0, 0);
     }
-
-    // Pass 32 omni lights from the view to shaders.
-    size_t localLightCount = 0;
-
-    float localLightData[8 * 32];
-        
-    localLightCount = std::min<size_t>(32, RenderDataManager::localLightsInFrustum.size());
-    
-    for (size_t i = 0; i < localLightCount; i++)
-    {
-        const LocalLightData* data = RenderDataManager::localLightsInFrustum[i];
-
-        const float rangeSqr = data->range.w() * data->range.w();
-
-        localLightData[i * 8 + 0] = data->position.x();
-        localLightData[i * 8 + 1] = data->position.y();
-        localLightData[i * 8 + 2] = data->position.z();
-        localLightData[i * 8 + 3] = rangeSqr;
-        localLightData[i * 8 + 4] = data->color.x() / (float)(4 * M_PI);
-        localLightData[i * 8 + 5] = data->color.y() / (float)(4 * M_PI);
-        localLightData[i * 8 + 6] = data->color.z() / (float)(4 * M_PI);
-        localLightData[i * 8 + 7] = 1.0f / rangeSqr;
-    }
-
-    if (SceneEffect::debug.disableLocalLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
-        localLightCount = 0;
-
-    // Force the shader of the specific index if we are warming up shaders.
-    if (!RenderDataManager::localLights.empty() && shaderCompilerWarmUpIndex < fxDeferredPassLightShaders.size())
-        localLightCount = shaderCompilerWarmUpIndex;
-    
-    if (localLightCount > 0)
-        d3dDevice->SetPixelShaderConstantF(111, (const float*)localLightData, 2 * localLightCount);
 
     //***************************************************//
     // Deferred light pass: Add direct lighting and SHLF //
     // to meshes through deferred rendering.             //
     //***************************************************//
 
-    // Set the corresponding shader.
-    device->SetShader(fxDeferredPassLightShaders[localLightCount]);
+    // Set the shader.
+    device->SetShader(fxDeferredPassLightShader);
 
     // Set shadowmaps.
     device->SetTexture(7, shadowMapNoTerrain);
-    device->SetSamplerFilter(7, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(7, D3DTADDRESS_BORDER);
-
     device->SetTexture(13, shadowMap);
-    device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
 
-    // Set SHLFs in the frustum.
-
-    auto shlfIterator = RenderDataManager::shlfsInFrustum.begin();
-
-    for (size_t i = 0; i < 3; i++)
-    {
-        const SHLightFieldData* cache = !RenderDataManager::shlfsInFrustum.empty() ? 
-            RenderDataManager::shlfsInFrustum[std::min(i, RenderDataManager::shlfsInFrustum.size() - 1)] : nullptr;
-
-        if (cache == nullptr || SceneEffect::debug.disableSHLightField)
-        {
-            device->UnsetSampler(4 + i);
-            continue;
-        }
-
-        device->SetTexture(4 + i, cache->picture);
-        device->SetSamplerFilter(4 + i, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-        device->SetSamplerAddressMode(4 + i, D3DTADDRESS_CLAMP);
-
-        d3dDevice->SetPixelShaderConstantF(175 + i * 3, cache->inverseMatrix.data(), 3);
-
-        float shlfParam[] = { (1.0f / cache->probeCounts[0]) * 0.5f, (1.0f / cache->probeCounts[1]) * 0.5f, (1.0f / cache->probeCounts[2]) * 0.5f, 0 };
-        d3dDevice->SetPixelShaderConstantF(184 + i, shlfParam, 1);
-    }
-
-    // Set SSAO.
-    BOOL enableSSAO[] = { SceneEffect::ssao.enable };
-    d3dDevice->SetPixelShaderConstantB(8, enableSSAO, 1);
+    // Set SSAO
+    filterCB.lightEnableSSAO = SceneEffect::ssao.enable;
+    filterCB.upload(d3dDevice);
 
     if (SceneEffect::ssao.enable)
-    {
-        float ssaoSize[] =
-        {
-            (float)ssaoBlurredTex->m_CreationParams.Width,
-            (float)ssaoBlurredTex->m_CreationParams.Height,
-
-            1.0f / (float)ssaoBlurredTex->m_CreationParams.Width,
-            1.0f / (float)ssaoBlurredTex->m_CreationParams.Height,
-        };
-
-        d3dDevice->SetPixelShaderConstantF(187, ssaoSize, 1);
-
-        device->SetTexture(8, ssaoBlurredTex);
-        device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-        device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
-
-        device->SetRenderTarget(1, gBuffer2Surface); // To update AO in the GBuffer
-    }
+        d3dDevice->SetTexture(19, ssaoBlurredTex->m_pD3DTexture);
 
     if (SceneEffect::debug.disableDirectLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
     {
@@ -541,9 +438,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     device->SetRenderTarget(0, gBuffer0Surface);
     device->DrawQuad2D(nullptr, 0, 0);
-
-    if (SceneEffect::ssao.enable)
-        device->UnsetRenderTarget(1);
+    device->SetTexture(0, gBuffer0Tex);
 
     //*****************************//
     // Real-time Local Reflections //
@@ -556,221 +451,28 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->SetShader(fxRLRShader);
         device->SetRenderTarget(0, rlrSurface);
-        device->Clear(D3DCLEAR_TARGET, 0, 1.0f, 0);
-
-        device->SetTexture(0, gBuffer0Tex);
-        device->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
 
         // Set parameters
-        float framebufferSize[] = {
-            (float)This->m_spColorTex->m_CreationParams.Width,
-            (float)This->m_spColorTex->m_CreationParams.Height,
-            1.0f / (float)This->m_spColorTex->m_CreationParams.Width,
-            1.0f / (float)This->m_spColorTex->m_CreationParams.Height,
-        };
-
-        float stepCount_maxRoughness_rayLength_fade[] = {
-            (float)SceneEffect::rlr.stepCount,
-            SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ? -1.0f : SceneEffect::rlr.maxRoughness,
-            SceneEffect::rlr.rayLength,
-            1.0f / SceneEffect::rlr.fade };
-
-        float accuracyThreshold_saturation_brightness[] = {
-            SceneEffect::rlr.accuracyThreshold,
-            std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::rlr.saturation)),
-            SceneEffect::rlr.brightness,
-            0 };
-
-        d3dDevice->SetPixelShaderConstantF(150, framebufferSize, 1);
-        d3dDevice->SetPixelShaderConstantF(151, stepCount_maxRoughness_rayLength_fade, 1);
-        d3dDevice->SetPixelShaderConstantF(152, accuracyThreshold_saturation_brightness, 1);
+        filterCB.rlrFramebufferSize[0] = (float)This->m_spColorTex->m_CreationParams.Width;
+        filterCB.rlrFramebufferSize[1] = (float)This->m_spColorTex->m_CreationParams.Height;
+        filterCB.rlrFramebufferSize[2] = 1.0f / (float)This->m_spColorTex->m_CreationParams.Width;
+        filterCB.rlrFramebufferSize[3] = 1.0f / (float)This->m_spColorTex->m_CreationParams.Height;
+        filterCB.rlrStepCount = SceneEffect::rlr.stepCount;
+        filterCB.rlrMaxRoughness = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ? -1.0f : SceneEffect::rlr.maxRoughness;
+        filterCB.rlrRayLength = SceneEffect::rlr.rayLength;
+        filterCB.rlrFade = 1.0f / SceneEffect::rlr.fade;
+        filterCB.rlrAccuracyThreshold = SceneEffect::rlr.accuracyThreshold;
+        filterCB.rlrSaturation = std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::rlr.saturation));
+        filterCB.rlrBrightness = SceneEffect::rlr.brightness;
+        filterCB.upload(d3dDevice);
 
         device->DrawQuad2D(nullptr, 0, 0);
-
-        // Apply gaussian blur to it because yes.
-        device->SetShader(fxConvolutionFilterShader);
-
-        device->SetSamplerFilter(0, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_POINT);
-        device->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
-
-        for (uint32_t i = 1; i < rlrTex->m_CreationParams.Levels; i++)
-        {
-            boost::shared_ptr<hh::ygg::CYggSurface> srcSurface, dstSurface, dstSurfaceTemp;
-
-            rlrTex->GetSurface(srcSurface, i - 1, 0);
-            rlrTex->GetSurface(dstSurface, i, 0);
-            rlrTempTex->GetSurface(dstSurfaceTemp, i, 0);
-
-            D3DSURFACE_DESC desc;
-            dstSurface->m_pD3DSurface->GetDesc(&desc);
-
-            // Downscale first.
-            d3dDevice->StretchRect(srcSurface->m_pD3DSurface, nullptr, dstSurface->m_pD3DSurface, nullptr, D3DTEXF_LINEAR);
-
-            // Now apply gaussian filter to it.
-            const float param[] = { 1.0f / desc.Width, 1.0f / desc.Height, exp2f((float)i), (float)i };
-            d3dDevice->SetPixelShaderConstantF(150, param, 1);
-
-            // Horizontal
-            device->SetRenderTarget(0, dstSurfaceTemp);
-
-            float direction[] = { -1, 0, 0, 0 };
-            d3dDevice->SetPixelShaderConstantF(151, direction, 1);
-
-            device->SetTexture(0, rlrTex);
-
-            device->DrawQuad2D(nullptr, 0, 0);
-
-            // Vertical
-            device->SetRenderTarget(0, dstSurface);
-
-            direction[0] = 0;
-            direction[1] = -1;
-            d3dDevice->SetPixelShaderConstantF(151, direction, 1);
-
-            device->SetTexture(0, rlrTempTex);
-
-            device->DrawQuad2D(nullptr, 0, 0);
-        }
-
-        // Revert sampler filters.
-        device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     }
-
-    device->SetTexture(0, gBuffer0Tex);
 
     //****************************************************//
     // Deferred specular pass: Add specular lighting to   //
     // terrain and objects.                               //
     //****************************************************//
-
-    // Set probes in the frustum.
-    // Process every 8 probes in a shader where no indirect lighting computation is applied.
-    // Process remaining probes and raw IBL framebuffer in the main shader.
-
-    size_t currProbeIndex = 0;
-
-    size_t iblCountInFrustum = std::min<size_t>(RenderDataManager::iblProbesInFrustum.size(), 
-        std::min<size_t>(Configuration::maxProbeCount, SceneEffect::debug.maxProbeCount));
-
-    if (SceneEffect::debug.disableIBLProbe)
-        iblCountInFrustum = 0;
-
-    // Force the shader of the specific index if we are warming up shaders.
-    if (!RenderDataManager::iblProbes.empty() && shaderCompilerWarmUpIndex < fxDeferredPassIBLCombineShaders.size())
-        iblCountInFrustum = 8 + shaderCompilerWarmUpIndex;
-
-    const int32_t iblProbePassCount = std::max<int32_t>(0, ((int32_t)iblCountInFrustum - 1) / 8);
-
-    // Set Default IBL and Env BRDF
-    device->SetTexture(14, RenderDataManager::defaultIBLPicture);
-    device->SetSamplerFilter(14, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-    device->SetSamplerAddressMode(14, D3DTADDRESS_CLAMP);
-
-    device->SetTexture(15, envBrdfPicture);
-    device->SetSamplerFilter(15, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(15, D3DTADDRESS_CLAMP);
-
-    if (SceneEffect::debug.disableDefaultIBL)
-        device->UnsetSampler(14);
-
-    if (SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
-        device->UnsetSampler(15);
-
-    // Initialize IBL parameter.
-    float iblLodParam[] = { 0, 0, 0, 0 };
-
-    if (RenderDataManager::defaultIBLPicture &&
-        RenderDataManager::defaultIBLPicture->m_spPictureData &&
-        RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture)
-    {
-        iblLodParam[0] = (float)RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture->GetLevelCount();
-    }
-
-    iblLodParam[1] = (float)(SceneEffect::rlr.maxLod >= 0 ?
-        std::min<int32_t>(SceneEffect::rlr.maxLod, rlrTex->m_CreationParams.Levels) : rlrTex->m_CreationParams.Levels);
-
-    d3dDevice->SetPixelShaderConstantF(145, iblLodParam, 1);
-
-    boost::shared_ptr<hh::ygg::CYggSurface> prevIBLSurface;
-    prevIBLTex->GetSurface(prevIBLSurface, 0, 0);
-
-    for (int32_t i = 0; i < iblProbePassCount + 1; i++)
-    {
-        const bool isCombinePass = i == iblProbePassCount;
-        const size_t iblCount = isCombinePass ? iblCountInFrustum - iblProbePassCount * 8 : 8;
-
-        float probeParams[32];
-        float probeLodParams[8];
-
-        for (size_t j = 0; j < iblCount; j++)
-        {
-            const IBLProbeData* cache;
-
-            // Use the first IBL in the list if we go out of bounds while warming up the shaders.
-            if (currProbeIndex >= RenderDataManager::iblProbesInFrustum.size())
-                cache = RenderDataManager::iblProbes[0].get();
-
-            else
-                cache = RenderDataManager::iblProbesInFrustum[currProbeIndex++];
-
-            d3dDevice->SetPixelShaderConstantF(111 + j * 3, cache->inverseMatrix.data(), 3);
-
-            probeParams[j * 4 + 0] = cache->position.x();
-            probeParams[j * 4 + 1] = cache->position.y();
-            probeParams[j * 4 + 2] = cache->position.z();
-            probeParams[j * 4 + 3] = cache->bias;
-
-            if (cache->picture && cache->picture->m_spPictureData && cache->picture->m_spPictureData->m_pD3DTexture)
-                probeLodParams[j] = (float)cache->picture->m_spPictureData->m_pD3DTexture->GetLevelCount();
-            else
-                probeLodParams[j] = 0.0f;
-
-            device->SetTexture(4 + j, cache->picture);
-            device->SetSamplerFilter(4 + j, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-            device->SetSamplerAddressMode(4 + j, D3DTADDRESS_CLAMP);
-        }
-
-        // Set the corresponding shader.
-        device->SetShader(isCombinePass ? fxDeferredPassIBLCombineShaders[iblCount] : fxDeferredPassIBLProbeShader);
-
-        if (iblCount > 0)
-        {
-            d3dDevice->SetPixelShaderConstantF(135, probeParams, iblCount);
-            d3dDevice->SetPixelShaderConstantF(143, probeLodParams, (iblCount + 3) / 4);
-        }
-
-        BOOL isEnablePrevIBL[] = { true };
-
-        if (i == 0)
-        {
-            if (SceneEffect::rlr.enable && Configuration::rlrEnable)
-            {
-                device->SetTexture(13, rlrTex);
-                device->SetSamplerFilter(13, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
-                device->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
-            }
-            else
-            {
-                isEnablePrevIBL[0] = false;
-            }
-        }
-
-        else
-        {
-            device->SetTexture(13, prevIBLTex);
-            device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-            device->SetSamplerAddressMode(13, D3DTADDRESS_CLAMP);
-        }
-
-        // Set g_IsEnablePrevIBL
-        // Looks like setting sampler to null returns 0, 0, 0, 1 instead of 0, 0, 0, 0
-        d3dDevice->SetPixelShaderConstantB(8, isEnablePrevIBL, 1);
-
-        // Set render target.
-        device->SetRenderTarget(0, isCombinePass ? This->m_spColorSurface : prevIBLSurface);
-        device->DrawQuad2D(nullptr, 0, 0);
-    }
 
     //*********//
     // Capture //
@@ -815,22 +517,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Forward rendering: Render transparent objects and water. //
     //***************************************************************//
 
-    // We're doing forward rendering now. Set the deferred bool to false.
-    isUseDeferred[0] = false;
-    d3dDevice->SetPixelShaderConstantB(8, isUseDeferred, 1);
-    d3dDevice->SetVertexShaderConstantB(8, isUseDeferred, 1);
-
-    // Set g_LuminanceSampler
-    device->SetTexture(8, luAvgTex);
-    device->SetSamplerFilter(8, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(8, D3DTADDRESS_CLAMP);
-
-    // Setup GI & occlusion flags.
-    device->SetSamplerFilter(9, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(9, D3DTADDRESS_CLAMP);
-    device->SetSamplerFilter(10, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(10, D3DTADDRESS_CLAMP);
-
     device->SetRenderTarget(0, This->m_spColorSurface);
     device->SetDepthStencil(This->m_spDepthSurface);
 
@@ -845,12 +531,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set the framebuffer and depth samplers.
     device->SetTexture(11, This->m_spCapturedColorTex);
-    device->SetSamplerFilter(11, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
-
     device->SetTexture(12, This->m_spCapturedDepthTex);
-    device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
     // Transparent objects should do alpha blending.
     renderingDevice->UnlockRenderState(D3DRS_ALPHABLENDENABLE);
@@ -925,9 +606,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     //*********************//
     if (SceneEffect::volumetricLighting.enable || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING)
     {
-        if (!blueNoisePicture)
-            This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
-
         renderingDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
         renderingDevice->LockRenderState(D3DRS_ZENABLE);
 
@@ -937,19 +615,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
         renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
-        float sampleCount_invSampleCount_g_inScatteringScale[] =
-        {
-            (float)SceneEffect::volumetricLighting.sampleCount,
-            1.0f / (float)SceneEffect::volumetricLighting.sampleCount,
-            SceneEffect::volumetricLighting.g,
-            SceneEffect::volumetricLighting.inScatteringScale
-        };
-
-        d3dDevice->SetPixelShaderConstantF(150, sampleCount_invSampleCount_g_inScatteringScale, 1);
-
-        device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-        device->SetSamplerAddressMode(0, D3DTADDRESS_WRAP);
-        device->SetTexture(0, blueNoisePicture);
+        filterCB.volumetricLightingSampleCount = SceneEffect::volumetricLighting.sampleCount;
+        filterCB.volumetricLightingRcpSampleCount = 1.0f / (float)SceneEffect::volumetricLighting.sampleCount;
+        filterCB.volumetricLightingG = SceneEffect::volumetricLighting.g;
+        filterCB.volumetricLightingInScatteringScale = SceneEffect::volumetricLighting.inScatteringScale;
+        filterCB.upload(d3dDevice);
 
         boost::shared_ptr<hh::ygg::CYggSurface> volumetricLightSurface;
         volumetricLightTex->GetSurface(volumetricLightSurface, 0, 0);
@@ -970,15 +640,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_DESTBLEND, SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING ? D3DBLEND_ZERO : D3DBLEND_ONE);
         renderingDevice->LockRenderState(D3DRS_DESTBLEND);
 
-        float sourceSize_depthThreshold[] =
-        {
-            1.0f / (float)volumetricLightTex->m_CreationParams.Width,
-            1.0f / (float)volumetricLightTex->m_CreationParams.Height,
-            SceneEffect::volumetricLighting.depthThreshold,
-            0
-        };
-
-        d3dDevice->SetPixelShaderConstantF(150, sourceSize_depthThreshold, 1);
+        filterCB.boxBlurSourceSize[0] = 1.0f / (float)volumetricLightTex->m_CreationParams.Width;
+        filterCB.boxBlurSourceSize[1] = 1.0f / (float)volumetricLightTex->m_CreationParams.Height;
+        filterCB.boxBlurDepthThreshold = SceneEffect::volumetricLighting.depthThreshold;
+        filterCB.upload(d3dDevice);
 
         device->SetTexture(4, volumetricLightTex);
         device->SetSamplerFilter(4, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
@@ -1047,12 +712,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     This->SetBuffer("captured_colortex", capturedColorTex == nullptr ? colorTex : capturedColorTex);
     This->SetBuffer("depthtex", This->m_spDepthTex);
     This->SetBuffer("captured_depthtex", This->m_spCapturedDepthTex);
-
-    if (shaderCompilerWarmUpIndex < fxDeferredPassLightShaders.size() && (!RenderDataManager::localLights.empty() || !RenderDataManager::iblProbes.empty()))
-    {
-        DebugDrawText::log(format("Compiling shaders... (pass: %d/%d)", shaderCompilerWarmUpIndex + 1, fxDeferredPassLightShaders.size()));
-        shaderCompilerWarmUpIndex++;
-    }
 }
 
 HOOK(void, __fastcall, CRenderingDeviceSetViewMatrix, hh::mr::fpCRenderingDeviceSetViewMatrix,

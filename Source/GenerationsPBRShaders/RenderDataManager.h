@@ -23,6 +23,7 @@ struct IBLProbeData
     float radius;
     float distance;
     boost::shared_ptr<hh::ygg::CYggPicture> picture;
+    size_t pictureIndex; // placeholder
 };
 
 struct LightMotionData

@@ -13,9 +13,10 @@ struct FixedString
         buffer[length] = '\0';
     }
 
-    bool equals(const FixedString& right) const
+    bool operator<(const FixedString& other) const
     {
-        return length == right.length && memcmp(str, right.str, length) == 0;
+        FUNCTION_PTR(bool, __thiscall, operatorLess, 0x72AE40, const FixedString* This, const FixedString& other);
+        return operatorLess(this, other);
     }
 };
 
@@ -34,7 +35,6 @@ struct SubTexture
 };
 
 using MapType = hh::map<FixedString, SubTexture>;
-using NodeType = MapType::node;
 
 class GIStore : public DX_PATCH::IUnknown9
 {
@@ -72,7 +72,7 @@ public:
     virtual ~GIStore() = default;
 };
 
-FUNCTION_PTR(NodeType*, __thiscall, findAtlasSubTexture, 0x72AEE0, MapType* This, const FixedString& key);
+FUNCTION_PTR(void, __thiscall, findAtlasSubTexture, 0x72AEE0, MapType* This, const FixedString& key);
 
 uint32_t movePictureDataMidAsmHookReturnAddress = 0x728F78;
 
@@ -96,33 +96,24 @@ void __stdcall movePictureDataSetupGIStore(char* name, MapType* map,
     boost::shared_ptr<hh::mr::CPictureData> occlusionTex;
     Rect occlusionRect { 1, 1, 0, 0 };
 
-    NodeType* occlusionNode = findAtlasSubTexture(map, { name, strlen(name) });
+    const auto occlusionNode = map->find({ name, strlen(name) });
     if (occlusionNode != map->end())
     {
         char atlasName[256];
-        occlusionNode->m_Value.m_Value.atlasName.copyTo(atlasName);
+        occlusionNode->second.atlasName.copyTo(atlasName);
 
         databaseWrapper->GetPictureData(occlusionTex, atlasName, 0);
 
         if (occlusionTex != nullptr)
-            occlusionRect = occlusionNode->m_Value.m_Value.rect;
+            occlusionRect = occlusionNode->second.rect;
     }
 
-    // Crackheadedly create a stub for presenting the data to the game.
-    uint8_t* stubData = (uint8_t*)operator new(sizeof(hh::mr::CPictureData));
-    memset(stubData, 0, sizeof(hh::mr::CPictureData));
+    // Create a stub for presenting the data to the game.
+    auto stub = boost::make_shared<hh::mr::CPictureData>();
+    stub->m_Flags = hh::db::eDatabaseDataFlags_IsMadeOne | hh::db::eDatabaseDataFlags_IsMadeAll;
+    stub->m_pD3DTexture = reinterpret_cast<DX_PATCH::IDirect3DBaseTexture9*>(new GIStore(pictureData, occlusionTex, occlusionRect, isSg));
 
-    *(uint8_t*)(stubData + offsetof(hh::mr::CPictureData, m_Flags)) = 0x3;
-
-    *(GIStore**)(stubData + offsetof(hh::mr::CPictureData, m_pD3DTexture)) = 
-        new GIStore(pictureData, occlusionTex, occlusionRect, isSg);
-
-    pictureData = boost::shared_ptr<hh::mr::CPictureData>((hh::mr::CPictureData*)stubData,
-        [](hh::mr::CPictureData* mem)
-        {
-            mem->m_pD3DTexture->Release();
-            operator delete (mem);
-        });
+    pictureData = std::move(stub);
 }
 
 void __declspec(naked) movePictureDataMidAsmHook()
@@ -216,22 +207,20 @@ void __declspec(naked) findAtlasSubTextureMidAsmHook()
     }
 }
 
-HOOK(NodeType*, __fastcall, FindAtlasSubTexture, findAtlasSubTexture, MapType* This, void* Edx, const FixedString& key)
+HOOK(void*, __fastcall, FindAtlasSubTexture, findAtlasSubTexture, MapType* This, void* Edx, const FixedString& key)
 {
-    // Always return end in invalid returns to make my life easier.
-    NodeType* result = originalFindAtlasSubTexture(This, Edx, key);
-    return result != This->end() && !key.equals(result->m_Value.m_Key) ? This->end() : result;
+    // I check for the equality here to make my life easier in the hooks above.
+    // I have to do this ugly reinterpret_cast due to not being able to
+    // return a structure in the function and keeping the same signature.
+
+    MapType::iterator it;
+    reinterpret_cast<void*&>(it) = originalFindAtlasSubTexture(This, Edx, key);
+
+    if (it == This->end() || (*it).first < key)
+        it = This->end();
+
+    return reinterpret_cast<void*&>(it);
 }
-
-struct CBGITexture
-{
-    FLOAT giAtlasParam[4];
-    FLOAT occlusionAtlasParam[4];
-    BOOL isSg;
-    BOOL hasOcclusion;
-};
-
-ConstantBuffer<CBGITexture, 4, true> cbGITexture;
 
 HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderingDeviceSetAtlasParameterData,
     hh::mr::CRenderingDevice* This, void* Edx, float* const pData)
@@ -248,20 +237,20 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
     if (dxpTex)
         dxpTex->QueryInterface(IID(), (void**)&giStore);
 
-    memcpy(cbGITexture.giAtlasParam, pData, sizeof(cbGITexture.giAtlasParam));
-    cbGITexture.isSg = giStore && giStore->isSg;
-    cbGITexture.hasOcclusion = giStore && giStore->occlusionTex;
+    memcpy(&giTextureCB.giAtlasParam, pData, sizeof(Eigen::Vector4f));
+    giTextureCB.isSg = giStore && giStore->isSg;
+    giTextureCB.hasOcclusion = giStore && giStore->occlusionTex;
 
-    if (cbGITexture.hasOcclusion)
+    if (giTextureCB.hasOcclusion)
     {
         This->m_pD3DDevice->SetTexture(18, giStore->occlusionTex->m_pD3DTexture);
-        memcpy(cbGITexture.occlusionAtlasParam, &giStore->occlusionRect, sizeof(cbGITexture.occlusionAtlasParam));
+        memcpy(&giTextureCB.occlusionAtlasParam, &giStore->occlusionRect, sizeof(Eigen::Vector4f));
     }
 
-    cbGITexture.update(This->m_pD3DDevice);
+    giTextureCB.upload(This->m_pD3DDevice);
 
-    This->m_pD3DDevice->SetTexture(cbGITexture.isSg ? 17 : 10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
-    //This->m_pD3DDevice->SetVertexShaderConstantF(186, pData, 1);
+    This->m_pD3DDevice->SetTexture(giTextureCB.isSg ? 17 : 10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
+    This->m_pD3DDevice->SetVertexShaderConstantF(186, pData, 1);
 }
 
 bool GIHandler::enabled = false;

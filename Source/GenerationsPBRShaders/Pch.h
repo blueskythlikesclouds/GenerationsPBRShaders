@@ -1,5 +1,8 @@
 #pragma once
 
+// BlueBlur
+#include <BlueBlur.h>
+
 #define WIN32_LEAN_AND_MEAN
 
 // Detours
@@ -33,12 +36,10 @@ using Microsoft::WRL::ComPtr;
 // LostCodeLoader
 #include <LostCodeLoader.h>
 
-// BlueBlur
-#include <BlueBlur.h>
-
 namespace Eigen
 {
 	using AlignedVector3f = AlignedVector3<float>;
+	using Matrix34f = Matrix<float, 3, 4>;
 }
 
 #include "Configuration.h"

@@ -7,5 +7,3 @@ class ShaderHandler
 public:
     static void applyPatches();
 };
-
-extern size_t shaderCompilerWarmUpIndex;

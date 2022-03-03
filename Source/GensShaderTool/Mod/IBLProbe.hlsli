@@ -9,13 +9,13 @@
 
 float4 ComputeIndirectIBLProbe(in ShaderParams params, float3 position, int index)
 {
-    float3 localPos = mul(g_IBL.Matrices[index], float4(position, 1)).xyz;
+    float3 localPos = mul(mrgIBLProbeMatrices[index], float4(position, 1)).xyz;
 
     float maxLocalPos = max(abs(localPos.x), max(abs(localPos.y), abs(localPos.z)));
     if (maxLocalPos >= 0.95)
         return 0;
 
-    float3 localDir = mul(g_IBL.Matrices[index], float4(params.RoughReflectionDirection, 0)).xyz;
+    float3 localDir = mul(mrgIBLProbeMatrices[index], float4(params.RoughReflectionDirection, 0)).xyz;
 
     float3 unitary = 1.0f;
     float3 firstPlaneIntersect = (unitary - localPos) / localDir;
@@ -25,9 +25,11 @@ float4 ComputeIndirectIBLProbe(in ShaderParams params, float3 position, int inde
     float distance = min(furthestPlane.x, min(furthestPlane.y, furthestPlane.z));
 
     float3 intersectPosition = position.xyz + params.RoughReflectionDirection * distance;
-    float3 reflectionDirection = intersectPosition - g_IBL.Params[index].xyz;
+    float3 reflectionDirection = intersectPosition - mrgIBLProbeParams[index].xyz;
 
-    float4 result = g_IBLProbeTextures.SampleLevel(g_LinearClampSampler, float4(reflectionDirection * float3(1, 1, -1), index), params.Roughness * g_IBL.LodParams[index]);
+    float4 result = g_IBLProbeTextures.SampleLevel(g_LinearClampSampler, 
+        float4(reflectionDirection * float3(1, 1, -1), mrgIBLProbeParams[index].w), params.Roughness * mrgIBLProbeLodParams[index / 6][index % 4]);
+
     return float4(result.rgb, 1) * result.a * (1 - maxLocalPos);
 }
 
@@ -35,7 +37,7 @@ void ComputeIndirectIBLProbes(inout ShaderParams params, float3 position, float 
 {
     float4 color = 0;
 
-    for (int i = 0; i < 24; i++)
+    for (int i = 0; i < mrgIBLProbeCount; i++)
     {
         if (color.w > 0.99)
             break;
@@ -44,7 +46,10 @@ void ComputeIndirectIBLProbes(inout ShaderParams params, float3 position, float 
     }
 
     if (color.w < 0.99)
-        color += float4(UnpackHDR(g_DefaultIBLTexture.SampleLevel(g_LinearClampSampler, params.RoughReflectionDirection, params.Roughness * g_IBL.LodParam)), 1) * (1 - color.a);
+    {
+        color += float4(UnpackHDR(g_DefaultIBLTexture.SampleLevel(g_LinearClampSampler, 
+            params.RoughReflectionDirection, params.Roughness * mrgDefaultIBLLodParam)), 1) * (1 - color.a);
+    }
 
     params.IndirectSpecular += color.rgb * blendFactor;
 }

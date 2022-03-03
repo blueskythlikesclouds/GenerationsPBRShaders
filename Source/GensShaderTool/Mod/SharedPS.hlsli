@@ -5,9 +5,9 @@
 #include "GlobalsPS.hlsli"
 
 Texture2D<float4> g_GBuffer0 : register(t0);
-Texture2D<float4> g_GBuffer1 : register(t0);
-Texture2D<float4> g_GBuffer2 : register(t0);
-Texture2D<float4> g_GBuffer3 : register(t0);
+Texture2D<float4> g_GBuffer1 : register(t1);
+Texture2D<float4> g_GBuffer2 : register(t2);
+Texture2D<float4> g_GBuffer3 : register(t3);
 
 void ComputeShadingParams(inout ShaderParams params, float3 position)
 {
@@ -22,10 +22,10 @@ void ComputeShadingParams(inout ShaderParams params, float3 position)
 
 ShaderParams LoadParams(float2 texCoord)
 {
-    float4 gBuffer0 = g_GBuffer0.Sample(g_PointClampSampler, texCoord);
-    float4 gBuffer1 = g_GBuffer1.Sample(g_PointClampSampler, texCoord);
-    float4 gBuffer2 = g_GBuffer2.Sample(g_PointClampSampler, texCoord);
-    float4 gBuffer3 = g_GBuffer3.Sample(g_PointClampSampler, texCoord);
+    float4 gBuffer0 = g_GBuffer0.SampleLevel(g_PointClampSampler, texCoord, 0);
+    float4 gBuffer1 = g_GBuffer1.SampleLevel(g_PointClampSampler, texCoord, 0);
+    float4 gBuffer2 = g_GBuffer2.SampleLevel(g_PointClampSampler, texCoord, 0);
+    float4 gBuffer3 = g_GBuffer3.SampleLevel(g_PointClampSampler, texCoord, 0);
 
     ShaderParams params = CreateShaderParams();
 
@@ -36,9 +36,9 @@ ShaderParams LoadParams(float2 texCoord)
     params.AmbientOcclusion = gBuffer2.z;
     params.Metalness = gBuffer2.w;
     params.Normal = gBuffer3.xyz * 2.0 - 1.0;
-    params.Type = uint(gBuffer3.w * TYPE_MAX);
+    params.DeferredFlags = uint(gBuffer3.w * DEFERRED_FLAGS_MAX);
 
-    if (params.Type == TYPE_CDR)
+    if (params.DeferredFlags & DEFERRED_FLAGS_CDR)
         params.Cdr = gBuffer0.rgb;
     else
         params.Emission = gBuffer0.rgb;
@@ -48,14 +48,17 @@ ShaderParams LoadParams(float2 texCoord)
 
 void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
 {
+    params.DeferredFlags = DEFERRED_FLAGS_LIGHT | DEFERRED_FLAGS_IBL | DEFERRED_FLAGS_LIGHT_SCATTERING;
+#ifdef NoGI
+    params.DeferredFlags |= DEFERRED_FLAGS_SH_LIGHT_FIELD;
+#endif
+
 #if defined HasSamplerCdr
-    params.Type = TYPE_CDR;
+    params.DeferredFlags |= DEFERRED_FLAGS_CDR;
     gBuffer0.rgb = params.Cdr;
 #elif defined NoGI
-    params.Type = TYPE_NO_GI;
     gBuffer0.rgb = params.Emission;
 #else
-    params.Type = TYPE_GI;
     gBuffer0.rgb = ComputeIndirectLighting(params, g_EnvBRDFTexture, g_LinearClampSampler);
     gBuffer0.rgb += params.Emission;
 #endif
@@ -71,7 +74,22 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
     gBuffer2.w = params.Metalness;
 
     gBuffer3.xyz = params.Normal * 0.5 + 0.5;
-    gBuffer3.w = float(params.Type) / float(TYPE_MAX);
+    gBuffer3.w = (float(params.DeferredFlags) + 0.5) / float(DEFERRED_FLAGS_MAX);
+}
+
+float3 ComputeLocalLights(in ShaderParams params, float3 position)
+{
+    float3 color = 0;
+
+    for (int i = 0; i < mrgLocalLightCount; i++)
+    {
+        float4 positionAndRange = mrgLocalLightData[i * 2 + 0];
+        float4 colorAndInvRange = mrgLocalLightData[i * 2 + 1];
+
+        color += ComputeLocalLight(position, params, positionAndRange.xyz, colorAndInvRange.rgb, float2(positionAndRange.w, colorAndInvRange.w));
+    }
+
+    return color;
 }
 
 #endif

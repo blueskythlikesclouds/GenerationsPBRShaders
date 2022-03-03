@@ -66,20 +66,12 @@ struct PixelDeclaration
 #endif
 };
 
-// Raw: GBuffer0 has raw color. Nothing is applied.
-// Emission: GBuffer0 has emission color. Light scattering is applied.
-// GI: GBuffer0 has GI and emission color. Direct light, local light, IBL and light scattering is applied.
-// No GI: GBuffer0 has emission color. Direct light, local light, SHLF, IBL and light scattering is applied.
-// CDR: GBuffer0 has CDR color. Direct light, local light, SHLF, IBL and light scattering is applied.
-// TransThin: GBuffer0 has SSS color. Direct light, local light, SHLF, IBL and light scattering is applied.
-
-#define TYPE_RAW          0
-#define TYPE_EMISSION     1
-#define TYPE_GI           2
-#define TYPE_NO_GI        3
-#define TYPE_CDR          4
-#define TYPE_TRANS_THIN   5
-#define TYPE_MAX          5
+#define DEFERRED_FLAGS_SH_LIGHT_FIELD        (1 << 0)
+#define DEFERRED_FLAGS_CDR                   (1 << 1)
+#define DEFERRED_FLAGS_LIGHT                 (1 << 2)
+#define DEFERRED_FLAGS_IBL                   (1 << 3)
+#define DEFERRED_FLAGS_LIGHT_SCATTERING      (1 << 4)
+#define DEFERRED_FLAGS_MAX                  ((1 << 5) - 1)
 
 struct ShaderParams
 {
@@ -94,7 +86,7 @@ struct ShaderParams
     float3 Cdr;
     float3 Emission;
 
-    uint Type;
+    uint DeferredFlags;
 
     float3 IndirectDiffuse;
     float3 IndirectSpecular;
@@ -122,7 +114,7 @@ ShaderParams CreateShaderParams()
     params.NormalMap = 0.0;
     params.Cdr = 1.0;
     params.Emission = 0.0;
-    params.Type = 0;
+    params.DeferredFlags = 0;
     params.FresnelReflectance = 0.0;
     params.IndirectDiffuse = 0.0;
     params.IndirectSpecular = 0.0;
@@ -390,9 +382,9 @@ bool IsInSHCoordRange(float3 shCoords)
     return 0.5 >= abs(shCoords.x) && 0.5 >= abs(shCoords.y) && 0.5 >= abs(shCoords.z);
 }
 
-float3 ComputeSHTexCoords(float3 shCoords, float4 shParam)
+float3 ComputeSHTexCoords(float3 shCoords, float3 shParam)
 {
-    float4 r19 = shParam;
+    float4 r19 = shParam.xyzx;
     float4 r20 = shCoords.xyzx;
     float4 r15, r10, r3;
 

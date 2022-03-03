@@ -55,6 +55,9 @@
     <ClCompile Include="IBLCaptureService.cpp">
       <Filter>Database\Probe</Filter>
     </ClCompile>
+    <ClCompile Include="ConstantBuffer.cpp">
+      <Filter>Base</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">

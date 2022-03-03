@@ -116,6 +116,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.inverseMatrix = matrix.inverse().transpose();
             data.position = Eigen::AlignedVector3f(iblProbe.position[0], iblProbe.position[1], iblProbe.position[2]) / 10.0f;
             data.bias = iblProbe.bias;
+            data.pictureIndex = 0;
 
             const AABB aabb = getAABBFromOBB(matrix, 1.0f, 1.0f);
             data.radius = getAABBRadius(aabb);
@@ -187,7 +188,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     if (lightListData && lightListData->IsMadeAll())
     {
-        for (auto it = lightListData->m_Lights.m_pBegin; it != lightListData->m_Lights.m_pEnd; it++)
+        for (auto it = lightListData->m_Lights.begin(); it != lightListData->m_Lights.end(); ++it)
         {
             if ((*it)->m_Type != hh::mr::eLightType_Point)
                 continue;
@@ -231,9 +232,6 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         mirageWrapper.GetPictureData(envBrdfPicture, "env_brdf", 0);
         globalUsePBR |= envBrdfPicture != nullptr;
     }
-
-    // Force compilation of shaders if necessary.
-    shaderCompilerWarmUpIndex = 0;
 }
 
 void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)

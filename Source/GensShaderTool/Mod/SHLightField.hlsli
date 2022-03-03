@@ -15,9 +15,9 @@ void ComputeSHLightField(inout ShaderParams params, in float3 position)
 
     int i;
 
-    for (i = 0; i < 3; i++)
+    [unroll] for (i = 0; i < 3; i++)
     {
-        float3 shCoords = mul(g_SHLightField.Matrices[i], float4(position * 10.0f, 1)).xyz;
+        float3 shCoords = mul(mrgSHLightFieldMatrices[i], float4(position * 10.0f, 1)).xyz;
 
         if (IsInSHCoordRange(shCoords))
         {
@@ -36,7 +36,7 @@ void ComputeSHLightField(inout ShaderParams params, in float3 position)
         }
     }
 
-    currentShCoords = ComputeSHTexCoords(currentShCoords, g_SHLightField.Params[currentIndex]);
+    currentShCoords = ComputeSHTexCoords(currentShCoords, mrgSHLightFieldParams[currentIndex]);
 
     float4 shlf[6];
 
@@ -72,7 +72,7 @@ void ComputeSHLightField(inout ShaderParams params, in float3 position)
         float3(0, 0, -1)
     };
 
-    for (i = 0; i < 6; i++)
+    [unroll] for (i = 0; i < 6; i++)
         params.IndirectDiffuse += ComputeSHBasis(params, shlf[i], directions[i]);
 
     params.IndirectDiffuse = ComputeSHFinal(params.IndirectDiffuse) * g_GI0Scale.rgb;

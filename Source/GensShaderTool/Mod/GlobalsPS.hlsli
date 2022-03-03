@@ -9,65 +9,66 @@ Texture2D<float> g_ShadowMapTexture : register(t13);
 Texture2D<float4> g_ReflectionMapTexture : register(t14);
 Texture2D<float4> g_ReflectionMap2Texture : register(t15);
 
-Texture2D<float> g_LuminanceTexture : register(t16);
-Texture2DArray<float3> g_SGGITexture : register(t17);
+Texture2D<float> g_BlueNoiseTexture : register(t16);
+Texture2D<float> g_LuminanceTexture : register(t17);
 Texture2D<float> g_OcclusionTexture : register(t18);
-Texture3D<float4> g_SHLightFieldTextures[3] : register(t19);
-Texture2D<float2> g_EnvBRDFTexture : register(t22);
-TextureCube<float4> g_DefaultIBLTexture : register(t23);
-TextureCubeArray<float4> g_IBLProbeTextures : register(t24);
+Texture2D<float> g_SSAOTexture : register(t19);
+Texture2D<float2> g_EnvBRDFTexture : register(t20);
+Texture2D<float3> g_RLRTexture : register(t21);
+Texture2DArray<float3> g_SGGITexture : register(t22);
+Texture3D<float4> g_SHLightFieldTextures[3] : register(t23);
+TextureCube<float4> g_DefaultIBLTexture : register(t24);
+TextureCubeArray<float4> g_IBLProbeTextures : register(t25);
 
-SamplerState g_LinearClampSampler : register(s10);
-SamplerState g_PointClampSampler : register(s11);
-SamplerState g_ShadowMapSampler : register(s13);
+SamplerState g_LinearClampSampler : register(s11);
+SamplerState g_PointClampSampler : register(s12);
+SamplerState g_PointBorderSampler : register(s13);
+SamplerState g_PointRepeatSampler : register(s15);
 
-cbuffer cb_RenderData : register(b3)
+cbuffer cbRenderData : register(b3)
 {
-    struct SHLightFieldParam
-    {
-        float3x4 Matrices[3];
-        float4 Params[3];
-    } g_SHLightField;
+    row_major float3x4 mrgSHLightFieldMatrices[3];
+    float3 mrgSHLightFieldParams[3];
 
-    struct IBLParam
-    {
-        float3x4 Matrices[24];
-        float4 Params[24];
-        float Indices[24];
-        float LodParams[24];
-        float LodParam;
-    } g_IBL;
+    row_major float3x4 mrgIBLProbeMatrices[24];
+    float4 mrgIBLProbeParams[24];
+    float4 mrgIBLProbeLodParams[6];
+
+    float4 mrgLocalLightData[64];
+
+    int mrgIBLProbeCount;
+    float mrgDefaultIBLLodParam;
+    int mrgLocalLightCount;
 }
 
-cbuffer cb_SceneEffect : register(b2)
+cbuffer cbSceneEffect : register(b2)
 {
-    bool g_DebugParamEnable;
-    bool g_UseWhiteAlbedo;
-    bool g_UseFlatNormal;
-    bool g_IsEnableLUT;
     float g_ReflectanceOverride;
     float g_RoughnessOverride;
     float g_AmbientOcclusionOverride;
     float g_MetalnessOverride;
+
     float3 g_GIColorOverride;
     float g_GIShadowOverride;
 
-    float g_SGGIRoughnessMultiply;
-    float g_SGGIRoughnessAdd;
-
+    float2 g_SGGIParam;
+    float g_RcpMiddleGray;
     float g_ESMFactor;
+
     float2 g_ShadowMapSize;
 
-    float g_RcpMiddleGray;
+    bool g_UseWhiteAlbedo;
+    bool g_UseFlatNormal;
+    bool g_UsePBR;
 }
 
-cbuffer cb_AlphaTest : register(b1)
+cbuffer cbAlphaTest : register(b1)
 {
     bool g_EnableAlphaTest;
     float g_AlphaThreshold;
 }
 
-cbuffer cb_GlobalsPS : register(b0)
+cbuffer cbGlobalsPS : register(b0)
 {
     row_major float4x4 g_MtxProjection : packoffset(c0);
     row_major float4x4 g_MtxInvProjection : packoffset(c4);

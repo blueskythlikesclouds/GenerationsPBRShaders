@@ -175,6 +175,7 @@ public class ShaderCompiler
                             
                             // Add permutation macro
                             macros.Add(new D3DShaderMacro("IsPermutation" + permutation.BitName));
+                            macros.Add(new D3DShaderMacro("IsPermutationDeferred"));
 
                             // Add feature macros
                             for (int i = 0; i < shader.Features.Count; i++)

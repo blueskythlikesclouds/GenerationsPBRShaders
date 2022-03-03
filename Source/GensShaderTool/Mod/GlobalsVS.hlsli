@@ -1,7 +1,7 @@
 #ifndef GLOBALS_VS_HLSLI_INCLUDED
 #define GLOBALS_VS_HLSLI_INCLUDED
 
-cbuffer cb_GlobalsVS : register(b0)
+cbuffer cbGlobalsVS : register(b0)
 {
     row_major float4x4 g_MtxProjection : packoffset(c0);
     row_major float4x4 g_MtxView : packoffset(c4);
