@@ -36,11 +36,8 @@ public class CharacterEye : DefaultPS<DefaultPSFeatures, CharacterEyeSamplers>
 
     public override ShaderVariation GetVertexShader(CharacterEyeSamplers samplers, DefaultPSFeatures features, Permutation<DefaultPSPermutations> permutation)
     {
-        return ShaderHandle<DefaultVS>.Reference.GetPair(
-            DefaultVSFeatures.EyeNormal,
-
-            permutation.EnumValue == DefaultPSPermutations.Deferred
-                ? DefaultVSPermutations.Deferred
-                : DefaultVSPermutations.None);
+        return ShaderHandle<DefaultVS>.Reference.GetPair(DefaultVSFeatures.EyeNormal |
+            (permutation.EnumValue == DefaultPSPermutations.Deferred ? DefaultVSFeatures.Deferred : default),
+            DefaultVSPermutations.None);
     }
 }

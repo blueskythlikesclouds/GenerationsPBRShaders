@@ -292,6 +292,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Pre-pass: Render opaque/punch-through objects and terrain. //
     //************************************************************//
 
+    // Make the game use "deferred" shader permutations.
+    const hh::base::CStringSymbol deferredSymbol = "deferred";
+    device->m_pRenderingInfrastructure->m_RenderingDevice.m_pPixelShaderPermutation = &deferredSymbol;
+
     // Enable Z buffer.
     renderingDevice->SetRenderState(D3DRS_ZENABLE, TRUE);
     renderingDevice->LockRenderState(D3DRS_ZENABLE);
@@ -340,6 +344,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Done with D3DRS_ZENABLE/D3DRS_ZWRITEENABLE TRUE, unlock them.
     renderingDevice->UnlockRenderState(D3DRS_ZENABLE);
     renderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
+
+    // Revert back to normal permutations.
+    device->m_pRenderingInfrastructure->m_RenderingDevice.m_pPixelShaderPermutation = nullptr;
 
     // We're done rendering opaque/punch-through terrain and objects!
     device->UnsetRenderTarget(0);

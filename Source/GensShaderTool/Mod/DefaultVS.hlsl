@@ -73,7 +73,7 @@ void main(in VertexDeclaration input, out PixelDeclaration output)
     output.Binormal.xyz = mul(float4(output.Binormal.xyz, 0), g_MtxWorld).xyz;
 #endif
 
-#ifndef IsPermutationDeferred
+#ifndef HasFeatureDeferred
     output.ShadowMapCoord = mul(float4(output.Position.xyz, 1), g_MtxLightViewProjection);
     output.LightScattering = ComputeLightScattering(input.Position, viewPosition.xyz);
 #endif

@@ -47,9 +47,8 @@ public class IgnoreLight : DefaultPS<DefaultPSFeatures, IgnoreLightSamplers>
 
     public override ShaderVariation GetVertexShader(IgnoreLightSamplers samplers, DefaultPSFeatures features, Permutation<DefaultPSPermutations> permutation)
     {
-        return ShaderHandle<DefaultVS>.Reference.GetPair(default, 
-            permutation.EnumValue == DefaultPSPermutations.Deferred
-                ? DefaultVSPermutations.Deferred
-                : DefaultVSPermutations.None);
+        return ShaderHandle<DefaultVS>.Reference.GetPair(
+            permutation.EnumValue == DefaultPSPermutations.Deferred ? DefaultVSFeatures.Deferred : default,
+            DefaultVSPermutations.None);
     }
 }

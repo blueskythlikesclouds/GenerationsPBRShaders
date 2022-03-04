@@ -58,14 +58,9 @@ public class Blend : DefaultPS<DefaultPSFeatures, BlendSamplers>
     public override ShaderVariation GetVertexShader(BlendSamplers samplers, DefaultPSFeatures features, Permutation<DefaultPSPermutations> permutation)
     {
         return ShaderHandle<DefaultVS>.Reference.GetPair(
-
-            samplers.HasFlag(BlendSamplers.Normal)
-                ? DefaultVSFeatures.NormalMapping :
-                default,
-
-            permutation.EnumValue == DefaultPSPermutations.Deferred
-                ? DefaultVSPermutations.Deferred
-                : DefaultVSPermutations.None);
+            (permutation.EnumValue == DefaultPSPermutations.Deferred ? DefaultVSFeatures.Deferred : default) |
+            (samplers.HasFlag(BlendSamplers.Normal) ? DefaultVSFeatures.NormalMapping : default),
+            DefaultVSPermutations.None);
     }
 }
 

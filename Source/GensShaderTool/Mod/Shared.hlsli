@@ -56,7 +56,7 @@ struct PixelDeclaration
     float3 EyeNormal : EYENORMAL;
 #endif
 
-#ifndef IsPermutationDeferred
+#ifndef HasFeatureDeferred
     float4 ShadowMapCoord : SHADOWMAPCOORD;
     float2 LightScattering : LIGHTSCATTERING;
 #endif

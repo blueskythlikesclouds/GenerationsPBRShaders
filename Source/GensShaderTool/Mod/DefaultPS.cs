@@ -21,6 +21,6 @@ public abstract class DefaultPS<TFeatures, TSamplers> : D3D11PixelShader<TFeatur
         new Permutation<DefaultPSPermutations>[]
         {
             new(DefaultPSPermutations.Default, "default", string.Empty),
-            new(DefaultPSPermutations.Deferred, "defferedlight", "d")
+            new(DefaultPSPermutations.Deferred, "deferred", "d")
         };
 }

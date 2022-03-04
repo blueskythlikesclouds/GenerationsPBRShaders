@@ -38,14 +38,9 @@ public class Character : DefaultPS<DefaultPSFeatures, CharacterSamplers>
     public override ShaderVariation GetVertexShader(CharacterSamplers samplers, DefaultPSFeatures features, Permutation<DefaultPSPermutations> permutation)
     {
         return ShaderHandle<DefaultVS>.Reference.GetPair(
-
-            samplers.HasFlag(CharacterSamplers.Normal)
-                ? DefaultVSFeatures.NormalMapping :
-                default,
-
-            permutation.EnumValue == DefaultPSPermutations.Deferred
-                ? DefaultVSPermutations.Deferred
-                : DefaultVSPermutations.None);
+            (permutation.EnumValue == DefaultPSPermutations.Deferred ? DefaultVSFeatures.Deferred : default) |
+            (samplers.HasFlag(CharacterSamplers.Normal) ? DefaultVSFeatures.NormalMapping : default),
+            DefaultVSPermutations.None);
     }
 }
 
