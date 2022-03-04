@@ -154,35 +154,24 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (!envBrdfPicture)
         This->m_pScheduler->GetPicture(envBrdfPicture, "env_brdf");
 
-    // Set g_BlueNoiseTexture
-    d3dDevice->SetTexture(16, blueNoisePicture ? blueNoisePicture->m_pD3DTexture : nullptr);
-
-    // Set g_LuminanceTexture
-    d3dDevice->SetTexture(17, luAvgTex ? luAvgTex->m_pD3DTexture : nullptr);
-
-    // Set g_EnvBRDFTexture
-    d3dDevice->SetTexture(20, envBrdfPicture && !giOnly ? envBrdfPicture->m_spPictureData->m_pD3DTexture : nullptr);
-
-    // Set g_DefaultIBLTexture
-    d3dDevice->SetTexture(24, RenderDataManager::defaultIBLPicture && !SceneEffect::debug.disableDefaultIBL
+    d3dDevice->SetTexture(16, blueNoisePicture ? blueNoisePicture->m_spPictureData->m_pD3DTexture : nullptr); // g_BlueNoiseTexture
+    d3dDevice->SetTexture(17, luAvgTex ? luAvgTex->m_pD3DTexture : nullptr); // g_LuminanceTexture
+    d3dDevice->SetTexture(20, envBrdfPicture && !giOnly ? envBrdfPicture->m_spPictureData->m_pD3DTexture : nullptr); // g_EnvBRDFTexture
+    d3dDevice->SetTexture(26, RenderDataManager::defaultIBLPicture && !SceneEffect::debug.disableDefaultIBL
                                   ? RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture
-                                  : nullptr);
+                                  : nullptr); // g_DefaultIBLTexture
 
-    // Set g_LinearClampSampler
     device->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP);
+    device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP); // g_LinearClampSampler
 
-    // Set g_PointClampSampler
     device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
+    device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP); // g_PointClampSampler
 
-    // Set g_PointBorderSampler
     device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(13, D3DTADDRESS_BORDER);
+    device->SetSamplerAddressMode(13, D3DTADDRESS_BORDER); // g_PointBorderSampler
 
-    // Set g_PointRepeatSampler
     device->SetSamplerFilter(15, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
-    device->SetSamplerAddressMode(15, D3DTADDRESS_WRAP);
+    device->SetSamplerAddressMode(15, D3DTADDRESS_WRAP); // g_PointRepeatSampler
 
     // Set SHLFs in the frustum.
     for (size_t i = 0; i < 3; i++)
@@ -193,7 +182,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         if (cache == nullptr || SceneEffect::debug.disableSHLightField)
             continue;
 
-        d3dDevice->SetTexture(19 + i, cache->picture->m_spPictureData->m_pD3DTexture);
+        d3dDevice->SetTexture(23 + i, cache->picture->m_spPictureData->m_pD3DTexture);
 
         memcpy(&renderDataCB.shLightFieldMatrices[i], cache->inverseMatrix.data(), sizeof(Eigen::Matrix34f));
         renderDataCB.shLightFieldParams[i].x() = (1.0f / cache->probeCounts[0]) * 0.5f;
@@ -353,6 +342,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->UnlockRenderState(D3DRS_ZWRITEENABLE);
 
     // We're done rendering opaque/punch-through terrain and objects!
+    device->UnsetRenderTarget(0);
     device->UnsetRenderTarget(1);
     device->UnsetRenderTarget(2);
     device->UnsetRenderTarget(3);
@@ -384,6 +374,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         boost::shared_ptr<hh::ygg::CYggSurface> ssaoSurface;
         ssaoTex->GetSurface(ssaoSurface, 0, 0);
 
+        device->SetShader(fxSSAOShader);
+        device->SetRenderTarget(0, ssaoSurface);
+
         filterCB.ssaoSampleCount = SceneEffect::ssao.sampleCount;
         filterCB.ssaoRcpSampleCount = 1.0f / (float)SceneEffect::ssao.sampleCount;
         filterCB.ssaoRadius = SceneEffect::ssao.radius;
@@ -391,22 +384,22 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         filterCB.ssaoStrength = SceneEffect::ssao.strength;
         filterCB.upload(d3dDevice);
 
-        device->SetShader(fxSSAOShader);
-        device->SetRenderTarget(0, ssaoSurface);
         device->DrawQuad2D(nullptr, 0, 0);
 
         // Apply blur
         boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
         ssaoBlurredTex->GetSurface(ssaoBlurredSurface, 0, 0);
 
+        device->SetShader(fxBoxBlurShader);
+        device->SetRenderTarget(0, ssaoBlurredSurface);
+        d3dDevice->SetTexture(19, nullptr);
+
         filterCB.boxBlurSourceSize[0] = 1.0f / (float)ssaoTex->m_CreationParams.Width;
         filterCB.boxBlurSourceSize[1] = 1.0f / (float)ssaoTex->m_CreationParams.Height;
         filterCB.boxBlurDepthThreshold = SceneEffect::ssao.depthThreshold;
         filterCB.upload(d3dDevice);
 
-        device->SetRenderTarget(0, ssaoBlurredSurface);
         device->SetTexture(4, ssaoTex);
-        device->SetShader(fxBoxBlurShader);
         device->DrawQuad2D(nullptr, 0, 0);
     }
 
@@ -417,17 +410,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set the shader.
     device->SetShader(fxDeferredPassLightShader);
+    device->SetRenderTarget(0, gBuffer0Surface);
 
-    // Set shadowmaps.
     device->SetTexture(7, shadowMapNoTerrain);
     device->SetTexture(13, shadowMap);
 
-    // Set SSAO
-    filterCB.lightEnableSSAO = SceneEffect::ssao.enable;
-    filterCB.upload(d3dDevice);
-
     if (SceneEffect::ssao.enable)
         d3dDevice->SetTexture(19, ssaoBlurredTex->m_pD3DTexture);
+
+    filterCB.lightEnableSSAO = SceneEffect::ssao.enable;
+    filterCB.upload(d3dDevice);
 
     if (SceneEffect::debug.disableDirectLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
     {
@@ -436,9 +428,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         d3dDevice->SetPixelShaderConstantF(37, globalLightColor, 1);
     }
 
-    device->SetRenderTarget(0, gBuffer0Surface);
     device->DrawQuad2D(nullptr, 0, 0);
-    device->SetTexture(0, gBuffer0Tex);
 
     //*****************************//
     // Real-time Local Reflections //
@@ -451,6 +441,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->SetShader(fxRLRShader);
         device->SetRenderTarget(0, rlrSurface);
+        device->SetTexture(0, gBuffer0Tex);
+        d3dDevice->SetTexture(21, nullptr);
 
         // Set parameters
         filterCB.rlrFramebufferSize[0] = (float)This->m_spColorTex->m_CreationParams.Width;
@@ -473,6 +465,20 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     // Deferred specular pass: Add specular lighting to   //
     // terrain and objects.                               //
     //****************************************************//
+
+    device->SetShader(fxDeferredPassIBLShader);
+    device->SetRenderTarget(0, This->m_spColorSurface);
+
+    device->SetTexture(0, gBuffer0Tex);
+
+    if (filterCB.iblEnableRLR)
+        d3dDevice->SetTexture(21, rlrTex->m_pD3DTexture);
+
+    filterCB.iblEnableSSAO = SceneEffect::ssao.enable;
+    filterCB.iblEnableRLR = SceneEffect::rlr.enable && Configuration::rlrEnable;
+    filterCB.upload(d3dDevice);
+
+    device->DrawQuad2D(nullptr, 0, 0);
 
     //*********//
     // Capture //
@@ -498,10 +504,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     boost::shared_ptr<hh::ygg::CYggSurface> capturedDepthSurface;
     This->m_spCapturedDepthTex->GetSurface(capturedDepthSurface, 0, 0);
 
+    device->SetShader(fxCopyColorDepthShader);
     device->SetRenderTarget(0, capturedColorSurface);
     device->SetDepthStencil(capturedDepthSurface);
-
-    device->SetShader(fxCopyColorDepthShader);
 
     device->SetTexture(0, This->m_spColorTex);
     device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
@@ -615,18 +620,19 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
         renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
+        boost::shared_ptr<hh::ygg::CYggSurface> volumetricLightSurface;
+        volumetricLightTex->GetSurface(volumetricLightSurface, 0, 0);
+
+        device->SetShader(SceneEffect::volumetricLighting.ignoreSky ? fxVolumetricLightingIgnoreSkyShader : fxVolumetricLightingShader);
+        device->UnsetDepthStencil();
+        device->SetRenderTarget(0, volumetricLightSurface);
+
         filterCB.volumetricLightingSampleCount = SceneEffect::volumetricLighting.sampleCount;
         filterCB.volumetricLightingRcpSampleCount = 1.0f / (float)SceneEffect::volumetricLighting.sampleCount;
         filterCB.volumetricLightingG = SceneEffect::volumetricLighting.g;
         filterCB.volumetricLightingInScatteringScale = SceneEffect::volumetricLighting.inScatteringScale;
         filterCB.upload(d3dDevice);
 
-        boost::shared_ptr<hh::ygg::CYggSurface> volumetricLightSurface;
-        volumetricLightTex->GetSurface(volumetricLightSurface, 0, 0);
-
-        device->UnsetDepthStencil();
-        device->SetRenderTarget(0, volumetricLightSurface);
-        device->SetShader(SceneEffect::volumetricLighting.ignoreSky ? fxVolumetricLightingIgnoreSkyShader : fxVolumetricLightingShader);
         device->DrawQuad2D(nullptr, 0, 0);
 
         // Apply blur
@@ -640,21 +646,22 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_DESTBLEND, SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_VOLUMETRIC_LIGHTING ? D3DBLEND_ZERO : D3DBLEND_ONE);
         renderingDevice->LockRenderState(D3DRS_DESTBLEND);
 
-        filterCB.boxBlurSourceSize[0] = 1.0f / (float)volumetricLightTex->m_CreationParams.Width;
-        filterCB.boxBlurSourceSize[1] = 1.0f / (float)volumetricLightTex->m_CreationParams.Height;
-        filterCB.boxBlurDepthThreshold = SceneEffect::volumetricLighting.depthThreshold;
-        filterCB.upload(d3dDevice);
+        device->SetRenderTarget(0, This->m_spColorSurface);
+        device->SetShader(fxBoxBlurShader);
 
         device->SetTexture(4, volumetricLightTex);
         device->SetSamplerFilter(4, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
-        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);       
+        device->SetSamplerAddressMode(4, D3DTADDRESS_CLAMP);
 
         device->SetTexture(12, This->m_spDepthTex);
         device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
-        device->SetRenderTarget(0, This->m_spColorSurface);
-        device->SetShader(fxBoxBlurShader);
+        filterCB.boxBlurSourceSize[0] = 1.0f / (float)volumetricLightTex->m_CreationParams.Width;
+        filterCB.boxBlurSourceSize[1] = 1.0f / (float)volumetricLightTex->m_CreationParams.Height;
+        filterCB.boxBlurDepthThreshold = SceneEffect::volumetricLighting.depthThreshold;
+        filterCB.upload(d3dDevice);
+
         device->DrawQuad2D(nullptr, 0, 0);
 
         // Unlock render states we are done with.

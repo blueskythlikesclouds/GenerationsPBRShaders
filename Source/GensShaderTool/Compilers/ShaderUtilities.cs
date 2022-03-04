@@ -9,10 +9,10 @@ public class ShaderUtilities
 
         int position = stringBuilder.Length;
 
-        for (int i = 0; i < pixelShader.Samplers.Count; i++)
+        foreach (var sampler in pixelShader.Samplers)
         {
-            if ((samplers & (1 << i)) != 0)
-                stringBuilder.Append(pixelShader.Samplers[i].Suffix);
+            if ((samplers & sampler.BitValue) != 0)
+                stringBuilder.Append(sampler.Suffix);
         }
 
         // If any of the suffixes are valid, insert an underscore
@@ -41,10 +41,10 @@ public class ShaderUtilities
             stringBuilder.Append('_');
 
         stringBuilder.Append('@');
-        for (int i = 0; i < shader.Features.Count; i++)
+        foreach (var feature in shader.Features)
         {
-            if ((features & (1 << i)) != 0)
-                stringBuilder.Append(shader.Features[i].Suffix);
+            if ((features & feature.BitValue) != 0)
+                stringBuilder.Append(feature.Suffix);
         }
 
         stringBuilder.Append('@');
@@ -66,10 +66,10 @@ public class ShaderUtilities
         if (features != 0)
         {
             stringBuilder.Append('[');
-            for (int i = 0; i < shader.Features.Count; i++)
+            foreach (var feature in shader.Features)
             {
-                if ((features & (1 << i)) != 0)
-                    stringBuilder.Append(shader.Features[i].Suffix);
+                if ((features & feature.BitValue) != 0)
+                    stringBuilder.Append(feature.Suffix);
             }
 
             stringBuilder.Append(']');

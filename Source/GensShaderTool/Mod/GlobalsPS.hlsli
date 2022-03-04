@@ -14,11 +14,11 @@ Texture2D<float> g_LuminanceTexture : register(t17);
 Texture2D<float> g_OcclusionTexture : register(t18);
 Texture2D<float> g_SSAOTexture : register(t19);
 Texture2D<float2> g_EnvBRDFTexture : register(t20);
-Texture2D<float3> g_RLRTexture : register(t21);
+Texture2D<float4> g_RLRTexture : register(t21);
 Texture2DArray<float3> g_SGGITexture : register(t22);
 Texture3D<float4> g_SHLightFieldTextures[3] : register(t23);
-TextureCube<float4> g_DefaultIBLTexture : register(t24);
-TextureCubeArray<float4> g_IBLProbeTextures : register(t25);
+TextureCube<float4> g_DefaultIBLTexture : register(t26);
+TextureCubeArray<float4> g_IBLProbeTextures : register(t27);
 
 SamplerState g_LinearClampSampler : register(s11);
 SamplerState g_PointClampSampler : register(s12);

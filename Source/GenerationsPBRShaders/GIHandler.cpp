@@ -209,16 +209,10 @@ void __declspec(naked) findAtlasSubTextureMidAsmHook()
 
 HOOK(void*, __fastcall, FindAtlasSubTexture, findAtlasSubTexture, MapType* This, void* Edx, const FixedString& key)
 {
-    // I check for the equality here to make my life easier in the hooks above.
+    // This is for making my life easier in the hooks above.
     // I have to do this ugly reinterpret_cast due to not being able to
     // return a structure in the function and keeping the same signature.
-
-    MapType::iterator it;
-    reinterpret_cast<void*&>(it) = originalFindAtlasSubTexture(This, Edx, key);
-
-    if (it == This->end() || (*it).first < key)
-        it = This->end();
-
+    auto it = This->find(key);
     return reinterpret_cast<void*&>(it);
 }
 
@@ -249,7 +243,7 @@ HOOK(void, __fastcall, CRenderingDeviceSetAtlasParameterData, hh::mr::fpCRenderi
 
     giTextureCB.upload(This->m_pD3DDevice);
 
-    This->m_pD3DDevice->SetTexture(giTextureCB.isSg ? 17 : 10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
+    This->m_pD3DDevice->SetTexture(giTextureCB.isSg ? 22 : 10, giStore ? giStore->giTex->m_pD3DTexture : nullptr);
     This->m_pD3DDevice->SetVertexShaderConstantF(186, pData, 1);
 }
 

@@ -38,14 +38,14 @@ bool LineIntersection(float2 a1, float2 a2, float2 b1, float2 b2, out float2 int
     return true;
 }
 
-float4 main(in float4 svPos : SV_POSITION, in float2 svPosition : TEXCOORD0, in float2 texCoord : TEXCOORD1) : SV_TARGET
+float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in float4 texCoord : TEXCOORD1) : SV_TARGET
 {
-    ShaderParams params = LoadParams(texCoord);
+    ShaderParams params = LoadParams(texCoord.xy);
     if (!(params.DeferredFlags & DEFERRED_FLAGS_IBL) || params.Roughness > g_MaxRoughness)
         return 0;
 
-    float3 position = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord, 0), g_MtxInvProjection);
-    float3 dir = normalize(ComputeRoughReflectionDirection(params.Roughness, normalize(mul(params.Normal, g_MtxView).xyz), normalize(-position)));
+    float3 position = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
+    float3 dir = normalize(reflect(normalize(position), normalize(mul(params.Normal, g_MtxView).xyz)));
 
     float4 color = 0;
 
@@ -54,7 +54,7 @@ float4 main(in float4 svPos : SV_POSITION, in float2 svPosition : TEXCOORD0, in 
     {
         float3 endPosition = position + dir * g_RayLength;
 
-        float3 begin = float3(texCoord, position.z);
+        float3 begin = float3(texCoord.xy, position.z);
         float4 end = mul(float4(endPosition, 1), g_MtxProjection);
 
         end.xy = end.xy / end.w * float2(0.5, -0.5) + 0.5;

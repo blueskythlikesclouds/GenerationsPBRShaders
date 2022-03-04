@@ -9,11 +9,11 @@ cbuffer cbFilter : register(b5)
 Texture2D<float4> g_SourceTexture : register(t0);
 Texture2D<float3> g_LUTTexture : register(t1);
 
-float4 main(in float4 svPosition : SV_POSITION, in float2 texCoord : TEXCOORD) : SV_TARGET
+float4 main(in float4 unused : SV_POSITION, in float4 texCoord : TEXCOORD) : SV_TARGET
 {
     const float2 g_LUTParam = float2(256, 16);
 
-    float4 color = LinearToSrgb(g_SourceTexture.SampleLevel(g_PointClampSampler, texCoord, 0));
+    float4 color = LinearToSrgb(g_SourceTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0));
 
     if (g_IsEnableLUT)
     {

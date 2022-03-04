@@ -22,10 +22,7 @@ public class Blend : DefaultPS<DefaultPSFeatures, BlendSamplers>
         new ShaderParameter("PBRFactor2", 151)
     };
 
-    public override IReadOnlyList<D3DShaderMacro> Macros => new[]
-    {
-        new D3DShaderMacro("HasExplicitMetalness", "false")
-    };
+    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { Common.DisableExplicitMetalness };
 
     public override IReadOnlyList<Sampler<BlendSamplers>> Samplers => new Sampler<BlendSamplers>[]
     {
@@ -69,5 +66,18 @@ public class Blend : DefaultPS<DefaultPSFeatures, BlendSamplers>
             permutation.EnumValue == DefaultPSPermutations.Deferred
                 ? DefaultVSPermutations.Deferred
                 : DefaultVSPermutations.None);
+    }
+}
+
+public class MBlend : Blend
+{
+    public override string Name => "MBlend";
+
+    public override IReadOnlyList<ShaderParameter> Vectors => Array.Empty<ShaderParameter>();
+    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { Common.EnableExplicitMetalness };
+
+    public override bool ValidateSamplers(BlendSamplers samplers)
+    {
+        return samplers.HasFlag(BlendSamplers.Specular) && base.ValidateSamplers(samplers); // Always have specular
     }
 }

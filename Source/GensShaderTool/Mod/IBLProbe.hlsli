@@ -33,7 +33,7 @@ float4 ComputeIndirectIBLProbe(in ShaderParams params, float3 position, int inde
     return float4(result.rgb, 1) * result.a * (1 - maxLocalPos);
 }
 
-void ComputeIndirectIBLProbes(inout ShaderParams params, float3 position, float blendFactor)
+float3 ComputeIndirectIBLProbes(inout ShaderParams params, float3 position)
 {
     float4 color = 0;
 
@@ -51,7 +51,7 @@ void ComputeIndirectIBLProbes(inout ShaderParams params, float3 position, float 
             params.RoughReflectionDirection, params.Roughness * mrgDefaultIBLLodParam)), 1) * (1 - color.a);
     }
 
-    params.IndirectSpecular += color.rgb * blendFactor;
+    return color.rgb;
 }
 
 #endif

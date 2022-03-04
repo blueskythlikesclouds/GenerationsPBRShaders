@@ -20,7 +20,7 @@ void ComputeShadingParams(inout ShaderParams params, float3 position)
     params.FresnelReflectance = lerp(params.Reflectance, params.Albedo, params.Metalness);
 }
 
-ShaderParams LoadParams(float2 texCoord)
+ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
 {
     float4 gBuffer0 = g_GBuffer0.SampleLevel(g_PointClampSampler, texCoord, 0);
     float4 gBuffer1 = g_GBuffer1.SampleLevel(g_PointClampSampler, texCoord, 0);
@@ -38,7 +38,7 @@ ShaderParams LoadParams(float2 texCoord)
     params.Normal = gBuffer3.xyz * 2.0 - 1.0;
     params.DeferredFlags = uint(gBuffer3.w * DEFERRED_FLAGS_MAX);
 
-    if (params.DeferredFlags & DEFERRED_FLAGS_CDR)
+    if (loadCdr && (params.DeferredFlags & DEFERRED_FLAGS_CDR))
         params.Cdr = gBuffer0.rgb;
     else
         params.Emission = gBuffer0.rgb;
@@ -77,6 +77,22 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
     gBuffer3.w = (float(params.DeferredFlags) + 0.5) / float(DEFERRED_FLAGS_MAX);
 }
 
+void StoreParams(float3 emission, float3 normal, int flags, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
+{
+    gBuffer0.rgb = emission;
+    gBuffer0.w = 0.0;
+
+    gBuffer1 = 0.0;
+
+    gBuffer2.x = 0.0;
+    gBuffer2.y = 1.0;
+    gBuffer2.z = 0.0;
+    gBuffer2.w = 1.0;
+
+    gBuffer3.xyz = normal * 0.5 + 0.5;
+    gBuffer3.w = (float(flags) + 0.5) / float(DEFERRED_FLAGS_MAX);
+}
+
 float3 ComputeLocalLights(in ShaderParams params, float3 position)
 {
     float3 color = 0;
@@ -90,6 +106,11 @@ float3 ComputeLocalLights(in ShaderParams params, float3 position)
     }
 
     return color;
+}
+
+float GetToneMapLuminance()
+{
+    return g_LuminanceTexture.Load(int3(0, 0, 0)) * g_RcpMiddleGray;
 }
 
 #endif

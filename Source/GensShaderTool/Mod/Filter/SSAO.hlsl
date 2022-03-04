@@ -11,22 +11,23 @@ cbuffer cbFilter : register(b5)
     float g_Strength;
 }
 
-float4 main(in float4 svPos : SV_POSITION, in float2 svPosition : TEXCOORD0, in float2 texCoord : TEXCOORD1) : SV_TARGET
+float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in float4 texCoord : TEXCOORD1) : SV_TARGET
 {
-    ShaderParams params = LoadParams(texCoord);
+    ShaderParams params = LoadParams(texCoord.xy);
     if (!(params.DeferredFlags & DEFERRED_FLAGS_LIGHT))
         return 1.0;
 
-    float3 position = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord, 0), g_MtxInvProjection);
+    float3 position = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
+    float3 normal = normalize(mul(params.Normal, g_MtxView));
 
     float radius = g_Radius / max(0.0001, -position.z);
-    float noise = g_BlueNoiseTexture.SampleLevel(g_PointRepeatSampler, texCoord.xy * 64, 0);
+    float noise = g_BlueNoiseTexture.SampleLevel(g_PointRepeatSampler, texCoord.xy * (g_ViewportSize.xy / 64.0), 0);
 
     float occlusion = 0;
 
     for (int i = 0; i < g_SampleCount; i++)
     {
-        float2 cmpTexCoord = texCoord + CalculateVogelDiskSample(i,
+        float2 cmpTexCoord = texCoord.xy + CalculateVogelDiskSample(i,
             g_SampleCount, noise * 2 * PI) * radius;
 
         float cmpDepth = g_DepthTexture.SampleLevel(g_PointClampSampler, cmpTexCoord, 0);
@@ -38,7 +39,7 @@ float4 main(in float4 svPos : SV_POSITION, in float2 svPosition : TEXCOORD0, in 
         float distance = length(direction);
         float invDistance = distance > 0.0001 ? 1.0f / distance : 0;
 
-        occlusion += saturate(dot(direction * invDistance, params.Normal)) * smoothstep(0, 1, saturate(g_DistanceFade * invDistance));
+        occlusion += saturate(dot(direction * invDistance, normal)) * smoothstep(0, 1, saturate(g_DistanceFade * invDistance));
     }
 
     return saturate(1 - occlusion * g_RcpSampleCount * g_Strength);

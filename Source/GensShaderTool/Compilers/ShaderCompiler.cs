@@ -105,13 +105,29 @@ public class ShaderCompiler
             // This means we are processing a material shader
             else
             {
-                // Use 1 as placeholder sampler for vertex shaders
-                int samplerPermutationCount = 1 << (pixelShader?.Samplers.Count ?? 0);
-
-                for (int samplers = 0; samplers < samplerPermutationCount; samplers++)
+                for (int i = 0; i < 1 << (pixelShader?.Samplers.Count ?? 0); i++)
                 {
-                    for (int features = 0; features < 1 << shader.Features.Count; features++)
+                    int samplers = 0;
+
+                    if (pixelShader != null)
                     {
+                        for (int j = 0; j < pixelShader.Samplers.Count; j++)
+                        {
+                            if ((i & (1 << j)) != 0)
+                                samplers |= pixelShader.Samplers[j].BitValue;
+                        }
+                    }
+
+                    for (int j = 0; j < 1 << shader.Features.Count; j++)
+                    {
+                        int features = 0;
+
+                        for (int k = 0; k < shader.Features.Count; k++)
+                        {
+                            if ((j & (1 << k)) != 0)
+                                features |= shader.Features[k].BitValue;
+                        }
+
                         ShaderListData shaderListData = null;
 
                         foreach (var permutation in shader.Permutations)
@@ -166,10 +182,10 @@ public class ShaderCompiler
                                 }
 
                                 // Add feature macros
-                                for (int i = 0; i < vertexShader.Shader.Features.Count; i++)
+                                foreach (var feature in vertexShader.Shader.Features)
                                 {
-                                    if ((vertexShader.Features & (1 << i)) != 0)
-                                        macros.Add(new D3DShaderMacro("HasFeature" + vertexShader.Shader.Features[i].BitName));
+                                    if ((vertexShader.Features & feature.BitValue) != 0)
+                                        macros.Add(new D3DShaderMacro("HasFeature" + feature.BitName));
                                 }
                             }
                             
@@ -178,19 +194,19 @@ public class ShaderCompiler
                             macros.Add(new D3DShaderMacro("IsPermutationDeferred"));
 
                             // Add feature macros
-                            for (int i = 0; i < shader.Features.Count; i++)
+                            foreach (var feature in shader.Features)
                             {
-                                if ((features & (1 << i)) != 0)
-                                    macros.Add(new D3DShaderMacro("HasFeature" + shader.Features[i].BitName));
+                                if ((features & feature.BitValue) != 0)
+                                    macros.Add(new D3DShaderMacro("HasFeature" + feature.BitName));
                             }
 
                             // Add sampler macros
                             if (pixelShader != null)
                             {
-                                for (int i = 0; i < pixelShader.Samplers.Count; i++)
+                                foreach (var sampler in pixelShader.Samplers)
                                 {
-                                    if ((samplers & (1 << i)) != 0)
-                                        macros.Add(new D3DShaderMacro("HasSampler" + pixelShader.Samplers[i].BitName));
+                                    if ((samplers & sampler.BitValue) != 0)
+                                        macros.Add(new D3DShaderMacro("HasSampler" + sampler.BitName));
                                 }
                             }
 
@@ -206,13 +222,13 @@ public class ShaderCompiler
                                 stringBuilder.Clear();
                                 stringBuilder.Append(shaderName);
 
-                                for (int i = 0; i < subPermutationNames.Length; i++)
+                                for (int k = 0; k < subPermutationNames.Length; k++)
                                 {
-                                    if ((subPermutations & (1 << i)) == 0)
+                                    if ((subPermutations & (1 << k)) == 0)
                                         continue;
 
                                     stringBuilder.Append('_');
-                                    stringBuilder.Append(subPermutationNames[i]);
+                                    stringBuilder.Append(subPermutationNames[k]);
                                 }
 
                                 var shaderData = new ShaderData
@@ -240,10 +256,10 @@ public class ShaderCompiler
                                 int countBeforeSubPermutations = macros.Count;
 
                                 // Add sub-permutation macros
-                                for (int i = 0; i < subPermutationNames.Length; i++)
+                                for (int k = 0; k < subPermutationNames.Length; k++)
                                 {
-                                    if ((subPermutations & (1 << i)) != 0)
-                                        macros.Add(new D3DShaderMacro(subPermutationNames[i]));
+                                    if ((subPermutations & (1 << k)) != 0)
+                                        macros.Add(new D3DShaderMacro(subPermutationNames[k]));
                                 }
 
                                 macros.Add(D3DShaderMacro.Terminator);

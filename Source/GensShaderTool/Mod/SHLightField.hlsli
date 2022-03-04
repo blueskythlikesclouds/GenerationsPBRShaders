@@ -45,19 +45,19 @@ void ComputeSHLightField(inout ShaderParams params, in float3 position)
     case 0:
     default:
         for (i = 0; i < 6; i++)
-            shlf[i] = g_SHLightFieldTextures[0].Sample(g_LinearClampSampler, float4(currentShCoords + float3(i / 9.0f, 0, 0), 0));
+            shlf[i] = g_SHLightFieldTextures[0].SampleLevel(g_LinearClampSampler, currentShCoords + float3(i / 9.0f, 0, 0), 0);
 
         break;
 
     case 1:
         for (i = 0; i < 6; i++)
-            shlf[i] = g_SHLightFieldTextures[1].Sample(g_LinearClampSampler, float4(currentShCoords + float3(i / 9.0f, 0, 0), 0));
+            shlf[i] = g_SHLightFieldTextures[1].SampleLevel(g_LinearClampSampler, currentShCoords + float3(i / 9.0f, 0, 0), 0);
 
         break;
 
     case 2:
         for (i = 0; i < 6; i++)
-            shlf[i] = g_SHLightFieldTextures[2].Sample(g_LinearClampSampler, float4(currentShCoords + float3(i / 9.0f, 0, 0), 0));
+            shlf[i] = g_SHLightFieldTextures[2].SampleLevel(g_LinearClampSampler, currentShCoords + float3(i / 9.0f, 0, 0), 0);
 
         break;
     }

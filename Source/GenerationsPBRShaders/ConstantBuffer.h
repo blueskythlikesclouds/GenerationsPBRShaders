@@ -102,6 +102,13 @@ struct FilterCB
             float convolutionDirection[2];
         };
 
+        // IBL
+        struct
+        {
+            BOOL iblEnableSSAO;
+            BOOL iblEnableRLR;
+        };
+
         // VolumetricLighting
         struct
         {

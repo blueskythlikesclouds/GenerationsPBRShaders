@@ -37,11 +37,14 @@ void main(in PixelDeclaration input,
 
     if (!g_UseFlatNormal)
     {
-        params.NormalMap = params.NormalMap * 2.0 - 1.0;
-        params.Normal =
-            normalize(input.Tangent) * params.NormalMap.x +
-            normalize(input.Binormal) * params.NormalMap.y +
-            normalize(input.Normal) * sqrt(1.0 - saturate(dot(params.NormalMap, params.NormalMap)));
+        float3 normalMap;
+        normalMap.xy = params.NormalMap.xy * 2.0 - 1.0;
+        normalMap.z = sqrt(1.0 - saturate(dot(normalMap.xy, normalMap.xy)));
+
+        params.Normal = normalize(
+            normalMap.x * normalize(input.Tangent) +
+            normalMap.y * normalize(input.Binormal) +
+            normalMap.z * normalize(input.Normal));
     }
 
 #endif
@@ -83,10 +86,10 @@ void main(in PixelDeclaration input,
 
         const float3 axis[4] =
         {
-            float3(0, 0.57735, 1),
-            float3(0, 0.57735, -1),
-            float3(1, 0.57735, 0),
-            float3(-1, 0.57735, 0)
+            float3(0, 0.57735002, 1),
+            float3(0, 0.57735002, -1),
+            float3(1, 0.57735002, 0),
+            float3(-1, 0.57735002, 0)
         };
 
         params.IndirectDiffuse = 0;
@@ -136,9 +139,9 @@ void main(in PixelDeclaration input,
 #endif
 
 #ifndef IsPermutationDeferred
-    ComputeIndirectIBLProbes(params, input.Position, iblBlendFactor);
+    params.IndirectSpecular += ComputeIndirectIBLProbes(params, input.Position) * iblBlendFactor;
 
-    //params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_ShadowMapSampler, input.ShadowMapCoord, g_ShadowMapSize, g_ESMFactor);
+    params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_PointBorderSampler, mul(float4(input.Position, 1.0), g_MtxLightViewProjection), g_ShadowMapSize, g_ESMFactor);
 
     bool cdr = false;
 #ifdef HasSamplerCdr
