@@ -60,7 +60,7 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
         end.xy = end.xy / end.w * float2(0.5, -0.5) + 0.5;
         end.z = endPosition.z;
 
-        if (end.x < 0 || end.x > 1.0 || end.y < 0 || end.y > 1.0)
+        if (any(end.xy < 0.0) || any(end.xy >= 1.0))
         {
             float2 points[] =
             {
@@ -104,55 +104,50 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
             float fbDepth = g_DepthTexture.SampleLevel(g_PointClampSampler, rayCoord.xy, 0);
             float cmpDepth = LinearizeDepth(fbDepth, g_MtxInvProjection);
 
-            if (fbDepth < 1 && depth < cmpDepth)
+            if (fbDepth >= 1 || depth >= cmpDepth || begin.z < cmpDepth)
+                continue;
+
+            float tmpStepSize = stepSize;
+
+            step -= tmpStepSize;
+            tmpStepSize *= 0.5f;
+            step += tmpStepSize;
+
+            [unroll] for (int j = 0; j < 4; j++)
             {
-                // If we hit a pixel closer to the camera than
-                // the start point, skip it. It'll likely be incorrect.
-                if (begin.z < cmpDepth)
-                    continue;
-
-                float tmpStepSize = stepSize;
-
-                step -= tmpStepSize;
-                tmpStepSize *= 0.5f;
-                step += tmpStepSize;
-
-                [loop] for (int j = 0; j < 4; j++)
-                {
-                    rayCoord = lerp(begin.xy, end.xy, step);
-                    depth = PerspectiveCorrectLerp(begin.z, end.z, step);
-
-                    cmpDepth = g_DepthTexture.SampleLevel(g_PointClampSampler, rayCoord.xy, 0);
-                    cmpDepth = LinearizeDepth(cmpDepth, g_MtxInvProjection);
-
-                    tmpStepSize *= 0.5f;
-
-                    if (depth < cmpDepth)
-                        step -= tmpStepSize;
-                    else
-                        step += tmpStepSize;
-                }
-
                 rayCoord = lerp(begin.xy, end.xy, step);
+                depth = PerspectiveCorrectLerp(begin.z, end.z, step);
 
-                // Check the accuracy of the hit position and skip as necessary.
-                float3 cmpPos = GetPositionFromDepth(rayCoord * float2(2, -2) + float2(-1, 1),
-                    g_DepthTexture.SampleLevel(g_PointClampSampler, rayCoord.xy, 0), g_MtxInvProjection);
+                cmpDepth = g_DepthTexture.SampleLevel(g_PointClampSampler, rayCoord.xy, 0);
+                cmpDepth = LinearizeDepth(cmpDepth, g_MtxInvProjection);
 
-                float3 d = abs(cmpPos - (position + dir * distance(cmpPos, position)));
+                tmpStepSize *= 0.5f;
 
-                if (max(d.x, max(d.y, d.z)) > g_AccuracyThreshold * -cmpPos.z)
-                    continue;
-
-                factor *= saturate(rayCoord.x * g_Fade);
-                factor *= saturate(rayCoord.y * g_Fade);
-
-                factor *= saturate((1 - rayCoord.x) * g_Fade);
-                factor *= saturate((1 - rayCoord.y) * g_Fade);
-
-                color = g_GBuffer0.SampleLevel(g_LinearClampSampler, rayCoord.xy, 0) * factor;
-                break;
+                if (depth < cmpDepth)
+                    step -= tmpStepSize;
+                else
+                    step += tmpStepSize;
             }
+
+            rayCoord = lerp(begin.xy, end.xy, step);
+
+            // Check the accuracy of the hit position and skip as necessary.
+            float3 cmpPos = GetPositionFromDepth(rayCoord * float2(2, -2) + float2(-1, 1), 
+                g_DepthTexture.SampleLevel(g_PointClampSampler, rayCoord.xy, 0), g_MtxInvProjection);
+
+            float3 d = abs(cmpPos - (position + dir * distance(cmpPos, position)));
+
+            if (any(d > g_AccuracyThreshold * -cmpPos.z))
+                continue;
+
+            factor *= saturate(rayCoord.x * g_Fade);
+            factor *= saturate(rayCoord.y * g_Fade);
+
+            factor *= saturate((1 - rayCoord.x) * g_Fade);
+            factor *= saturate((1 - rayCoord.y) * g_Fade);
+
+            color = g_GBuffer0.SampleLevel(g_LinearClampSampler, rayCoord.xy, 0) * factor;
+            break;
         }
     }
 

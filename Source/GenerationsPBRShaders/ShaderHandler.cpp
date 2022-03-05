@@ -1,6 +1,7 @@
 ﻿#include "ShaderHandler.h"
 
 #include "ConstantBuffer.h"
+#include "HBAOPlusHandler.h"
 #include "RenderDataManager.h"
 
 //
@@ -14,8 +15,6 @@ hh::mr::SShaderPair fxConvolutionFilterShader;
 
 hh::mr::SShaderPair fxCopyColorShader;
 hh::mr::SShaderPair fxCopyColorDepthShader;
-
-hh::mr::SShaderPair fxSSAOShader;
 
 hh::mr::SShaderPair fxVolumetricLightingShader;
 hh::mr::SShaderPair fxVolumetricLightingIgnoreSkyShader;
@@ -35,7 +34,6 @@ boost::shared_ptr<hh::ygg::CYggTexture> rlrTempTex;
 boost::shared_ptr<hh::ygg::CYggTexture> prevIBLTex;
 
 boost::shared_ptr<hh::ygg::CYggTexture> ssaoTex;
-boost::shared_ptr<hh::ygg::CYggTexture> ssaoBlurredTex;
 
 boost::shared_ptr<hh::ygg::CYggTexture> volumetricLightTex;
 
@@ -74,8 +72,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
     This->m_pScheduler->GetShader(fxCopyColorShader, "FxFilterT", "FxCopyColor");
     This->m_pScheduler->GetShader(fxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
 
-    This->m_pScheduler->GetShader(fxSSAOShader, "FxFilterPT", "FxSSAO");
-
     This->m_pScheduler->GetShader(fxVolumetricLightingShader, "FxFilterPT", "FxVolumetricLighting");
     This->m_pScheduler->GetShader(fxVolumetricLightingIgnoreSkyShader, "FxFilterPT", "FxVolumetricLighting_IgnoreSky");
 
@@ -96,8 +92,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(prevIBLTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, 0.5f, 0.5f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoBlurredTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
+    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
     This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(volumetricLightTex, 0.5f, 0.5f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
@@ -378,36 +373,28 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     if (SceneEffect::ssao.enable)
     {
-        boost::shared_ptr<hh::ygg::CYggSurface> ssaoSurface;
-        ssaoTex->GetSurface(ssaoSurface, 0, 0);
+        // Force SSAO to allocate
+        if (!ssaoTex->m_pD3DTexture)
+        {
+            boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
+            ssaoTex->GetSurface(ssaoBlurredSurface, 0, 0);
+            device->SetRenderTarget(0, ssaoBlurredSurface);
+            device->Flush();
+        }
 
-        device->SetShader(fxSSAOShader);
-        device->SetRenderTarget(0, ssaoSurface);
+        // ???
+        if (!ssaoTex->m_pD3DTexture)
+            __debugbreak();
 
-        filterCB.ssaoSampleCount = SceneEffect::ssao.sampleCount;
-        filterCB.ssaoRcpSampleCount = 1.0f / (float)SceneEffect::ssao.sampleCount;
-        filterCB.ssaoRadius = SceneEffect::ssao.radius;
-        filterCB.ssaoDistanceFade = SceneEffect::ssao.distanceFade;
-        filterCB.ssaoStrength = SceneEffect::ssao.strength;
-        filterCB.upload(d3dDevice);
+        HBAOPlusHandler::initialize(GenerationsD3D11::GetDevice(d3dDevice));
 
-        device->DrawQuad2D(nullptr, 0, 0);
-
-        // Apply blur
-        boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
-        ssaoBlurredTex->GetSurface(ssaoBlurredSurface, 0, 0);
-
-        device->SetShader(fxBoxBlurShader);
-        device->SetRenderTarget(0, ssaoBlurredSurface);
-        d3dDevice->SetTexture(19, nullptr);
-
-        filterCB.boxBlurSourceSize[0] = 1.0f / (float)ssaoTex->m_CreationParams.Width;
-        filterCB.boxBlurSourceSize[1] = 1.0f / (float)ssaoTex->m_CreationParams.Height;
-        filterCB.boxBlurDepthThreshold = SceneEffect::ssao.depthThreshold;
-        filterCB.upload(d3dDevice);
-
-        device->SetTexture(4, ssaoTex);
-        device->DrawQuad2D(nullptr, 0, 0);
+        const auto lock = GenerationsD3D11::LockGuard(d3dDevice);
+        
+        HBAOPlusHandler::execute(
+            GenerationsD3D11::GetDeviceContext(d3dDevice),
+            GenerationsD3D11::GetShaderResourceView(gBuffer3Tex->m_pD3DTexture),
+            GenerationsD3D11::GetShaderResourceView(This->m_spDepthTex->m_pD3DTexture),
+            GenerationsD3D11::GetRenderTargetView(ssaoTex->m_pD3DTexture));
     }
 
     //***************************************************//
@@ -423,7 +410,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     device->SetTexture(13, shadowMap);
 
     if (SceneEffect::ssao.enable)
-        d3dDevice->SetTexture(19, ssaoBlurredTex->m_pD3DTexture);
+        d3dDevice->SetTexture(19, ssaoTex->m_pD3DTexture);
 
     filterCB.lightEnableSSAO = SceneEffect::ssao.enable;
     filterCB.upload(d3dDevice);
@@ -449,7 +436,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetShader(fxRLRShader);
         device->SetRenderTarget(0, rlrSurface);
         device->SetTexture(0, gBuffer0Tex);
-        d3dDevice->SetTexture(21, nullptr);
 
         // Set parameters
         filterCB.rlrFramebufferSize[0] = (float)This->m_spColorTex->m_CreationParams.Width;
@@ -486,6 +472,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     filterCB.upload(d3dDevice);
 
     device->DrawQuad2D(nullptr, 0, 0);
+
+    // Unset SSAO/RLR.
+    d3dDevice->SetTexture(19, nullptr);
+    d3dDevice->SetTexture(21, nullptr);
 
     //*********//
     // Capture //
@@ -701,7 +691,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         break;
 
     case DEBUG_VIEW_MODE_SSAO:
-        colorTex = ssaoBlurredTex;
+        colorTex = ssaoTex;
         break;
 
     case DEBUG_VIEW_MODE_SHADOW_MAP:

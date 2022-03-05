@@ -6,7 +6,7 @@ class alignas(16) ConstantBuffer : public T
     ComPtr<ID3D11Buffer> buffer;
 
 public:
-    void upload(void* dxpDevice);
+    void upload(DX_PATCH::IDirect3DDevice9* dxpDevice);
 };
 
 struct SceneEffectCB
@@ -132,7 +132,7 @@ extern ConstantBuffer<GITextureCB, 4, true, true> giTextureCB;
 extern ConstantBuffer<FilterCB, 5, true, true> filterCB;
 
 template <typename T, size_t StartSlot, bool PS, bool Dynamic>
-void ConstantBuffer<T, StartSlot, PS, Dynamic>::upload(void* dxpDevice)
+void ConstantBuffer<T, StartSlot, PS, Dynamic>::upload(DX_PATCH::IDirect3DDevice9* dxpDevice)
 {
     ID3D11DeviceContext* deviceContext = GenerationsD3D11::GetDeviceContext(dxpDevice);
 

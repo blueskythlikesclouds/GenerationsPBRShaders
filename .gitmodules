@@ -11,3 +11,6 @@
 [submodule "Dependencies/DirectXTex"]
 	path = Dependencies/DirectXTex
 	url = https://github.com/microsoft/DirectXTex.git
+[submodule "Dependencies/HBAOPlus"]
+	path = Dependencies/HBAOPlus
+	url = https://github.com/NVIDIAGameWorks/HBAOPlus.git

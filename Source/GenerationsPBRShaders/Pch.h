@@ -36,6 +36,9 @@ using Microsoft::WRL::ComPtr;
 // LostCodeLoader
 #include <LostCodeLoader.h>
 
+// HBAOPlus
+#include <GFSDK_SSAO.h>
+
 namespace Eigen
 {
 	using AlignedVector3f = AlignedVector3<float>;

@@ -58,6 +58,9 @@
     <ClCompile Include="ConstantBuffer.cpp">
       <Filter>Base</Filter>
     </ClCompile>
+    <ClCompile Include="HBAOPlusHandler.cpp">
+      <Filter>Shader\Shader\Filter</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -123,6 +126,9 @@
     </ClInclude>
     <ClInclude Include="ConstantBuffer.h">
       <Filter>Base</Filter>
+    </ClInclude>
+    <ClInclude Include="HBAOPlusHandler.h">
+      <Filter>Shader\Shader\Filter</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

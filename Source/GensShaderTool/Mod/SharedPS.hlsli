@@ -35,7 +35,7 @@ ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
     params.Roughness = gBuffer2.y;
     params.AmbientOcclusion = gBuffer2.z;
     params.Metalness = gBuffer2.w;
-    params.Normal = gBuffer3.xyz * 2.0 - 1.0;
+    params.Normal = normalize(gBuffer3.xyz * 2.0 - 1.0);
     params.DeferredFlags = uint(gBuffer3.w * DEFERRED_FLAGS_MAX);
 
     if (loadCdr && (params.DeferredFlags & DEFERRED_FLAGS_CDR))

@@ -5,7 +5,7 @@ CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
 RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
-SSAOParam SceneEffect::ssao = { false, 32, 0.17f, 0.25f, 1.5f, 0.002f };
+SSAOParam SceneEffect::ssao;
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
 VolumetricLightingParam SceneEffect::volumetricLighting = { false, false, 16, -0.98f, 1.0f, 0.002f };
 
@@ -82,11 +82,22 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
 
     Sonic::CParameterCategory* ssaoParamCategory = parameterGroup->CreateParameterCategory("SSAO", "SSAO");
     ssaoParamCategory->CreateParamBool(&SceneEffect::ssao.enable, "Enable");
-    ssaoParamCategory->CreateParamUnsignedLong(&SceneEffect::ssao.sampleCount, "SampleCount");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.radius, "Radius");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.distanceFade, "DistanceFade");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.strength, "Strength");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.depthThreshold, "DepthThreshold");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.Radius, "Radius");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.Bias, "Bias");
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.PowerExponent, "PowerExponent");
+    ssaoParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::ssao.StepCount, "StepCount", "StepCount",
+        {
+            {"4 Steps", GFSDK_SSAO_STEP_COUNT_4},
+            {"8 Steps", GFSDK_SSAO_STEP_COUNT_8}
+        });
+
+    ssaoParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::ssao.Blur.Radius, "BlurRadius", "BlurRadius",
+        {
+            {"2 Pixels", GFSDK_SSAO_BLUR_RADIUS_2},
+            {"4 Pixels", GFSDK_SSAO_BLUR_RADIUS_4}
+        });
+
+    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.Blur.Sharpness, "BlurSharpness");
 
     parameterGroup->Flush();
 

@@ -66,14 +66,9 @@ struct RLRParam
     int32_t maxLod;
 };
 
-struct SSAOParam
+struct SSAOParam : GFSDK_SSAO_Parameters
 {
-    bool enable;
-    unsigned long sampleCount;
-    float radius;
-    float distanceFade;
-    float strength;
-    float depthThreshold;
+    bool enable{};
 };
 
 enum BloomType : uint32_t

@@ -47,8 +47,6 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<RLR>("Filter/RLR"),
 
-    Shader<SSAO>("Filter/SSAO"),
-
     Shader<VolumetricLighting>("Filter/VolumetricLighting"),
     Shader<VolumetricLightingIgnoreSky>("Filter/VolumetricLighting"),
 });
