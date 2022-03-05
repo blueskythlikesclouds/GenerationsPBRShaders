@@ -66,12 +66,13 @@ struct PixelDeclaration
 #endif
 };
 
-#define DEFERRED_FLAGS_SH_LIGHT_FIELD        (1 << 0)
-#define DEFERRED_FLAGS_CDR                   (1 << 1)
-#define DEFERRED_FLAGS_LIGHT                 (1 << 2)
-#define DEFERRED_FLAGS_IBL                   (1 << 3)
-#define DEFERRED_FLAGS_LIGHT_SCATTERING      (1 << 4)
-#define DEFERRED_FLAGS_MAX                  ((1 << 5) - 1)
+#define DEFERRED_FLAGS_GI                    (1 << 0)
+#define DEFERRED_FLAGS_LIGHT_FIELD           (1 << 1)
+#define DEFERRED_FLAGS_CDR                   (1 << 2)
+#define DEFERRED_FLAGS_LIGHT                 (1 << 3)
+#define DEFERRED_FLAGS_IBL                   (1 << 4)
+#define DEFERRED_FLAGS_LIGHT_SCATTERING      (1 << 5)
+#define DEFERRED_FLAGS_MAX                  ((1 << 6) - 1)
 
 struct ShaderParams
 {

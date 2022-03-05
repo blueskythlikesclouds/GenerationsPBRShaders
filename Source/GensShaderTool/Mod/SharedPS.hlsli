@@ -50,7 +50,9 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
 {
     params.DeferredFlags = DEFERRED_FLAGS_LIGHT | DEFERRED_FLAGS_IBL | DEFERRED_FLAGS_LIGHT_SCATTERING;
 #ifdef NoGI
-    params.DeferredFlags |= DEFERRED_FLAGS_SH_LIGHT_FIELD;
+    params.DeferredFlags |= DEFERRED_FLAGS_LIGHT_FIELD;
+#else
+    params.DeferredFlags |= DEFERRED_FLAGS_GI;
 #endif
 
 #if defined HasSamplerCdr

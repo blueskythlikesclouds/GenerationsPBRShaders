@@ -33,7 +33,7 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
         if (ibl.a < 0.99)
             ibl.rgb += ComputeIndirectIBLProbes(params, position) * (1 - ibl.a);
 
-        if (!(params.DeferredFlags & DEFERRED_FLAGS_SH_LIGHT_FIELD))
+        if (params.DeferredFlags & DEFERRED_FLAGS_GI)
         {
             float sggiBlendFactor = saturate(g_SGGIParam.x + params.Roughness * g_SGGIParam.y);
             float iblBlendFactor = lerp(1.0 - sggiBlendFactor, 1.0, params.Metalness);
