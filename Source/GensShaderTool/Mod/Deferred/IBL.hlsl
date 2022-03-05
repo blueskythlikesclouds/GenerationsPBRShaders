@@ -17,7 +17,7 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
     if (g_EnableSSAO)
         params.AmbientOcclusion *= g_SSAOTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0);
 
-    float3 viewPosition = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
+    float3 viewPosition = GetPositionFromDepth(svPos.xy, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
     float3 position = mul(float4(viewPosition, 1.0), g_MtxInvView).xyz;
     ComputeShadingParams(params, position);
 

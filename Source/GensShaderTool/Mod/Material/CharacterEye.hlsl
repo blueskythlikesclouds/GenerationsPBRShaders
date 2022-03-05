@@ -33,7 +33,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
 void ModifyParams(inout ShaderParams params, in PixelDeclaration input)
 {
 #ifdef HasSamplerCdr
-    params.Cdr = texCdr.Sample(sampCdr, float2(dot(params.Normal, -mrgGlobalLight_Direction.xyz) * 0.5 + 0.5, input.Color.y));
+    params.Cdr = texCdr.SampleLevel(sampCdr, float2(dot(params.Normal, -mrgGlobalLight_Direction.xyz) * 0.5 + 0.5, input.Color.y), 0).rgb;
 #endif
 
     float3 eyeNormal = normalize(input.EyeNormal);
@@ -45,7 +45,7 @@ void ModifyParams(inout ShaderParams params, in PixelDeclaration input)
 
     float diffuseAlpha = texDiffuse.Sample(sampDiffuse, UV(0) + diffuseAlphaOffset).a;
     float3 reflection = texReflection.Sample(sampReflection, UV(0) + reflectionOffset).rgb;
-    float3 reflectionAlpha = texReflection.Sample(sampReflection, UV(3) + reflectionAlphaOffset).a;
+    float reflectionAlpha = texReflection.Sample(sampReflection, UV(3) + reflectionAlphaOffset).a;
 
     params.Albedo = saturate(lerp((params.Albedo + reflection * texSpecular.Sample(sampSpecular, UV(1)).a) * diffuseAlpha, 1, reflectionAlpha));
     params.AmbientOcclusion = lerp(params.AmbientOcclusion, 1, reflectionAlpha);

@@ -36,9 +36,9 @@ cbuffer cbRenderData : register(b3)
 
     float4 mrgLocalLightData[64];
 
-    int mrgIBLProbeCount;
+    uint mrgIBLProbeCount;
     float mrgDefaultIBLLodParam;
-    int mrgLocalLightCount;
+    uint mrgLocalLightCount;
 }
 
 cbuffer cbSceneEffect : register(b2)

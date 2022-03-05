@@ -16,8 +16,9 @@ public class ShaderCompiler
 
     private class ShaderCompilerPermutation
     {
-        public string Data;
+        public string FilePath;
         public string DirectoryPath;
+        public string Data;
 
         public string Name;
         public IShader Shader;
@@ -30,10 +31,10 @@ public class ShaderCompiler
 
         Parallel.ForEach(shaders, tuple =>
         {
-            var (srcFilePath, shader) = tuple;
+            var (filePath, shader) = tuple;
 
-            string directoryPath = Path.GetDirectoryName(srcFilePath);
-            string srcData = File.ReadAllText(srcFilePath);
+            string directoryPath = Path.GetDirectoryName(filePath);
+            string data = File.ReadAllText(filePath);
 
             var stringBuilder = StringBuilderCache.Acquire();
             var pixelShader = shader as IPixelShader;
@@ -91,8 +92,10 @@ public class ShaderCompiler
 
                 var compilerPermutation = new ShaderCompilerPermutation
                 {
-                    Data = srcData,
                     DirectoryPath = directoryPath,
+                    FilePath = filePath,
+                    Data = data,
+
                     Name = shader.Name,
                     Shader = shader,
                     Macros = shader.Macros.Append(D3DShaderMacro.Terminator).ToArray()
@@ -265,8 +268,10 @@ public class ShaderCompiler
 
                                 var compilerPermutation = new ShaderCompilerPermutation
                                 {
-                                    Data = srcData,
                                     DirectoryPath = directoryPath,
+                                    FilePath = filePath,
+                                    Data = data,
+
                                     Name = shaderData.CodeName,
                                     Shader = shader,
                                     Macros = macros.ToArray()
@@ -306,7 +311,7 @@ public class ShaderCompiler
             int result = D3DCompiler.Compile(
                 permutation.Data,
                 permutation.Data.Length,
-                null,
+                permutation.FilePath,
                 permutation.Macros,
                 include.Pointer,
                 permutation.Shader.EntryPoint,
@@ -316,12 +321,15 @@ public class ShaderCompiler
                 out var blob,
                 out var errorBlob);
 
-            if (result < 0)
+            if (errorBlob != null)
             {
                 string message = errorBlob.ConvertToString();
                 Console.WriteLine(message);
-                throw new Exception(message);
+                if (result < 0)
+                    throw new Exception(message);
             }
+            else if (result < 0)
+                throw new Exception("Shader compilation failed");
 
             destArchiveDatabase.Add(new DatabaseData
             {

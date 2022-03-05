@@ -11,7 +11,7 @@ public class CharacterEmission : Character
 
     public override bool ValidateSamplers(CharacterSamplers samplers)
     {
-        return samplers.HasFlag(CharacterSamplers.Emission) && base.ValidateSamplers(samplers); 
+        return samplers.HasFlag(CharacterSamplers.Diffuse) && samplers.HasFlag(CharacterSamplers.Emission); 
     }
 }
 

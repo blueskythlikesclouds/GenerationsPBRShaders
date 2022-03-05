@@ -97,7 +97,7 @@ float3 ComputeLocalLights(in ShaderParams params, float3 position)
 {
     float3 color = 0;
 
-    for (int i = 0; i < mrgLocalLightCount; i++)
+    for (uint i = 0; i < mrgLocalLightCount; i++)
     {
         float4 positionAndRange = mrgLocalLightData[i * 2 + 0];
         float4 colorAndInvRange = mrgLocalLightData[i * 2 + 1];

@@ -147,7 +147,7 @@ float2 GetTexCoord(in PixelDeclaration input, uint index, float4 mrgTexcoordInde
 
 float3 SrgbToLinear(float3 value)
 {
-    return pow(value, 2.2);
+    return pow(abs(value), 2.2);
 }
 
 float4 SrgbToLinear(float4 value)
@@ -157,7 +157,7 @@ float4 SrgbToLinear(float4 value)
 
 float3 LinearToSrgb(float3 value)
 {
-    return pow(value, 1.0 / 2.2);
+    return pow(abs(value), 1.0 / 2.2);
 }
 
 float4 LinearToSrgb(float4 value)

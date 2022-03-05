@@ -46,14 +46,14 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
     params.NormalMap = texNormal.Sample(sampNormal, UV(2)).xy;
 
 #ifdef HasSamplerEmission
-    params.Emission = texEmission.Sample(sampEmission, UV(1)) * g_Ambient.rgb * Luminance.x * GetToneMapLuminance();
+    params.Emission = SrgbToLinear(texEmission.Sample(sampEmission, UV(1))).rgb * g_Ambient.rgb * Luminance.x * GetToneMapLuminance();
 #endif
 }
 
 void ModifyParams(inout ShaderParams params, in PixelDeclaration input)
 {
 #ifdef HasSamplerCdr
-    params.Cdr = texCdr.Sample(sampCdr, float2(dot(params.Normal, -mrgGlobalLight_Direction.xyz) * 0.5 + 0.5, input.Color.y));
+    params.Cdr = texCdr.SampleLevel(sampCdr, float2(dot(params.Normal, -mrgGlobalLight_Direction.xyz) * 0.5 + 0.5, input.Color.y), 0).rgb;
 #endif
 
 #ifdef HasSamplerFalloff

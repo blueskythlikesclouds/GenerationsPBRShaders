@@ -4,7 +4,7 @@
 
 cbuffer cbFilter : register(b5)
 {
-    int g_SampleCount;
+    uint g_SampleCount;
     float g_RcpSampleCount;
     float g_Radius;
     float g_DistanceFade;
@@ -17,15 +17,15 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
     if (!(params.DeferredFlags & DEFERRED_FLAGS_LIGHT))
         return 1.0;
 
-    float3 position = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
-    float3 normal = normalize(mul(params.Normal, g_MtxView));
+    float3 position = GetPositionFromDepth(svPos.xy, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
+    float3 normal = normalize(mul(float4(params.Normal, 0), g_MtxView).rgb);
 
     float radius = g_Radius / max(0.0001, -position.z);
     float noise = g_BlueNoiseTexture.SampleLevel(g_PointRepeatSampler, texCoord.xy * (g_ViewportSize.xy / 64.0), 0);
 
     float occlusion = 0;
 
-    for (int i = 0; i < g_SampleCount; i++)
+    for (uint i = 0; i < g_SampleCount; i++)
     {
         float2 cmpTexCoord = texCoord.xy + CalculateVogelDiskSample(i,
             g_SampleCount, noise * 2 * PI) * radius;

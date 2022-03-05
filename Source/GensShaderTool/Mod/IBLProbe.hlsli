@@ -7,7 +7,7 @@
 
 #include "Shared.hlsli"
 
-float4 ComputeIndirectIBLProbe(in ShaderParams params, float3 position, int index)
+float4 ComputeIndirectIBLProbe(in ShaderParams params, float3 position, uint index)
 {
     float3 localPos = mul(mrgIBLProbeMatrices[index], float4(position, 1)).xyz;
 
@@ -37,7 +37,7 @@ float3 ComputeIndirectIBLProbes(inout ShaderParams params, float3 position)
 {
     float4 color = 0;
 
-    for (int i = 0; i < mrgIBLProbeCount; i++)
+    for (uint i = 0; i < mrgIBLProbeCount; i++)
     {
         if (color.w > 0.99)
             break;

@@ -5,7 +5,7 @@
 cbuffer cbFilter : register(b5)
 {
     float4 g_FramebufferSize;
-    int g_StepCount;
+    uint g_StepCount;
     float g_MaxRoughness;
     float g_RayLength;
     float g_Fade;
@@ -44,8 +44,8 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
     if (!(params.DeferredFlags & DEFERRED_FLAGS_IBL) || params.Roughness > g_MaxRoughness)
         return 0;
 
-    float3 position = GetPositionFromDepth(svPos, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
-    float3 dir = normalize(reflect(normalize(position), normalize(mul(params.Normal, g_MtxView).xyz)));
+    float3 position = GetPositionFromDepth(svPos.xy, g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0), g_MtxInvProjection);
+    float3 dir = normalize(reflect(normalize(position), normalize(mul(float4(params.Normal, 0), g_MtxView).xyz)));
 
     float4 color = 0;
 
@@ -75,7 +75,7 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
             [unroll] for (int i = 0; i < 4; i++)
             {
                 float2 intersection;
-                if (LineIntersection(points[i * 2 + 0], points[i * 2 + 1], begin, end, intersection))
+                if (LineIntersection(points[i * 2 + 0], points[i * 2 + 1], begin.xy, end.xy, intersection))
                     intersectionResult = intersection;
             }
 
@@ -91,10 +91,10 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
 
         float2 deltaPixel = delta * g_FramebufferSize.xy;
 
-        int stepCount = min(g_StepCount, int(round(sqrt(dot(deltaPixel, deltaPixel)))));
+        uint stepCount = min(g_StepCount, uint(round(sqrt(dot(deltaPixel, deltaPixel)))));
         float stepSize = 1.0f / stepCount;
 
-        [loop] for (int i = 0; i < stepCount; i++)
+        [loop] for (uint i = 0; i < stepCount; i++)
         {
             float step = (i + 0.5) * stepSize;
 

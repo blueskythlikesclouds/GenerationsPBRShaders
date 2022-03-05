@@ -73,7 +73,7 @@ void ComputeSHLightField(inout ShaderParams params, in float3 position)
     };
 
     [unroll] for (i = 0; i < 6; i++)
-        params.IndirectDiffuse += ComputeSHBasis(params, shlf[i], directions[i]);
+        params.IndirectDiffuse += ComputeSHBasis(params, shlf[i].rgb, directions[i]);
 
     params.IndirectDiffuse = ComputeSHFinal(params.IndirectDiffuse) * g_GI0Scale.rgb;
     params.Shadow *= shlf[0].a;

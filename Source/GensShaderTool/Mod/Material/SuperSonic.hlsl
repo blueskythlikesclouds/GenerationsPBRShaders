@@ -42,7 +42,7 @@ void ModifyParams(inout ShaderParams params, in PixelDeclaration input)
 #ifdef HasSamplerFalloff
     float4 falloff = SrgbToLinear(texFalloff.Sample(sampFalloff, UV(4)));
     lerpAmount *= falloff.w;
-    emission = lerp(emission, falloff, lerpAmount);
+    emission = lerp(emission, falloff.rgb, lerpAmount);
 #endif
 
     params.Emission = emission * max(Blend.x, lerpAmount) * GetToneMapLuminance();
