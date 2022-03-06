@@ -17,10 +17,9 @@ public abstract class DefaultPS<TFeatures, TSamplers> : D3D11PixelShader<TFeatur
     where TFeatures : Enum
     where TSamplers : Enum
 {
-    public override IReadOnlyList<Permutation<DefaultPSPermutations>> Permutations =>
-        new Permutation<DefaultPSPermutations>[]
-        {
-            new(DefaultPSPermutations.Default, "default", string.Empty),
-            new(DefaultPSPermutations.Deferred, "deferred", "d")
-        };
+    public static readonly Permutation<DefaultPSPermutations> Default = new(DefaultPSPermutations.Default, "default", string.Empty);
+    public static readonly Permutation<DefaultPSPermutations> Deferred = new(DefaultPSPermutations.Deferred, "deferred", "d");
+
+    public override IReadOnlyList<Permutation<DefaultPSPermutations>> Permutations { get; } =
+        new[] { Default, Deferred };
 }

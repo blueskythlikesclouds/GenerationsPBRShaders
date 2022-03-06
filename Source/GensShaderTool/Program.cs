@@ -14,6 +14,9 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 {
     Shader<DefaultVS>("DefaultVS"),
 
+    Shader<SkyHDR>("Sky"),
+    Shader<SkySDR>("Sky"),
+
     Shader<Blend>("Material/Blend"),
     Shader<MBlend>("Material/Blend"),
 
@@ -36,7 +39,12 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<IgnoreLight>("Material/IgnoreLight"),
 
+    Shader<Ring>("Material/Ring"),
+
     Shader<SuperSonic>("Material/SuperSonic"),
+
+    Shader<Water01>("Material/Water01"),
+    Shader<Water05>("Material/Water05"),
     
     Shader<IBL>("Deferred/IBL"),
     Shader<Light>("Deferred/Light"),

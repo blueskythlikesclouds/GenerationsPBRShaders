@@ -156,10 +156,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
                                   ? RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture
                                   : nullptr); // g_DefaultIBLTexture
 
-    device->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_NONE);
+    device->SetSamplerFilter(11, D3DTEXF_LINEAR, D3DTEXF_LINEAR, D3DTEXF_LINEAR);
     device->SetSamplerAddressMode(11, D3DTADDRESS_CLAMP); // g_LinearClampSampler
 
-    device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
+    device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_POINT);
     device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP); // g_PointClampSampler
 
     device->SetSamplerFilter(13, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);

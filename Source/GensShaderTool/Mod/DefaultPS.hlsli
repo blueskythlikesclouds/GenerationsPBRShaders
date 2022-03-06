@@ -141,7 +141,7 @@ void main(in PixelDeclaration input,
 #ifndef IsPermutationDeferred
     params.IndirectSpecular += ComputeIndirectIBLProbes(params, input.Position) * iblBlendFactor;
 
-    params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_PointBorderSampler, mul(float4(input.Position, 1.0), g_MtxLightViewProjection), g_ShadowMapSize, g_ESMFactor);
+    params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_PointBorderSampler, g_ShadowMapSize, g_ESMFactor, mul(float4(input.Position, 1.0), g_MtxLightViewProjection));
 
     bool cdr = false;
 #ifdef HasSamplerCdr
@@ -151,6 +151,7 @@ void main(in PixelDeclaration input,
     outColor.rgb = ComputeDirectLighting(params, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.xyz, cdr) * params.Shadow;
     outColor.rgb += ComputeLocalLights(params, input.Position);
     outColor.rgb += ComputeIndirectLighting(params, g_EnvBRDFTexture, g_LinearClampSampler);
+    outColor.rgb = lerp(outColor.rgb, params.Refraction.rgb, params.Refraction.w);
     outColor.rgb += params.Emission;
     outColor.rgb = outColor.rgb * input.LightScattering.x + g_LightScatteringColor.rgb * input.LightScattering.y;
     outColor.a = params.Alpha;

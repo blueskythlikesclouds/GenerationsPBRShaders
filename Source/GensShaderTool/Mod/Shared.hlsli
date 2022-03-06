@@ -4,8 +4,17 @@
 #define PI       3.14159265358979323846f
 #define LOG2E    1.44269504088896340736f
 
+#ifdef ConstTexCoord
+
 #define UV(x) \
-    GetTexCoord(input, x, mrgTexcoordIndex)
+    (input.TexCoord0.xy)
+
+#else
+
+#define UV(x) \
+    GetTexCoord(input.TexCoord0, input.TexCoord1, x, mrgTexcoordIndex)
+
+#endif
 
 struct VertexDeclaration
 {
@@ -87,6 +96,8 @@ struct ShaderParams
     float3 Cdr;
     float3 Emission;
 
+    float4 Refraction;
+
     uint DeferredFlags;
 
     float3 IndirectDiffuse;
@@ -115,6 +126,7 @@ ShaderParams CreateShaderParams()
     params.NormalMap = 0.0;
     params.Cdr = 1.0;
     params.Emission = 0.0;
+    params.Refraction = 0.0;
     params.DeferredFlags = 0;
     params.FresnelReflectance = 0.0;
     params.IndirectDiffuse = 0.0;
@@ -129,18 +141,18 @@ ShaderParams CreateShaderParams()
     return params;
 }
 
-float2 GetTexCoord(in PixelDeclaration input, uint index, float4 mrgTexcoordIndex[4])
+float2 GetTexCoord(float4 texCoord0, float4 texCoord1, uint index, float4 mrgTexcoordIndex[4])
 {
 #ifdef ConstTexCoord
-    return input.TexCoord0.xy;
+    return texCoord0.xy;
 #else
 
     float value = trunc(mrgTexcoordIndex[index / 4][index % 4]);
 
-    if (value == 0.0f) return input.TexCoord0.xy;
-    if (value == 1.0f) return input.TexCoord0.zw;
-    if (value == 2.0f) return input.TexCoord1.xy;
-    if (value == 3.0f) return input.TexCoord1.zw;
+    if (value == 0.0f) return texCoord0.xy;
+    if (value == 1.0f) return texCoord0.zw;
+    if (value == 2.0f) return texCoord1.xy;
+    if (value == 3.0f) return texCoord1.zw;
 
     return 0.0f;
 #endif
@@ -490,70 +502,66 @@ float3 ComputeIndirectLighting(in ShaderParams material, Texture2D<float2> texEn
     return ComputeIndirectLighting(material, texEnvBRDF.Sample(sampEnvBRDF, float2(material.CosViewDirection, material.Roughness)));
 }
 
-float SampleShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 texSize, float2 texCoord, float depth, float esmFactor)
+float4 ComputeOcclusion(float4 values, float depth, float esmFactor)
 {
-    float2 pixelPos = texCoord * texSize.x - 0.5;
-    float2 pixelCenter = floor(pixelPos);
-    float2 fraction = pixelPos - pixelCenter;
-    texCoord = (pixelCenter + 0.5) * texSize.y;
-
-    float4 values = saturate(exp2((texShadow.Gather(sampShadow, texCoord) - depth) * esmFactor));
-    return lerp(lerp(values.x, values.y, fraction.x), lerp(values.z, values.w, fraction.x), fraction.y);
+    return saturate(exp2((values - depth) * esmFactor));
 }
 
-float ComputeShadow(Texture2D<float> texShadow, SamplerState sampShadow, float4 shadowMapCoord, float2 texSize, float esmFactor, float fallback = 1.0)
+float SampleShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 texSize, float esmFactor, float2 pixelPos, float depth)
 {
-    if (abs(shadowMapCoord.x) > shadowMapCoord.w ||
-        abs(shadowMapCoord.y) > shadowMapCoord.w ||
-        abs(shadowMapCoord.z) > shadowMapCoord.w)
-        return fallback;
+    float2 texCoord = (pixelPos - 0.5) * texSize.y;
+    float2 fraction = frac(pixelPos);
 
-    float3 shadowPos = shadowMapCoord.xyz / shadowMapCoord.w;
-    shadowPos.xy = shadowPos.xy * float2(0.5, -0.5) + 0.5;
+    float4 values = ComputeOcclusion(texShadow.GatherRed(sampShadow, texCoord), depth, esmFactor);
+    return lerp(lerp(values.w, values.z, fraction.x), lerp(values.x, values.y, fraction.x), fraction.y);
+}
 
-    float sum = 0;
-    {
-        float2 position = shadowPos.xy * texSize.x;
-            
-        float2 center;
-        center.x = floor(position.x + 0.5);
-        center.y = floor(position.y + 0.5);
+float ComputeShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 texSize, float esmFactor, float4 shadowPos)
+{
+    if (any(abs(shadowPos.xyz)) > shadowPos.w)
+        return 1.0;
 
-        float s = (position.x + 0.5 - center.x);
-        float t = (position.y + 0.5 - center.y);
+    shadowPos /= shadowPos.w;
+    shadowPos.xy = (shadowPos.xy * float2(0.5, -0.5) + 0.5) * texSize.x;
 
-        center = (center - 0.5) * texSize.y;
+    // From: https://github.com/TheRealMJP/Shadows
 
-        float uw0 = (3 - 2 * s);
-        float uw1 = (1 + 2 * s);
-        float vw0 = (3 - 2 * t);
-        float vw1 = (1 + 2 * t);
+    float2 basePos;
+    basePos.x = floor(shadowPos.x + 0.5);
+    basePos.y = floor(shadowPos.y + 0.5);
 
-        float4 offsets;
+    float s = (shadowPos.x + 0.5 - basePos.x);
+    float t = (shadowPos.y + 0.5 - basePos.y);
 
-        offsets.x = (2 - s) / uw0 - 1;
-        offsets.y = s / uw1 + 1;
-        offsets.z = (2 - t) / vw0 - 1;
-        offsets.w = t / vw1 + 1;
+    float uw0 = (4 - 3 * s);
+    float uw1 = 7;
+    float uw2 = (1 + 3 * s);
 
-        offsets *= texSize.y;
+    float u0 = (3 - 2 * s) / uw0 - 2;
+    float u1 = (3 + s) / uw1;
+    float u2 = s / uw2 + 2;
 
-        sum += uw0 * vw0 * SampleShadow(texShadow, sampShadow, texSize, center + offsets.xz, shadowPos.z, esmFactor);
-        sum += uw1 * vw0 * SampleShadow(texShadow, sampShadow, texSize, center + offsets.yz, shadowPos.z, esmFactor);
-        sum += uw0 * vw1 * SampleShadow(texShadow, sampShadow, texSize, center + offsets.xw, shadowPos.z, esmFactor);
-        sum += uw1 * vw1 * SampleShadow(texShadow, sampShadow, texSize, center + offsets.yw, shadowPos.z, esmFactor);
-    }
+    float vw0 = (4 - 3 * t);
+    float vw1 = 7;
+    float vw2 = (1 + 3 * t);
 
-    float fade;
+    float v0 = (3 - 2 * t) / vw0 - 2;
+    float v1 = (3 + t) / vw1;
+    float v2 = t / vw2 + 2;
 
-    fade = saturate(shadowPos.x / 0.01);
-    fade *= saturate(shadowPos.y / 0.01);
-    fade *= saturate(shadowPos.z / 0.01);
-    fade *= saturate((1 - shadowPos.x) / 0.01);
-    fade *= saturate((1 - shadowPos.y) / 0.01);
-    fade *= saturate((1 - shadowPos.z) / 0.01);
+    float sum = 0.0;
 
-    return lerp(fallback, sum / 16, fade);
+    sum += uw0 * vw0 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u0, v0), shadowPos.z);
+    sum += uw1 * vw0 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u1, v0), shadowPos.z);
+    sum += uw2 * vw0 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u2, v0), shadowPos.z);
+    sum += uw0 * vw1 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u0, v1), shadowPos.z);
+    sum += uw1 * vw1 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u1, v1), shadowPos.z);
+    sum += uw2 * vw1 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u2, v1), shadowPos.z);
+    sum += uw0 * vw2 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u0, v2), shadowPos.z);
+    sum += uw1 * vw2 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u1, v2), shadowPos.z);
+    sum += uw2 * vw2 * SampleShadow(texShadow, sampShadow, texSize, esmFactor, basePos + float2(u2, v2), shadowPos.z);
+
+    return sum / 144.0;
 }
 
 float3 FresnelSchlick(float3 F0, float cosTheta)

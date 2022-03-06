@@ -37,9 +37,9 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
     if (params.DeferredFlags & DEFERRED_FLAGS_LIGHT)
     {
         if (params.DeferredFlags & DEFERRED_FLAGS_LIGHT_FIELD)
-            params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_PointBorderSampler, mul(float4(position, 1.0), g_MtxLightViewProjection), g_ShadowMapSize, g_ESMFactor);
+            params.Shadow *= ComputeShadow(g_ShadowMapTexture, g_PointBorderSampler, g_ShadowMapSize, g_ESMFactor, mul(float4(position, 1.0), g_MtxLightViewProjection));
         else
-            params.Shadow *= ComputeShadow(g_VerticalShadowMapTexture, g_PointBorderSampler, mul(float4(position, 1.0), g_MtxLightViewProjection), g_ShadowMapSize, g_ESMFactor);
+            params.Shadow *= ComputeShadow(g_VerticalShadowMapTexture, g_PointBorderSampler, g_ShadowMapSize, g_ESMFactor, mul(float4(position, 1.0), g_MtxLightViewProjection));
 
         color += ComputeDirectLighting(params, -mrgGlobalLight_Direction.xyz, mrgGlobalLight_Diffuse.rgb, params.DeferredFlags & DEFERRED_FLAGS_CDR) * params.Shadow;
         color += ComputeLocalLights(params, position);
