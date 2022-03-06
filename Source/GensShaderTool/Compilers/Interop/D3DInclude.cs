@@ -18,6 +18,7 @@ public class D3DInclude : IDisposable
     private D3DIncludeClose mClose;
     private GCHandle mHandle;
 
+    private readonly D3DIncludeCache mCache;
     private readonly Stack<string> mDirectoryPaths;
 
     public IntPtr Pointer { get; }
@@ -39,28 +40,26 @@ public class D3DInclude : IDisposable
 
         string fullPath = Path.GetFullPath(Path.Combine(include.mDirectoryPaths.Peek(), Marshal.PtrToStringAnsi(pFileName)));
         include.mDirectoryPaths.Push(Path.GetDirectoryName(fullPath));
-
-        using var fileStream = File.OpenRead(fullPath);
-        pBytes = (int)fileStream.Length;
-        ppData = Marshal.AllocHGlobal(pBytes);
-        pBytes = fileStream.Read(new Span<byte>(ppData.ToPointer(), pBytes));
+        include.mCache.Get(fullPath, out var handle);
+        ppData = handle.Data;
+        pBytes = handle.Bytes;
 
         return 0;
     }
 
     private static int Close(IntPtr pThis, IntPtr pData)
     {
-        Marshal.FreeHGlobal(pData);
         GetInclude(pThis).mDirectoryPaths.Pop();
         return 0;
     }
 
-    public D3DInclude(string directoryPath)
+    public D3DInclude(D3DIncludeCache cache, string directoryPath)
     {
         mHandle = GCHandle.Alloc(this);
         mOpen = Open;
         mClose = Close;
 
+        mCache = cache;
         mDirectoryPaths = new Stack<string>();
         mDirectoryPaths.Push(directoryPath);
 

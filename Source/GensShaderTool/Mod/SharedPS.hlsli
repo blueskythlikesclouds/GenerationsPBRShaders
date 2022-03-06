@@ -79,7 +79,7 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
     gBuffer3.w = (float(params.DeferredFlags) + 0.5) / float(DEFERRED_FLAGS_MAX);
 }
 
-void StoreParams(float3 emission, float3 normal, int flags, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
+void StoreParams(float3 emission, float3 normal, uint flags, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
 {
     gBuffer0.rgb = emission;
     gBuffer0.w = 0.0;

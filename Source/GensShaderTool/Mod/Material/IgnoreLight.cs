@@ -14,13 +14,13 @@ public class IgnoreLight : DefaultPS<DefaultPSFeatures, IgnoreLightSamplers>
 {
     public override string Name => "IgnoreLight2";
 
-    public override IReadOnlyList<ShaderParameter> Vectors => new[]
+    public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[]
     {
         new ShaderParameter("Luminance", 150),
         new ShaderParameter("Offset", 151),
     };
 
-    public override IReadOnlyList<Sampler<IgnoreLightSamplers>> Samplers => new Sampler<IgnoreLightSamplers>[]
+    public override IReadOnlyList<Sampler<IgnoreLightSamplers>> Samplers { get; } = new Sampler<IgnoreLightSamplers>[]
     {
         new(IgnoreLightSamplers.Diffuse, 0, "diffuse", "d" ),
         new(IgnoreLightSamplers.Emission, 1, "emission", "E" ),

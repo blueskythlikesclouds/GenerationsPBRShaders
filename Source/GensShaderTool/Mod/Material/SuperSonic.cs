@@ -14,13 +14,13 @@ public class SuperSonic : DefaultPS<DefaultPSFeatures, SuperSonicSamplers>
 {
     public override string Name => "SuperSonic";
 
-    public override IReadOnlyList<ShaderParameter> Vectors => new[]
+    public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[]
     {
         new ShaderParameter("Blend", 150),
         new ShaderParameter("FalloffFactor", 151),
     };
 
-    public override IReadOnlyList<Sampler<SuperSonicSamplers>> Samplers => new Sampler<SuperSonicSamplers>[]
+    public override IReadOnlyList<Sampler<SuperSonicSamplers>> Samplers { get; } = new Sampler<SuperSonicSamplers>[]
     {
         new(SuperSonicSamplers.Diffuse, 0, "diffuse", "d"),
         new(SuperSonicSamplers.Emission, 1, "diffuse", "d"),

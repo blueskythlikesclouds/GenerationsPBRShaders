@@ -4,7 +4,7 @@ public class CharacterEyeSuper : CharacterEye
 {
     public override string Name => "ChrEyeSuper";
 
-    public override IReadOnlyList<ShaderParameter> Vectors => new[]
+    public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[]
     {
         ChrEye1,
         ChrEye2,
@@ -12,5 +12,5 @@ public class CharacterEyeSuper : CharacterEye
         Blend,
     };
 
-    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { AddEmission };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { AddEmission };
 }

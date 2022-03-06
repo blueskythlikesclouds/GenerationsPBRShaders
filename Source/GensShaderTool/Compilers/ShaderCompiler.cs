@@ -18,7 +18,7 @@ public class ShaderCompiler
     {
         public string FilePath;
         public string DirectoryPath;
-        public string Data;
+        public D3DIncludeHandle Handle;
 
         public string Name;
         public IShader Shader;
@@ -27,14 +27,16 @@ public class ShaderCompiler
 
     public static void Compile(ArchiveDatabase destArchiveDatabase, IReadOnlyList<(string SourceFilePath, IShader Shader)> shaders)
     {
+        using var includeFactory = new D3DIncludeFactory();
         var permutations = new List<ShaderCompilerPermutation>();
 
         Parallel.ForEach(shaders, tuple =>
         {
             var (filePath, shader) = tuple;
 
-            string directoryPath = Path.GetDirectoryName(filePath);
-            string data = File.ReadAllText(filePath);
+            string fullPath = Path.GetFullPath(filePath);
+            string directoryPath = Path.GetDirectoryName(fullPath);
+            includeFactory.Cache.Get(fullPath, out var handle);
 
             var stringBuilder = StringBuilderCache.Acquire();
             var pixelShader = shader as IPixelShader;
@@ -93,8 +95,8 @@ public class ShaderCompiler
                 var compilerPermutation = new ShaderCompilerPermutation
                 {
                     DirectoryPath = directoryPath,
-                    FilePath = filePath,
-                    Data = data,
+                    FilePath = fullPath,
+                    Handle = handle,
 
                     Name = shader.Name,
                     Shader = shader,
@@ -269,8 +271,8 @@ public class ShaderCompiler
                                 var compilerPermutation = new ShaderCompilerPermutation
                                 {
                                     DirectoryPath = directoryPath,
-                                    FilePath = filePath,
-                                    Data = data,
+                                    FilePath = fullPath,
+                                    Handle = handle,
 
                                     Name = shaderData.CodeName,
                                     Shader = shader,
@@ -306,11 +308,11 @@ public class ShaderCompiler
         {
             Console.WriteLine("({0}/{1}) {2}", Interlocked.Increment(ref permutationIndex), permutations.Count, permutation.Name);
 
-            using var include = new D3DInclude(permutation.DirectoryPath);
+            using var include = includeFactory.Create(permutation.DirectoryPath);
 
             int result = D3DCompiler.Compile(
-                permutation.Data,
-                permutation.Data.Length,
+                permutation.Handle.Data,
+                permutation.Handle.Bytes,
                 permutation.FilePath,
                 permutation.Macros,
                 include.Pointer,

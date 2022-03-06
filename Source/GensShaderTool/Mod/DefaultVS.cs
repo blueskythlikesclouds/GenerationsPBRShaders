@@ -20,12 +20,12 @@ public class DefaultVS : D3D11VertexShader<DefaultVSFeatures, DefaultVSPermutati
 {
     public override string Name => "Default2";
 
-    public override IReadOnlyList<Permutation<DefaultVSPermutations>> Permutations => new Permutation<DefaultVSPermutations>[]
+    public override IReadOnlyList<Permutation<DefaultVSPermutations>> Permutations { get; } = new Permutation<DefaultVSPermutations>[]
     {
         new(DefaultVSPermutations.None, "none", string.Empty),
     };
 
-    public override IReadOnlyList<Feature<DefaultVSFeatures>> Features => new Feature<DefaultVSFeatures>[]
+    public override IReadOnlyList<Feature<DefaultVSFeatures>> Features { get; } = new Feature<DefaultVSFeatures>[]
     {
         new(DefaultVSFeatures.NoBone, "b"),
         new(DefaultVSFeatures.NoVertexColor, "c"),

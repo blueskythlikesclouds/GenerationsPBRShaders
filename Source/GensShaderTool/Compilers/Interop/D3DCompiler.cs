@@ -4,7 +4,7 @@ public class D3DCompiler
 {
     [DllImport("d3dcompiler_47.dll", CallingConvention = CallingConvention.StdCall, PreserveSig = true, EntryPoint = "D3DCompile")]
     public static extern int Compile(
-        [MarshalAs(UnmanagedType.LPStr), In] string pSrcData,
+        [In] IntPtr pSrcData,
         [In] int SrcDataSize,
         [MarshalAs(UnmanagedType.LPStr), In, Optional] string pSourceName,
         [In, Optional] D3DShaderMacro[] pDefines,

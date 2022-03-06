@@ -26,10 +26,10 @@ public class Common : DefaultPS<DefaultPSFeatures, CommonSamplers>
     public static readonly Sampler<CommonSamplers> Emission = new(CommonSamplers.Emission, 3, "emission", "E");
     public static readonly Sampler<CommonSamplers> Transparency = new(CommonSamplers.Transparency, 4, "transparency", "a");
 
-    public override IReadOnlyList<ShaderParameter> Vectors => new[] { PBRFactor };
-    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { DisableExplicitMetalness };
+    public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[] { PBRFactor };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { DisableExplicitMetalness };
 
-    public override IReadOnlyList<Sampler<CommonSamplers>> Samplers =>
+    public override IReadOnlyList<Sampler<CommonSamplers>> Samplers { get; } =
         new[] { Diffuse, Specular, Normal, Transparency };
 
     public override bool ValidateSamplers(CommonSamplers samplers)
@@ -51,7 +51,7 @@ public class MCommon : Common
     public override string Name => "MCommon";
 
     public override IReadOnlyList<ShaderParameter> Vectors => Array.Empty<ShaderParameter>();
-    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { EnableExplicitMetalness };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { EnableExplicitMetalness };
 
     public override bool ValidateSamplers(CommonSamplers samplers)
     {

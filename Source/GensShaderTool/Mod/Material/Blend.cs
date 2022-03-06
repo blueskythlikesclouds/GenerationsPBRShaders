@@ -16,15 +16,15 @@ public class Blend : DefaultPS<DefaultPSFeatures, BlendSamplers>
 {
     public override string Name => "Blend2";
 
-    public override IReadOnlyList<ShaderParameter> Vectors => new[]
+    public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[]
     {
         new ShaderParameter("PBRFactor", 150),
         new ShaderParameter("PBRFactor2", 151)
     };
 
-    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { Common.DisableExplicitMetalness };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.DisableExplicitMetalness };
 
-    public override IReadOnlyList<Sampler<BlendSamplers>> Samplers => new Sampler<BlendSamplers>[]
+    public override IReadOnlyList<Sampler<BlendSamplers>> Samplers { get; } = new Sampler<BlendSamplers>[]
     {
         new(BlendSamplers.Diffuse, 0, "diffuse", "d"),
         new(BlendSamplers.Specular, 1, "specular", "p"),
@@ -69,7 +69,7 @@ public class MBlend : Blend
     public override string Name => "MBlend";
 
     public override IReadOnlyList<ShaderParameter> Vectors => Array.Empty<ShaderParameter>();
-    public override IReadOnlyList<D3DShaderMacro> Macros => new[] { Common.EnableExplicitMetalness };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.EnableExplicitMetalness };
 
     public override bool ValidateSamplers(BlendSamplers samplers)
     {

@@ -25,9 +25,9 @@ public class CharacterEye : DefaultPS<DefaultPSFeatures, CharacterEyeSamplers>
     public static Sampler<CharacterEyeSamplers> Cdr = new(CharacterEyeSamplers.Cdr, 2, "cdr", string.Empty);
     public static Sampler<CharacterEyeSamplers> Reflection = new(CharacterEyeSamplers.Reflection, 3, "reflection", string.Empty);
 
-    public override IReadOnlyList<ShaderParameter> Vectors => new[] { ChrEye1, ChrEye2, ChrEye3 };
+    public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[] { ChrEye1, ChrEye2, ChrEye3 };
 
-    public override IReadOnlyList<Sampler<CharacterEyeSamplers>> Samplers => new[] { Diffuse, Specular, Reflection };
+    public override IReadOnlyList<Sampler<CharacterEyeSamplers>> Samplers { get; } = new[] { Diffuse, Specular, Reflection };
 
     public override bool ValidateSamplers(CharacterEyeSamplers samplers)
     {
