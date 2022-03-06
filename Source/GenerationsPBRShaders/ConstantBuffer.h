@@ -38,12 +38,13 @@ struct RenderDataCB
 
     Eigen::Matrix34f iblProbeMatrices[24];
     Eigen::Vector4f iblProbeParams[24];
-    float iblProbeLodParams[24];
 
     float localLightData[256];
 
-    size_t iblProbeCount;
+    float iblProbeLodParam;
     float defaultIblLodParam;
+
+    size_t iblProbeCount;
     size_t localLightCount;
 };
 
@@ -150,6 +151,8 @@ void ConstantBuffer<T, StartSlot, PS, Dynamic>::upload(DX_PATCH::IDirect3DDevice
         initialData.pSysMem = this;
 
         device->CreateBuffer(&bufferDesc, &initialData, buffer.GetAddressOf());
+
+        const auto lock = GenerationsD3D11::LockGuard(dxpDevice);
 
         if (PS)
             deviceContext->PSSetConstantBuffers(StartSlot, 1, buffer.GetAddressOf());

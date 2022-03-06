@@ -22,8 +22,7 @@ struct IBLProbeData
     float bias;
     float radius;
     float distance;
-    boost::shared_ptr<hh::ygg::CYggPicture> picture;
-    size_t pictureIndex; // placeholder
+    size_t pictureIndex;
 };
 
 struct LightMotionData
@@ -50,6 +49,11 @@ class RenderDataManager
 public:
     static boost::shared_ptr<hh::ygg::CYggPicture> defaultIBLPicture;
     static boost::shared_ptr<hh::ygg::CYggPicture> rgbTablePicture;
+
+    static size_t iblProbesMipLevels;
+    static size_t defaultIblMipLevels;
+    static ComPtr<ID3D11Texture2D> iblProbesTex;
+    static ComPtr<ID3D11ShaderResourceView> iblProbesSRV;
 
     static std::vector<std::unique_ptr<SHLightFieldData>> shlfs;
     static std::vector<std::unique_ptr<IBLProbeData>> iblProbes;

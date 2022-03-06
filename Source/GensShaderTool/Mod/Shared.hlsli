@@ -593,10 +593,10 @@ float3 ComputeDirectLighting(in ShaderParams params, float3 lightDirection, floa
 
     float3 kd = lerp(1 - F, 0, params.Metalness);
 
-    float3 diffuseBRDF = kd * (params.Albedo / PI) * lightColor;
-    float3 specularBRDF = (D * Vis) * F * lightColor;
+    float3 diffuseBRDF = kd * (params.Albedo / PI);
+    float3 specularBRDF = (D * Vis) * F;
 
-    float3 directLighting = diffuseBRDF + specularBRDF;
+    float3 directLighting = (diffuseBRDF + specularBRDF) * lightColor;
     if (cdr)
         directLighting *= params.Cdr;
     else

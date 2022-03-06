@@ -9,8 +9,6 @@ public class D3DIncludeCache : IDisposable
         if (mCache.TryGetValue(fullPath, out handle))
             return;
 
-        Console.WriteLine("Reading {0}", fullPath);
-
         using var fileStream = File.OpenRead(fullPath);
         handle.Bytes = (int)fileStream.Length;
         handle.Data = Marshal.AllocHGlobal(handle.Bytes);

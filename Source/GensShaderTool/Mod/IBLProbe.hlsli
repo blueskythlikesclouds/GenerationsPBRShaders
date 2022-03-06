@@ -28,9 +28,9 @@ float4 ComputeIndirectIBLProbe(in ShaderParams params, float3 position, uint ind
     float3 reflectionDirection = intersectPosition - mrgIBLProbeParams[index].xyz;
 
     float4 result = g_IBLProbeTextures.SampleLevel(g_LinearClampSampler, 
-        float4(reflectionDirection * float3(1, 1, -1), mrgIBLProbeParams[index].w), params.Roughness * mrgIBLProbeLodParams[index / 6][index % 4]);
+        float4(reflectionDirection * float3(1, 1, -1), mrgIBLProbeParams[index].w), params.Roughness * mrgIBLProbeLodParam);
 
-    return float4(result.rgb, 1) * result.a * (1 - maxLocalPos);
+    return float4(result.rgb, 1.0) * result.a * saturate((1 - maxLocalPos) / min(0.5, params.Roughness));
 }
 
 float3 ComputeIndirectIBLProbes(inout ShaderParams params, float3 position)

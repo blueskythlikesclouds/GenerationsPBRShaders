@@ -7,6 +7,10 @@
 
 boost::shared_ptr<hh::ygg::CYggPicture> RenderDataManager::defaultIBLPicture;
 boost::shared_ptr<hh::ygg::CYggPicture> RenderDataManager::rgbTablePicture;
+size_t RenderDataManager::iblProbesMipLevels;
+size_t RenderDataManager::defaultIblMipLevels;
+ComPtr<ID3D11Texture2D> RenderDataManager::iblProbesTex;
+ComPtr<ID3D11ShaderResourceView> RenderDataManager::iblProbesSRV;
 
 std::vector<std::unique_ptr<SHLightFieldData>> RenderDataManager::shlfs;
 std::vector<std::unique_ptr<IBLProbeData>> RenderDataManager::iblProbes;
@@ -28,6 +32,8 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     RenderDataManager::iblProbesInFrustum.clear();
     RenderDataManager::defaultIBLPicture.reset();
     RenderDataManager::rgbTablePicture.reset();
+    RenderDataManager::iblProbesTex.Reset();
+    RenderDataManager::iblProbesSRV.Reset();
     RenderDataManager::shlfs.clear();
     RenderDataManager::iblProbes.clear();
     RenderDataManager::lightMotions.clear();
@@ -39,6 +45,25 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     Sonic::CFxScheduler* scheduler = ((Sonic::CRenderDirectorFxPipeline*)(*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spRenderDirector.get())->m_pScheduler;
 
     scheduler->GetPicture(RenderDataManager::defaultIBLPicture, (StageId::get() + "_defaultibl").c_str());
+
+    if (RenderDataManager::defaultIBLPicture && 
+        RenderDataManager::defaultIBLPicture->m_spPictureData &&
+        RenderDataManager::defaultIBLPicture->m_spPictureData->IsMadeAll())
+    {
+        ID3D11Resource* defaultIblResource = GenerationsD3D11::GetResource(
+            RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture);
+
+        ComPtr<ID3D11Texture2D> defaultIblTex;
+
+        if (SUCCEEDED(defaultIblResource->QueryInterface(defaultIblTex.GetAddressOf())))
+        {
+            D3D11_TEXTURE2D_DESC defaultIblDesc;
+            defaultIblTex->GetDesc(&defaultIblDesc);
+
+            RenderDataManager::defaultIblMipLevels = defaultIblDesc.MipLevels;
+        }
+    }
+
     scheduler->GetPicture(RenderDataManager::rgbTablePicture, (StageId::get() + "_rgb_table0").c_str());
 
     hh::db::CDatabase* database = (*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spDatabase.get();
@@ -93,8 +118,14 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         RenderDataManager::shlfsInFrustum.reserve(RenderDataManager::shlfs.size());
     }
 
+    hh::mr::CMirageDatabaseWrapper mirageWrapper(database);
+
     if (probeData && probeData->IsMadeAll())
     {
+        DX_PATCH::IDirect3DDevice9* dxpDevice = scheduler->m_pMisc->m_pDevice->m_pD3DDevice;
+        ID3D11Device* device = GenerationsD3D11::GetDevice(dxpDevice);
+        ID3D11DeviceContext* deviceContext = GenerationsD3D11::GetDeviceContext(dxpDevice);
+
         hlBINAV2Fix(probeData->m_spData.get(), probeData->m_DataSize);
 
         IBLProbeSet* iblProbeSet = (IBLProbeSet*)hlBINAV2GetData(probeData->m_spData.get());
@@ -116,17 +147,65 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             data.inverseMatrix = matrix.inverse().transpose();
             data.position = Eigen::AlignedVector3f(iblProbe.position[0], iblProbe.position[1], iblProbe.position[2]) / 10.0f;
             data.bias = iblProbe.bias;
-            data.pictureIndex = 0;
+            data.pictureIndex = i;
 
             const AABB aabb = getAABBFromOBB(matrix, 1.0f, 1.0f);
             data.radius = getAABBRadius(aabb);
 
-            scheduler->GetPicture(data.picture, iblProbe.name);
+            boost::shared_ptr<hh::mr::CPictureData> probePicture;
+            mirageWrapper.GetPictureData(probePicture, iblProbe.name, 0);
 
             RenderDataManager::iblProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
 
-            if (RenderDataManager::iblProbes.back()->picture)
-                RenderDataManager::nodeBVH.add(NodeType::IBLProbe, RenderDataManager::iblProbes.back().get(), aabb);
+            if (!probePicture || !probePicture->IsMadeAll())
+                continue;
+
+            ID3D11Resource* probeResource = GenerationsD3D11::GetResource(probePicture->m_pD3DTexture);
+            ComPtr<ID3D11Texture2D> probeTexture;
+
+            if (FAILED(probeResource->QueryInterface(probeTexture.GetAddressOf())))
+                continue;
+
+            // Load the texture into a TextureCubeArray
+            if (!RenderDataManager::iblProbesTex)
+            {
+                D3D11_TEXTURE2D_DESC probeDesc;
+                probeTexture->GetDesc(&probeDesc);
+
+                probeDesc.ArraySize = 6 * iblProbeSet->probeCount;
+                RenderDataManager::iblProbesMipLevels = probeDesc.MipLevels;
+
+                device->CreateTexture2D(&probeDesc, nullptr, RenderDataManager::iblProbesTex.ReleaseAndGetAddressOf());
+
+                D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+                srvDesc.Format = probeDesc.Format;
+                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
+                srvDesc.TextureCubeArray.MipLevels = probeDesc.MipLevels;
+                srvDesc.TextureCubeArray.NumCubes = iblProbeSet->probeCount;
+
+                device->CreateShaderResourceView(RenderDataManager::iblProbesTex.Get(), &srvDesc, RenderDataManager::iblProbesSRV.ReleaseAndGetAddressOf());
+            }
+
+            for (size_t j = 0; j < RenderDataManager::iblProbesMipLevels; j++)
+            {
+                for (size_t k = 0; k < 6; k++)
+                {
+                    const auto lock = GenerationsD3D11::LockGuard(dxpDevice);
+
+                    deviceContext->CopySubresourceRegion(
+                        RenderDataManager::iblProbesTex.Get(),
+                        D3D11CalcSubresource(j, (6 * i) + k, RenderDataManager::iblProbesMipLevels),
+                        0,
+                        0,
+                        0,
+                        probeResource,
+                        D3D11CalcSubresource(j, k, RenderDataManager::iblProbesMipLevels),
+                        nullptr
+                    );
+                }
+            }
+
+            RenderDataManager::nodeBVH.add(NodeType::IBLProbe, RenderDataManager::iblProbes.back().get(), aabb);
         }
 
         RenderDataManager::iblProbesInFrustum.reserve(RenderDataManager::iblProbes.size());
@@ -180,8 +259,6 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             RenderDataManager::lightMotions.push_back(std::make_unique<LightMotionData>(std::move(data)));
         }
     }
-
-    hh::mr::CMirageDatabaseWrapper mirageWrapper(database);
 
     boost::shared_ptr<hh::mr::CLightListData> lightListData;
     mirageWrapper.GetLightListData(lightListData, "light-list", 0);
@@ -243,10 +320,6 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     case NodeType::SHLightField:
     {
         SHLightFieldData* shlf = (SHLightFieldData*)node.data;
-
-        if (!shlf->picture->m_spPictureData->IsMadeAll())
-            break;
-
         shlf->distance = (pCamera->m_MyCamera.m_Position - shlf->position).squaredNorm();
 
         if (shlf->distance > SceneEffect::culling.shLightFieldCullingRange * SceneEffect::culling.shLightFieldCullingRange)
@@ -261,10 +334,6 @@ void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
     case NodeType::IBLProbe:
     {
         IBLProbeData* probe = (IBLProbeData*)node.data;
-
-        if (!probe->picture->m_spPictureData->IsMadeAll())
-            break;
-
         probe->distance = (pCamera->m_MyCamera.m_Position - probe->position).squaredNorm();
 
         if (probe->distance > SceneEffect::culling.iblProbeCullingRange * SceneEffect::culling.iblProbeCullingRange)

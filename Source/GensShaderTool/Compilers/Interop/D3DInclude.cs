@@ -34,7 +34,7 @@ public class D3DInclude : IDisposable
         return (D3DInclude)GCHandle.FromIntPtr(Marshal.ReadIntPtr(pThis, IntPtr.Size * 3)).Target;
     }
 
-    private static unsafe int Open(IntPtr pThis, D3DIncludeType includeType, IntPtr pFileName, IntPtr pParentData, ref IntPtr ppData, ref int pBytes)
+    private static int Open(IntPtr pThis, D3DIncludeType includeType, IntPtr pFileName, IntPtr pParentData, ref IntPtr ppData, ref int pBytes)
     {
         var include = GetInclude(pThis);
 

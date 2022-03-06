@@ -32,12 +32,13 @@ cbuffer cbRenderData : register(b3)
 
     row_major float3x4 mrgIBLProbeMatrices[24];
     float4 mrgIBLProbeParams[24];
-    float4 mrgIBLProbeLodParams[6];
 
     float4 mrgLocalLightData[64];
 
-    uint mrgIBLProbeCount;
+    float mrgIBLProbeLodParam;
     float mrgDefaultIBLLodParam;
+
+    uint mrgIBLProbeCount;
     uint mrgLocalLightCount;
 }
 
