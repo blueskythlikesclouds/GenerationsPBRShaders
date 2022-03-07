@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Dependencies\Amicitia.IO\src\Amicitia.IO\Amicitia.IO.csproj" />
+    <ProjectReference Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ShaderTranslator.csproj" />
   </ItemGroup>
 
 </Project>

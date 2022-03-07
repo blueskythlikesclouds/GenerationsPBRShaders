@@ -27,7 +27,6 @@ struct SceneEffectCB
 
     BOOL useWhiteAlbedo;
     BOOL useFlatNormal;
-    BOOL isEnableLUT;
     BOOL usePBR;
 };
 

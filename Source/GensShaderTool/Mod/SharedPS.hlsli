@@ -9,6 +9,8 @@ Texture2D<float4> g_GBuffer1 : register(t1);
 Texture2D<float4> g_GBuffer2 : register(t2);
 Texture2D<float4> g_GBuffer3 : register(t3);
 
+#ifndef GLOBALS_PS_ONLY_PBR_CONSTANTS
+
 void ComputeShadingParams(inout ShaderParams params, float3 position)
 {
     params.ViewDirection = normalize(g_EyePosition.xyz - position.xyz);
@@ -19,6 +21,8 @@ void ComputeShadingParams(inout ShaderParams params, float3 position)
 
     params.FresnelReflectance = lerp(params.Reflectance, params.Albedo, params.Metalness);
 }
+
+#endif
 
 ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
 {

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "GensShaderTool": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\Repositories\\GenerationsPBRShaders\\Source\\GensShaderTool\\Mod\" \"D:\\Steam\\steamapps\\common\\Sonic Generations\\mods\\PBR Shaders\\disk\\bb3\" \"D:\\Steam\\steamapps\\common\\Sonic Generations\\disk\\bb3\""
+    }
+  }
+}

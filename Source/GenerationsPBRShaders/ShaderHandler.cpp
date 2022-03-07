@@ -314,10 +314,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
     // Render objects & player separately from terrain so it gets culled better.
+    device->SetTexture(13, shadowMap);
+
     This->RenderScene(
         hh::ygg::eRenderCategory_Object | 
         hh::ygg::eRenderCategory_ObjectOverlay | hh::ygg::eRenderCategory_Player,
         hh::ygg::eRenderLevel_Opaque);
+
+    device->SetTexture(13, shadowMapNoTerrain);
 
     This->RenderScene(hh::ygg::eRenderCategory_Terrain,
         hh::ygg::eRenderLevel_Opaque);
@@ -329,10 +333,14 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->SetRenderState(D3DRS_ALPHATESTENABLE, TRUE);
     renderingDevice->LockRenderState(D3DRS_ALPHATESTENABLE);
 
+    device->SetTexture(13, shadowMap);
+
     This->RenderScene(
         hh::ygg::eRenderCategory_Object | 
         hh::ygg::eRenderCategory_ObjectOverlay | hh::ygg::eRenderCategory_Player,
         hh::ygg::eRenderLevel_PunchThrough);
+
+    device->SetTexture(13, shadowMapNoTerrain);
 
     This->RenderScene(hh::ygg::eRenderCategory_Terrain,
         hh::ygg::eRenderLevel_PunchThrough);

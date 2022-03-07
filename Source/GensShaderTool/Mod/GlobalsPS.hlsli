@@ -63,6 +63,8 @@ cbuffer cbSceneEffect : register(b2)
     bool g_UsePBR;
 }
 
+#ifndef GLOBALS_PS_ONLY_PBR_CONSTANTS
+
 cbuffer cbAlphaTest : register(b1)
 {
     bool g_EnableAlphaTest;
@@ -157,5 +159,7 @@ cbuffer cbGlobalsPS : register(b0)
 #endif
 
 #define GLOBALS_PS_APPEND_PARAMETERS_END }
+
+#endif
 
 #endif

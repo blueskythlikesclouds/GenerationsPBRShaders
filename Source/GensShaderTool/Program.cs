@@ -2,10 +2,58 @@
 using GensShaderTool.Mod.Deferred;
 using GensShaderTool.Mod.Filter;
 using GensShaderTool.Mod.Material;
+using GensShaderTool.Mod.Vanilla;
+
+if (args.Length < 3)
+{
+    Console.WriteLine("ERROR: Missing command line arguments.");
+    return;
+}
+
+if (!File.Exists(Path.Combine(args[1], "shader_vanilla.ar.00")))
+{
+    var shaderRegular = new ArchiveDatabase(Path.Combine(args[2], "shader_r.ar.00"));
+    var shaderRegularAdd = new ArchiveDatabase(Path.Combine(args[2], "shader_r_add.ar.00"));
+
+    void MoveShader(string initials) => 
+        shaderRegularAdd.Contents.AddRange(shaderRegular.Contents.Where(x => x.Name.StartsWith(initials)));
+
+    MoveShader("Common_dn");
+    MoveShader("Default_");
+    MoveShader("IgnoreLight");
+    MoveShader("MakeShadowMap");
+    MoveShader("Sys");
+
+    shaderRegular.Contents.RemoveAll(x => shaderRegularAdd.Contents.Contains(x));
+
+    var shaderConverter = new ShaderConverter(args[0]);
+
+    Parallel.ForEach(shaderRegular.Contents.Where(x => x.Name.EndsWith(".wpu") || x.Name.EndsWith(".wvu")), x =>
+    {
+        Console.WriteLine(x.Name);
+
+        x.Data = shaderConverter.ConvertPostEffectShader(x.Name, x.Data);
+        x.Time = DateTime.Now;
+    });
+
+    Parallel.ForEach(shaderRegularAdd.Contents.Where(x => x.Name.EndsWith(".wpu") || x.Name.EndsWith(".wvu")), x =>
+    {
+        Console.WriteLine(x.Name);
+
+        x.Data = shaderConverter.ConvertMaterialShader(x.Name, x.Data);
+        x.Time = DateTime.Now;
+    });
+
+    shaderRegular.Contents.AddRange(shaderRegularAdd.Contents);
+
+    shaderRegular.Sort();
+    shaderRegular.Save(Path.Combine(args[1], "shader_vanilla.ar.00"));
+    return;
+}
 
 (string, IShader) Shader<T>(string filePath) where T : IShader, new()
 {
-    return (Path.Combine(@"D:\Repositories\GenerationsPBRShaders\Source\GensShaderTool\Mod", filePath + ".hlsl"), ShaderHandle<T>.Reference);
+    return (Path.Combine(args[0], filePath + ".hlsl"), ShaderHandle<T>.Reference);
 }
 
 var archiveDatabase = new ArchiveDatabase();
@@ -61,4 +109,5 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     Shader<VolumetricLightingIgnoreSky>("Filter/VolumetricLighting"),
 });
 
-archiveDatabase.Save(@"D:\Steam\steamapps\common\Sonic Generations\mods\PBR Shaders\disk\bb3\shader_pbr.ar.00");
+archiveDatabase.Sort();
+archiveDatabase.Save(Path.Combine(args[1], "shader_pbr.ar.00"));

@@ -17,6 +17,8 @@ public class DatabaseData
     {
         Time = DateTime.Now;
     }
+
+    public override string ToString() => Name;
 }
 
 public class ArchiveDatabase
