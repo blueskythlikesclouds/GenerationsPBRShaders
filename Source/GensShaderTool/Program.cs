@@ -39,6 +39,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<IgnoreLight>("Material/IgnoreLight"),
 
+    Shader<PointMarker>("Material/PointMarker"),
+
     Shader<Ring>("Material/Ring"),
 
     Shader<SuperSonic>("Material/SuperSonic"),

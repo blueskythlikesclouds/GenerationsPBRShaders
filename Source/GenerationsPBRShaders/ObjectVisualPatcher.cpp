@@ -30,8 +30,8 @@
 
 #pragma endregion
 
-STRING_HOOK(UpReelRopeVertexShader, 0x102FE31, "Default2NoV_ConstTexCoord");
-STRING_HOOK(UpReelRopePixelShader, 0x102FE74, "Common2_dp@@_NoLight_NoGI_ConstTexCoord");
+STRING_HOOK(UpReelRopeVertexShader, 0x102FE31, "Default2_@cd@_ConstTexCoord");
+STRING_HOOK(UpReelRopePixelShader, 0x102FE74, "Common2_dp@@d_NoLight_NoGI_ConstTexCoord");
 STRING_HOOK(UpReelRopeDiffuse, 0x102FEB7, "cmn_metal_ms_wire_HD_abd");
 STRING_HOOK(UpReelRopeSpecular, 0x102FEF8, "cmn_metal_ms_wire_HD_prm");
 

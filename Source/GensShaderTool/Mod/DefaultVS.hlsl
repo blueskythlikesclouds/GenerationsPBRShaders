@@ -80,6 +80,8 @@ void main(in VertexDeclaration input, out PixelDeclaration output)
 
 #ifndef HasFeatureNoVertexColor
     output.Color = input.Color;
+#else
+    output.Color = 1.0;
 #endif
 
 #ifdef HasFeatureEyeNormal

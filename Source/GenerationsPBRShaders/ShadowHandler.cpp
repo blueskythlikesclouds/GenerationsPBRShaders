@@ -24,6 +24,10 @@ void ShadowHandler::applyPatches()
 
     enabled = true;
 
+    // Prevent render target texture from being created.
+    WRITE_MEMORY(0x10C604A, uint8_t, 0x89, 0xC7);
+    WRITE_NOP(0x10C604C, 0x10C60A0 - 0x10C604C);
+
     WRITE_JUMP(0x10C60AA, CFxShadowMapInitializeMidAsmHook);
 
     // Linear -> Point

@@ -26,7 +26,7 @@ public class ShaderUtilities
 
     public static bool GeneratesOriginalName(IShader shader)
     {
-        return shader.Features.Count == 0 && (shader is not IPixelShader pixelShader || pixelShader.Samplers.Count == 0);
+        return shader.Features.Count == 0 && shader.Permutations.Count == 0 && (shader is not IPixelShader pixelShader || pixelShader.Samplers.Count == 0);
     }
 
     public static string GenerateShaderName(StringBuilder stringBuilder, IShader shader, int samplers, int features, IPermutation permutation)

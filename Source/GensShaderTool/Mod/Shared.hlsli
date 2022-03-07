@@ -39,9 +39,7 @@ struct VertexDeclaration
     float4 Binormal : BINORMAL;
 #endif
 
-#ifndef HasFeatureNoVertexColor
     float4 Color : COLOR;
-#endif
 };
 
 struct PixelDeclaration
@@ -70,9 +68,7 @@ struct PixelDeclaration
     float2 LightScattering : LIGHTSCATTERING;
 #endif
 
-#ifndef HasFeatureNoVertexColor
     float4 Color : COLOR;
-#endif
 };
 
 #define DEFERRED_FLAGS_GI                    (1 << 0)
@@ -518,7 +514,7 @@ float SampleShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 t
 
 float ComputeShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 texSize, float esmFactor, float4 shadowPos)
 {
-    if (any(abs(shadowPos.xyz)) > shadowPos.w)
+    if (any(abs(shadowPos.xyz) >= shadowPos.w))
         return 1.0;
 
     shadowPos /= shadowPos.w;
