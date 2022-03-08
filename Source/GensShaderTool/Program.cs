@@ -74,6 +74,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     Shader<Emission>("Material/Common"),
     Shader<MEmission>("Material/Common"),
 
+    Shader<Glass>("Material/Glass"),
+
     Shader<CharacterEyeCDRF>("Material/CharacterEye"),
     Shader<CharacterEyeSuper>("Material/CharacterEye"),
 
@@ -84,6 +86,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     Shader<MCharacterEmission>("Material/Character"),
 
     Shader<CharacterSkinCDRF>("Material/Character"),
+
+    Shader<CharacterGlass>("Material/CharacterGlass"),
 
     Shader<IgnoreLight>("Material/IgnoreLight"),
 
