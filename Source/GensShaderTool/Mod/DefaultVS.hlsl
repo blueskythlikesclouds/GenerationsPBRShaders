@@ -7,7 +7,8 @@ void main(in VertexDeclaration input, out PixelDeclaration output)
 #ifdef HasFeatureNormalMapping
     float3 binormal;
 
-    if (dot(input.Binormal.xyz, input.Binormal.xyz) == 0)
+    // 0.0 means there's no binormal in the input layout.
+    if (input.Normal.w == 0.0)
         binormal = cross(input.Normal.xyz, input.Tangent.xyz) * sign(input.Tangent.w);
     else
         binormal = input.Binormal.xyz;
