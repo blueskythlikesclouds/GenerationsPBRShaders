@@ -135,7 +135,7 @@ public class ShaderConverter : IDisposable
         code = code.Replace(", 4)", ", asfloat(0x7F800000))");
 
         // Pass correct data to GBuffer.
-        index = code.IndexOf("if (g_EnableAlphaTest)", StringComparison.Ordinal);
+        index = code.IndexOf("if (g_Flags & SHARED_FLAGS_ENABLE_ALPHA_TEST)", StringComparison.Ordinal);
         index = code.LastIndexOf(';', index) + 1;
 
         code = code[..index] +

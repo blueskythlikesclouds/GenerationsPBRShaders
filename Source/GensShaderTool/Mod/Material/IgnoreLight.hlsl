@@ -52,7 +52,7 @@ void main(in PixelDeclaration input,
     diffuse.a *= texTransparency.Sample(sampTransparency, offset + UV(2));
 #endif
 
-    if (g_EnableAlphaTest)
+    if (g_Flags & SHARED_FLAGS_ENABLE_ALPHA_TEST)
         clip(diffuse.a - g_AlphaThreshold);
 
     float3 emission;

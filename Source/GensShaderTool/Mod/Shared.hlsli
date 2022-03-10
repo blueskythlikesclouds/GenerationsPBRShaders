@@ -18,10 +18,14 @@
 
 #ifndef GLOBALS_ONLY_PBR_CONSTANTS
 
+#define SHARED_FLAGS_ENABLE_ALPHA_TEST (1 << 0)
+#define SHARED_FLAGS_HAS_10_BIT_NORMAL (1 << 1)
+#define SHARED_FLAGS_HAS_BINORMAL      (1 << 2)
+
 cbuffer cbGlobalsShared : register(b1)
 {
     uint g_Booleans;
-    bool g_EnableAlphaTest;
+    uint g_Flags;
     float g_AlphaThreshold;
 }
 
@@ -147,6 +151,27 @@ ShaderParams CreateShaderParams()
 
     return params;
 }
+
+#ifndef GLOBALS_ONLY_PBR_CONSTANTS
+
+float4 DecodeNormal(float4 value)
+{
+    // snorm data gets reinterpreted as unorm and gets normalized to 0-1 range
+    [branch] if (g_Flags & SHARED_FLAGS_HAS_10_BIT_NORMAL)
+    {
+        value -= value > (511.0 / 1023.0);
+        value *= 2.0;
+    }
+
+    return value;
+}
+
+float3 DecodeNormal(float3 value)
+{
+    return DecodeNormal(float4(value, 1.0)).xyz;
+}
+
+#endif
 
 float2 GetTexCoord(float4 texCoord0, float4 texCoord1, uint index, float4 mrgTexcoordIndex[4])
 {

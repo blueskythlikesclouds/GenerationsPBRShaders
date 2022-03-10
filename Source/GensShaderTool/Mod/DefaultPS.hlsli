@@ -28,7 +28,7 @@ void main(in PixelDeclaration input,
     ShaderParams params = CreateShaderParams();
     LoadParams(params, input);
 
-    if (g_EnableAlphaTest)
+    if (g_Flags & SHARED_FLAGS_ENABLE_ALPHA_TEST)
         clip(params.Alpha - g_AlphaThreshold);
 
     params.Normal = normalize(input.Normal);

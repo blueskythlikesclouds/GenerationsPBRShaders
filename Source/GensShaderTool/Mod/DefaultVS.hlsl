@@ -4,14 +4,16 @@
 
 void main(in VertexDeclaration input, out PixelDeclaration output)
 {
+    float3 normal = DecodeNormal(input.Normal.xyz);
+
 #ifdef HasFeatureNormalMapping
+    float4 tangent = DecodeNormal(input.Tangent);
     float3 binormal;
 
-    // 0.0 means there's no binormal in the input layout.
-    if (input.Normal.w == 0.0)
-        binormal = cross(input.Normal.xyz, input.Tangent.xyz) * sign(input.Tangent.w);
+    [branch] if (g_Flags & SHARED_FLAGS_HAS_BINORMAL)
+        binormal = DecodeNormal(input.Binormal.xyz);
     else
-        binormal = input.Binormal.xyz;
+        binormal = cross(normal.xyz, tangent.xyz) * sign(tangent.w);
 #endif
 
 #ifndef HasFeatureNoBone
@@ -23,10 +25,10 @@ void main(in VertexDeclaration input, out PixelDeclaration output)
         blendMatrix += g_MtxPalette[input.BlendIndices[3]] * (1 - input.BlendWeight[0] - input.BlendWeight[1] - input.BlendWeight[2]);
 
         output.Position.xyz = mul(blendMatrix, float4(input.Position.xyz, 1));
-        output.Normal.xyz = mul(blendMatrix, float4(input.Normal.xyz, 0));
+        output.Normal.xyz = mul(blendMatrix, float4(normal, 0));
 
 #ifdef HasFeatureNormalMapping
-        output.Tangent.xyz = mul(blendMatrix, float4(input.Tangent.xyz, 0));
+        output.Tangent.xyz = mul(blendMatrix, float4(tangent.xyz, 0));
         output.Binormal.xyz = mul(blendMatrix, float4(binormal, 0));
 #endif
 
@@ -38,10 +40,10 @@ void main(in VertexDeclaration input, out PixelDeclaration output)
     {
 #endif
         output.Position.xyz = input.Position.xyz;
-        output.Normal.xyz = input.Normal.xyz;
+        output.Normal.xyz = normal.xyz;
 
 #ifdef HasFeatureNormalMapping
-        output.Tangent.xyz = input.Tangent.xyz;
+        output.Tangent.xyz = tangent.xyz;
         output.Binormal.xyz = binormal;
 #endif
 
