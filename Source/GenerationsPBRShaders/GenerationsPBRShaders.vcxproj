@@ -113,6 +113,7 @@
     <ClCompile Include="NodeBVH.cpp" />
     <ClCompile Include="ObjectVisualPatcher.cpp" />
     <ClCompile Include="RenderDataManager.cpp" />
+    <ClCompile Include="SampleChunkResource.cpp" />
     <ClCompile Include="SceneEffect.cpp" />
     <ClCompile Include="GIHandler.cpp" />
     <ClCompile Include="DllMain.cpp" />
@@ -144,6 +145,7 @@
     <ClInclude Include="NodeBVH.h" />
     <ClInclude Include="ObjectVisualPatcher.h" />
     <ClInclude Include="RenderDataManager.h" />
+    <ClInclude Include="SampleChunkResource.h" />
     <ClInclude Include="SceneEffect.h" />
     <ClInclude Include="SHLightField.h" />
     <ClInclude Include="GIHandler.h" />
@@ -160,7 +162,7 @@
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\Dependencies\HedgeLib\HedgeLib\HedgeLib.vcxproj">
-      <Project>{b98fb53d-a55c-1049-ce75-fef0baa145d7}</Project>
+      <Project>{6e42f2de-83ec-3eff-b98f-cce253c42ba1}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

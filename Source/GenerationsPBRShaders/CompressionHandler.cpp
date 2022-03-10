@@ -26,8 +26,8 @@ HOOK(uint32_t, __cdecl, DecompressCAB, 0xA92E54, void* a1, char* pBuffer, void* 
 
     const auto uncompressedData = boost::make_shared<uint8_t[]>(header->uncompressedLength);
 
-    hlDecompressNoAlloc((HlCompressType)(header->compressionType & 0xFFFF), (uint8_t*)header + sizeof(BSCHeader), 
-        header->compressedLength, header->uncompressedLength, uncompressedData.get());
+    hl::decompress_no_alloc((hl::compress_type)(header->compressionType & 0xFFFF), header->compressedLength, (uint8_t*)header + sizeof(BSCHeader),
+        header->uncompressedLength, uncompressedData.get());
 
     struct Output
     {

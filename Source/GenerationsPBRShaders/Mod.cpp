@@ -8,6 +8,7 @@
 #include "IBLCaptureService.h"
 #include "LightShaftHandler.h"
 #include "ObjectVisualPatcher.h"
+#include "SampleChunkResource.h"
 #include "ShaderHandler.h"
 #include "ShadowHandler.h"
 #include "StageId.h"
@@ -54,7 +55,7 @@ extern "C" void __declspec(dllexport) OnFrame()
 
 extern "C" void __declspec(dllexport) Init(ModInfo* info)
 {
-#if _DEBUG || true
+#if _DEBUG
     if (!GetConsoleWindow())
         AllocConsole();
 
@@ -81,6 +82,7 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     LightShaftHandler::applyPatches();
     RenderDataManager::applyPatches();
     ObjectVisualPatcher::applyPatches();
+    SampleChunkResource::applyPatches();
 
 #ifdef ENABLE_IBL_CAPTURE_SERVICE
     IBLCaptureService::applyPatches();

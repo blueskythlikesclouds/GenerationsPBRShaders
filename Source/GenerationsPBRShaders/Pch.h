@@ -32,6 +32,8 @@ using Microsoft::WRL::ComPtr;
 // HedgeLib
 #include <hedgelib/hl_compression.h>
 #include <hedgelib/io/hl_bina.h>
+#include <hedgelib/io/hl_hh_mirage.h>
+#include <hedgelib/models/hl_hh_model.h>
 
 // LostCodeLoader
 #include <LostCodeLoader.h>

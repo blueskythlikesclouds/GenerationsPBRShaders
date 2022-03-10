@@ -79,9 +79,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     if (shlfData && shlfData->IsMadeAll())
     {
-        hlBINAV2Fix(shlfData->m_spData.get(), shlfData->m_DataSize);
+        hl::bina::fix64(shlfData->m_spData.get(), shlfData->m_DataSize);
 
-        SHLightFieldSet* shlfSet = (SHLightFieldSet*)hlBINAV2GetData(shlfData->m_spData.get());
+        SHLightFieldSet* shlfSet = (SHLightFieldSet*)hl::bina::get_data(shlfData->m_spData.get());
 
         for (uint32_t i = 0; i < shlfSet->shlfCount; i++)
         {
@@ -126,9 +126,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         ID3D11Device* device = GenerationsD3D11::GetDevice(dxpDevice);
         ID3D11DeviceContext* deviceContext = GenerationsD3D11::GetDeviceContext(dxpDevice);
 
-        hlBINAV2Fix(probeData->m_spData.get(), probeData->m_DataSize);
+        hl::bina::fix64(probeData->m_spData.get(), probeData->m_DataSize);
 
-        IBLProbeSet* iblProbeSet = (IBLProbeSet*)hlBINAV2GetData(probeData->m_spData.get());
+        IBLProbeSet* iblProbeSet = (IBLProbeSet*)hl::bina::get_data(probeData->m_spData.get());
 
         for (uint32_t i = 0; i < iblProbeSet->probeCount; i++)
         {

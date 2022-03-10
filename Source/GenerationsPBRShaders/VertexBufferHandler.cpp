@@ -1,7 +1,5 @@
 ﻿#include "VertexBufferHandler.h"
 
-#include <hedgelib/models/hl_hh_model.h>
-
 #define SWAP_U32() \
     { \
         *(uint32_t*)outputData = _byteswap_ulong(*(uint32_t*)data); \
@@ -62,7 +60,7 @@ HOOK(DX_PATCH::IDirect3DVertexBuffer9*, __cdecl, CreateVertexBuffer, 0x7479A0,
     return dxpVertexBuffer;
 }
 
-std::unordered_map<HlU32, D3DDECLTYPE> declTypeMap =
+std::unordered_map<hl::u32, D3DDECLTYPE> declTypeMap =
 {
     {0x2C83A4, D3DDECLTYPE_FLOAT1},
     {0x2C23A5, D3DDECLTYPE_FLOAT2},
@@ -102,7 +100,7 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
         uint32_t* meshData;
         uint8_t* vertexData;
         uint16_t* indexData;
-        HlHHVertexElement* elementData;
+        hl::hh::mirage::raw_vertex_element* elementData;
     };
 
     SharedVertexBufferItem* begin = *(SharedVertexBufferItem**)(This + 24);
@@ -115,11 +113,11 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
 
         bool swapStates[0x100]{};
 
-        HlHHVertexElement* element = it->elementData;
+        hl::hh::mirage::raw_vertex_element* element = it->elementData;
 
         while (_byteswap_ushort(element->stream) != 0xFF)
         {
-            const HlU16 offset = _byteswap_ushort(element->offset);
+            const hl::u16 offset = _byteswap_ushort(element->offset);
 
             if (swapStates[offset])
             {
@@ -185,7 +183,7 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
     return originalCreateSharedVertexBuffer(This);
 }
 
-HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9* d3dElements, uint32_t count, HlHHVertexElement* hlElements)
+HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9* d3dElements, uint32_t count, hl::hh::mirage::raw_vertex_element* hlElements)
 {
     D3DVERTEXELEMENT9* minTexCoordElement = nullptr;
     int32_t maxTexCoordUsageIndex = INT_MIN;
@@ -194,7 +192,7 @@ HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9*
 
     for (i = 0; i < count - 1; i++)
     {
-        HlHHVertexElement* hlElement = &hlElements[i];
+        hl::hh::mirage::raw_vertex_element* hlElement = &hlElements[i];
 
         if (_byteswap_ushort(hlElement->stream) == 0xFF)
             break;
@@ -204,8 +202,8 @@ HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9*
         d3dElement->Stream = _byteswap_ushort(hlElement->stream);
         d3dElement->Offset = _byteswap_ushort(hlElement->offset);
         d3dElement->Type = declTypeMap[_byteswap_ulong(hlElement->format)];
-        d3dElement->Method = hlElement->method;
-        d3dElement->Usage = hlElement->type;
+        d3dElement->Method = (BYTE)hlElement->method;
+        d3dElement->Usage = (BYTE)hlElement->type;
         d3dElement->UsageIndex = hlElement->index;
 
         if (d3dElement->Usage != D3DDECLUSAGE_TEXCOORD)

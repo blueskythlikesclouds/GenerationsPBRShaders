@@ -61,6 +61,9 @@
     <ClCompile Include="HBAOPlusHandler.cpp">
       <Filter>Shader\Shader\Filter</Filter>
     </ClCompile>
+    <ClCompile Include="SampleChunkResource.cpp">
+      <Filter>Database</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -129,6 +132,9 @@
     </ClInclude>
     <ClInclude Include="HBAOPlusHandler.h">
       <Filter>Shader\Shader\Filter</Filter>
+    </ClInclude>
+    <ClInclude Include="SampleChunkResource.h">
+      <Filter>Database</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
