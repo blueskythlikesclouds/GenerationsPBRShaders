@@ -16,6 +16,17 @@
 
 #endif
 
+#ifndef GLOBALS_ONLY_PBR_CONSTANTS
+
+cbuffer cbGlobalsShared : register(b1)
+{
+    uint g_Booleans;
+    bool g_EnableAlphaTest;
+    float g_AlphaThreshold;
+}
+
+#endif
+
 struct VertexDeclaration
 {
     float4 Position : POSITION;

@@ -63,13 +63,14 @@ cbuffer cbSceneEffect : register(b2)
     bool g_UsePBR;
 }
 
-#ifndef GLOBALS_PS_ONLY_PBR_CONSTANTS
+#ifndef GLOBALS_ONLY_PBR_CONSTANTS
 
-cbuffer cbAlphaTest : register(b1)
-{
-    bool g_EnableAlphaTest;
-    float g_AlphaThreshold;
-}
+#define mrgIsEnableHemisphere     (1 << 16)
+#define g_IsShadowMapEnable       (1 << 17)
+#define g_IsAlphaDepthBlur        (1 << 18)
+#define g_IsGIEnabled             (1 << 19)
+#define g_IsLightScatteringEnable (1 << 20)
+#define g_IsSoftParticle          (1 << 21)
 
 cbuffer cbGlobalsPS : register(b0)
 {
@@ -146,13 +147,6 @@ cbuffer cbGlobalsPS : register(b0)
     row_major float4x4 g_MtxVerticalLightViewProjection : packoffset(c102);
     float4 mrgVsmEpsilon : packoffset(c148);
     float4 g_DebugValue : packoffset(c149);
-
-    bool mrgIsEnableHemisphere : packoffset(c224.x);
-    bool g_IsShadowMapEnable : packoffset(c224.y);
-    bool g_IsAlphaDepthBlur : packoffset(c224.z);
-    bool g_IsGIEnabled : packoffset(c224.w);
-    bool g_IsLightScatteringEnable : packoffset(c225.x);
-    bool g_IsSoftParticle : packoffset(c225.y);
 
 #ifndef GLOBALS_PS_APPEND_PARAMETERS_BEGIN
 }

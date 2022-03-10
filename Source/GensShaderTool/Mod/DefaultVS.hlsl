@@ -14,7 +14,7 @@ void main(in VertexDeclaration input, out PixelDeclaration output)
 #endif
 
 #ifndef HasFeatureNoBone
-    if (mrgHasBone)
+    if (g_Booleans & mrgHasBone)
     {
         float3x4 blendMatrix = g_MtxPalette[input.BlendIndices[0]] * input.BlendWeight[0];
         blendMatrix += g_MtxPalette[input.BlendIndices[1]] * input.BlendWeight[1];

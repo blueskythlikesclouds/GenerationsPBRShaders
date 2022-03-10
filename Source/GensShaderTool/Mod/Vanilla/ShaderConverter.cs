@@ -44,7 +44,7 @@ public class ShaderConverter : IDisposable
         string codeOriginal = code;
 
         // Include PBR functionality.
-        preCode = "#define GLOBALS_PS_ONLY_PBR_CONSTANTS\n" +
+        preCode = "#define GLOBALS_ONLY_PBR_CONSTANTS\n" +
                   "#include \"GlobalsPS.hlsli\"\n" +
                   "#include \"SharedPS.hlsli\"\n" +
                   "" +
@@ -135,7 +135,7 @@ public class ShaderConverter : IDisposable
         code = code.Replace(", 4)", ", asfloat(0x7F800000))");
 
         // Pass correct data to GBuffer.
-        index = code.IndexOf("if (enable_alpha_test)", StringComparison.Ordinal);
+        index = code.IndexOf("if (g_EnableAlphaTest)", StringComparison.Ordinal);
         index = code.LastIndexOf(';', index) + 1;
 
         code = code[..index] +

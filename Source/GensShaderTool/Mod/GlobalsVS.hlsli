@@ -1,6 +1,10 @@
 #ifndef GLOBALS_VS_HLSLI_INCLUDED
 #define GLOBALS_VS_HLSLI_INCLUDED
 
+#define mrgHasBone                (1 << 0)
+#define g_IsShadowMapEnable       (1 << 1)
+#define g_IsLightScatteringEnable (1 << 2)
+
 cbuffer cbGlobalsVS : register(b0)
 {
     row_major float4x4 g_MtxProjection : packoffset(c0);
@@ -41,10 +45,6 @@ cbuffer cbGlobalsVS : register(b0)
     float4 g_SkyParam : packoffset(c219);
     float4 g_ViewZAlphaFade : packoffset(c220);
     float4 g_PowerGlossLevel : packoffset(c245);
-
-    bool mrgHasBone : packoffset(c256.x);
-    bool g_IsShadowMapEnable : packoffset(c256.y);
-    bool g_IsLightScatteringEnable : packoffset(c256.z);
 
 #ifndef GLOBALS_VS_APPEND_PARAMETERS_BEGIN
 }
