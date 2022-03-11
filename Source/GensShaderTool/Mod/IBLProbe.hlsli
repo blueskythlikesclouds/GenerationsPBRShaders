@@ -48,7 +48,7 @@ float3 ComputeIndirectIBLProbes(inout ShaderParams params, float3 position)
     if (color.w < 0.99)
     {
         color += float4(UnpackHDR(g_DefaultIBLTexture.SampleLevel(g_LinearClampSampler, 
-            params.RoughReflectionDirection, params.Roughness * mrgDefaultIBLLodParam)), 1) * (1 - color.a);
+            params.RoughReflectionDirection * float3(1, 1, -1), params.Roughness * mrgDefaultIBLLodParam)), 1) * (1 - color.a);
     }
 
     return color.rgb;
