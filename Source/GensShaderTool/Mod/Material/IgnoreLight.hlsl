@@ -60,7 +60,7 @@ void main(in PixelDeclaration input,
 #if defined HasSamplerEmissionReflection
     float3 viewNormal = normalize(mul(float4(input.Normal.xyz, 0), g_MtxView).xyz);
     emission = texEmission.Sample(sampEmission, viewNormal.xy * float2(0.5, -0.5) + 0.5).rgb;
-#elif defined HasEmission
+#elif defined HasSamplerEmission
     emission = texEmission.Sample(sampEmission, offset + UV(1)).rgb;
 #else
     emission = g_Emissive.rgb;
