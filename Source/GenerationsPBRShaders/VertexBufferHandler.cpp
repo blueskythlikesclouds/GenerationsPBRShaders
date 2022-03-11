@@ -172,12 +172,6 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
 
             element++;
         }
-
-        // Swap again so it becomes valid in the original code.
-        // TODO: Instead of doing this, rewrite the original function.
-        for (size_t i = 0; i < vertexCount * stride; i += 4)
-            *(uint32_t*)(it->vertexData + i) = _byteswap_ulong(*(uint32_t*)(it->vertexData + i));
-
     }
 
     return originalCreateSharedVertexBuffer(This);
@@ -241,4 +235,7 @@ void VertexBufferHandler::applyPatches()
     INSTALL_HOOK(CreateVertexBuffer);
     INSTALL_HOOK(CreateSharedVertexBuffer);
     INSTALL_HOOK(CreateVertexElements);
+
+    // Prevent the game's own endian swapping
+    WRITE_NOP(0x72E9A2, 2);
 }

@@ -172,6 +172,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
                 D3D11_TEXTURE2D_DESC probeDesc;
                 probeTexture->GetDesc(&probeDesc);
 
+                probeDesc.Usage = D3D11_USAGE_DEFAULT;
                 probeDesc.ArraySize = 6 * iblProbeSet->probeCount;
                 RenderDataManager::iblProbesMipLevels = probeDesc.MipLevels;
 
