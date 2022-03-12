@@ -485,7 +485,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     device->DrawQuad2D(nullptr, 0, 0);
 
-    // Unset SSAO/RLR.
+    // Unset SSAO/RLR/ShadowMap.
+    device->UnsetSampler(7);
     d3dDevice->SetTexture(19, nullptr);
     d3dDevice->SetTexture(21, nullptr);
 
@@ -526,6 +527,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     device->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
     device->DrawQuad2D(nullptr, 0, 0);
+
+    device->UnsetSampler(0);
+    device->UnsetSampler(1);
 
     //***************************************************************//
     // Forward rendering: Render transparent objects and water. //
@@ -673,6 +677,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
         device->DrawQuad2D(nullptr, 0, 0);
 
+        device->UnsetSampler(4);
+        device->UnsetSampler(12);
+
         // Unlock render states we are done with.
         renderingDevice->UnlockRenderState(D3DRS_DESTBLEND);
         renderingDevice->UnlockRenderState(D3DRS_SRCBLEND);
@@ -756,6 +763,7 @@ HOOK(void, __fastcall, CFxToneMappingExecute, Sonic::fpCFxToneMappingExecute, So
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
     This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
+    This->m_pScheduler->m_pMisc->m_pDevice->UnsetSampler(0);
 }
 
 HOOK(void, __fastcall, CGameplayFlowStageOnExit, 0xD05360, void* This)
