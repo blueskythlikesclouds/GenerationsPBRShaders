@@ -8,7 +8,7 @@ cbuffer cbFilter : register(b5)
 
 Texture2D<float4> g_SourceTexture : register(t4);
 
-float4 main(in float4 unused : SV_POSITION, in float4 texCoord : TEXCOORD1) : SV_TARGET
+float4 main(in float4 unused : SV_POSITION, in float4 texCoord : TEXCOORD0) : SV_TARGET
 {
     float depth = g_DepthTexture.SampleLevel(g_PointClampSampler, texCoord.xy, 0).x;
 
