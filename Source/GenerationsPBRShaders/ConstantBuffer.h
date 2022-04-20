@@ -28,6 +28,8 @@ struct SceneEffectCB
     BOOL useWhiteAlbedo;
     BOOL useFlatNormal;
     BOOL usePBR;
+
+    float defaultIBLIntensity;
 };
 
 struct RenderDataCB

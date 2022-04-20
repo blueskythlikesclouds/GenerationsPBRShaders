@@ -61,6 +61,8 @@ cbuffer cbSceneEffect : register(b2)
     bool g_UseWhiteAlbedo;
     bool g_UseFlatNormal;
     bool g_UsePBR;
+
+    float g_DefaultIBLIntensity;
 }
 
 #ifndef GLOBALS_ONLY_PBR_CONSTANTS

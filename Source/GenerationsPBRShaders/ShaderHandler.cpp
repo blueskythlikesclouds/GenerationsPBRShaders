@@ -138,6 +138,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     sceneEffectCB.useWhiteAlbedo = SceneEffect::debug.useWhiteAlbedo || giOnly;
     sceneEffectCB.useFlatNormal = iblOnly || SceneEffect::debug.useFlatNormal;
     sceneEffectCB.usePBR = globalUsePBR;
+    sceneEffectCB.defaultIBLIntensity = SceneEffect::ibl.defaultIBLIntensity;
     sceneEffectCB.upload(d3dDevice);
 
     if (!globalUsePBR)
@@ -187,7 +188,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     // Set IBLs in the frustum.
     renderDataCB.iblProbeCount = std::min<size_t>(RenderDataManager::iblProbesInFrustum.size(),
-        std::min<size_t>(Configuration::maxProbeCount, SceneEffect::debug.maxProbeCount));
+        std::min<size_t>(Configuration::maxProbeCount, SceneEffect::ibl.maxIBLProbeCount));
 
     if (SceneEffect::debug.disableIBLProbe)
         renderDataCB.iblProbeCount = 0;

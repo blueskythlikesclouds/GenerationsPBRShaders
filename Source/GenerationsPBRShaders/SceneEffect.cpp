@@ -1,6 +1,6 @@
 ﻿#include "SceneEffect.h"
 
-DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false, 24 };
+DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, -Eigen::Vector3f::Ones(), -1, DEBUG_VIEW_MODE_NONE, false, false, false, false, false, false };
 CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
@@ -8,6 +8,7 @@ RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0
 SSAOParam SceneEffect::ssao;
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
 VolumetricLightingParam SceneEffect::volumetricLighting = { false, false, 16, -0.98f, 1.0f, 0.002f };
+IBLParam SceneEffect::ibl = { 1.0f, 24 };
 
 HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParameterFile* This)
 {
@@ -45,7 +46,6 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDefaultIBL, "DisableDefaultIBL");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableIBLProbe, "DisableIBLProbe");
     debugParamCategory->CreateParamBool(&SceneEffect::debug.disableLUT, "DisableLUT");
-    debugParamCategory->CreateParamUnsignedLong(&SceneEffect::debug.maxProbeCount, "MaxProbeCount");
 
     parameterGroup->Flush();
 
@@ -119,6 +119,12 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     volumetricLightingCategory->CreateParamFloat(&SceneEffect::volumetricLighting.g, "G");
     volumetricLightingCategory->CreateParamFloat(&SceneEffect::volumetricLighting.inScatteringScale, "InScatteringScale");
     volumetricLightingCategory->CreateParamFloat(&SceneEffect::volumetricLighting.depthThreshold, "DepthThreshold");
+
+    parameterGroup->Flush();
+
+    Sonic::CParameterCategory* iblCategory = parameterGroup->CreateParameterCategory("IBL", "IBL");
+    iblCategory->CreateParamFloat(&SceneEffect::ibl.defaultIBLIntensity, "DefaultIBLIntensity");
+    iblCategory->CreateParamUnsignedLong(&SceneEffect::ibl.maxIBLProbeCount, "MaxIBLProbeCount");
 
     parameterGroup->Flush();
 

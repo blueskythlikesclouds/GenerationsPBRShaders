@@ -32,7 +32,6 @@ struct DebugParam
     bool disableDefaultIBL;
     bool disableIBLProbe;
     bool disableLUT;
-    unsigned long maxProbeCount;
 };
 
 struct CullingParam
@@ -94,6 +93,12 @@ struct VolumetricLightingParam
     float depthThreshold;
 };
 
+struct IBLParam
+{
+    float defaultIBLIntensity;
+    unsigned long maxIBLProbeCount;
+};
+
 class SceneEffect
 {
 public:
@@ -105,6 +110,7 @@ public:
     static SSAOParam ssao;
     static BloomParam bloom;
     static VolumetricLightingParam volumetricLighting;
+    static IBLParam ibl;
 
     static void applyPatches();
 };
