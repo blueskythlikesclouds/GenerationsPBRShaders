@@ -73,7 +73,7 @@ struct SSAOParam : GFSDK_SSAO_Parameters
 enum BloomType : uint32_t
 {
     BLOOM_TYPE_DEFAULT,
-    BLOOM_TYPE_PBR,
+    BLOOM_TYPE_FORCES,
     BLOOM_TYPE_BFXP,
     BLOOM_TYPE_COLORS
 };

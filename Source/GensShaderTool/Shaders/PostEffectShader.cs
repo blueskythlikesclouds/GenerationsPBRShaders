@@ -10,9 +10,9 @@ public abstract class PostEffectShader : IShader
     public string CodeExtension => ".wpu";
     public string ParameterExtension => ".psparam";
 
-    public IReadOnlyList<ShaderParameter> Vectors => Array.Empty<ShaderParameter>();
-    public IReadOnlyList<ShaderParameter> Integers => Array.Empty<ShaderParameter>();
-    public IReadOnlyList<ShaderParameter> Booleans => Array.Empty<ShaderParameter>();
+    public virtual IReadOnlyList<ShaderParameter> Vectors => Array.Empty<ShaderParameter>();
+    public virtual IReadOnlyList<ShaderParameter> Integers => Array.Empty<ShaderParameter>();
+    public virtual IReadOnlyList<ShaderParameter> Booleans => Array.Empty<ShaderParameter>();
     public IReadOnlyList<IFeature> Features => Array.Empty<IFeature>();
     public IReadOnlyList<IPermutation> Permutations => Array.Empty<IPermutation>();
     public virtual IReadOnlyList<D3DShaderMacro> Macros => Array.Empty<D3DShaderMacro>();

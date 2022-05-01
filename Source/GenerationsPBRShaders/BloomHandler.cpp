@@ -47,7 +47,7 @@ bool __cdecl isUsePBRBloomShader()
     case BLOOM_TYPE_DEFAULT:
         return globalUsePBR;
 
-    case BLOOM_TYPE_PBR:
+    case BLOOM_TYPE_FORCES:
         return true;
 
     case BLOOM_TYPE_BFXP:

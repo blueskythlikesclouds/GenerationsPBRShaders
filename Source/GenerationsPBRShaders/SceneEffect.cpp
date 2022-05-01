@@ -105,9 +105,9 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     bloomParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::bloom.type, "Type", "Type",
         {
             { "Default", BLOOM_TYPE_DEFAULT },
-            { "PBR", BLOOM_TYPE_PBR },
+            { "Sonic Colors", BLOOM_TYPE_COLORS },
+            { "Sonic Forces", BLOOM_TYPE_FORCES },
             { "Better FxPipeline", BLOOM_TYPE_BFXP },
-            { "Colors", BLOOM_TYPE_COLORS },
         });
 
     parameterGroup->Flush();

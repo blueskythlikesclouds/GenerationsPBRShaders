@@ -113,6 +113,14 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<VolumetricLighting>("Filter/VolumetricLighting"),
     Shader<VolumetricLightingIgnoreSky>("Filter/VolumetricLighting"),
+    
+    Shader<WarsBloom>("Filter/WarsBloom"),
+    
+    Shader<Sonic2010Bloom>("Filter/Sonic2010Bloom"),
+    
+    Shader<DownSampleN>("Filter/DownSampleN"),
+
+    Shader<BicubicFilter>("Filter/BicubicFilter"),
 });
 
 archiveDatabase.Sort();

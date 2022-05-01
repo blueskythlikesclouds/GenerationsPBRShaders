@@ -71,7 +71,7 @@ extern "C" void __declspec(dllexport) Init(ModInfo* info)
     if (!Configuration::load(dir + "GenerationsPBRShaders.ini"))
         MessageBox(NULL, L"Failed to parse GenerationsPBRShaders.ini", NULL, MB_ICONERROR);
 
-    //BloomHandler::applyPatches();
+    BloomHandler::applyPatches();
     GIHandler::applyPatches();
     ShaderHandler::applyPatches();
     ShadowHandler::applyPatches();
