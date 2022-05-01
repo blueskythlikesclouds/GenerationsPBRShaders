@@ -226,6 +226,27 @@ void ConvertPBRFactorToParams(float4 pbrFactor, inout ShaderParams params)
     params.Metalness = pbrFactor.r > 0.9;
 }
 
+float3 DecodeNormalMap(float2 normalMap)
+{
+    float3 decoded;
+    decoded.xy = normalMap.xy * 2.0 - 1.0;
+    decoded.z = sqrt(1.0 - saturate(dot(decoded.xy, decoded.xy)));
+    return decoded;
+}
+
+float2 EncodeNormalMap(float3 normalMap)
+{
+    return normalMap.xy * 0.5 + 0.5;
+}
+
+float3 BlendNormalMap(float3 left, float3 right)
+{
+    left += float3(0, 0, 1);
+    right *= float3(-1, -1, 1);
+
+    return left * dot(left, right) / left.z - right;
+}
+
 float ComputeFalloff(float cosViewDirection, float3 falloffFactor)
 {
     return saturate(exp2(log2(saturate(1 - cosViewDirection + falloffFactor.z)) * falloffFactor.y) * falloffFactor.x);

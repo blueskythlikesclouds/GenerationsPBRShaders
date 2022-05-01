@@ -99,6 +99,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<Water01>("Material/Water01"),
     Shader<Water05>("Material/Water05"),
+
+    Shader<TriplanarBlend>("Material/TriplanarBlend"),
     
     Shader<IBL>("Deferred/IBL"),
     Shader<Light>("Deferred/Light"),

@@ -37,9 +37,7 @@ void main(in PixelDeclaration input,
 
     if (!g_UseFlatNormal)
     {
-        float3 normalMap;
-        normalMap.xy = params.NormalMap.xy * 2.0 - 1.0;
-        normalMap.z = sqrt(1.0 - saturate(dot(normalMap.xy, normalMap.xy)));
+        float3 normalMap = DecodeNormalMap(params.NormalMap);
 
         params.Normal = normalize(
             normalMap.x * normalize(input.Tangent) +
