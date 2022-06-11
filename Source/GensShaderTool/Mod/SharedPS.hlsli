@@ -24,6 +24,11 @@ void ComputeShadingParams(inout ShaderParams params, float3 position)
 
 #endif
 
+uint DecodeDeferredFlags(float value)
+{
+    return uint(value * DEFERRED_FLAGS_MAX);
+}
+
 ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
 {
     float4 gBuffer0 = g_GBuffer0.SampleLevel(g_PointClampSampler, texCoord, 0);
@@ -40,7 +45,7 @@ ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
     params.AmbientOcclusion = gBuffer2.z;
     params.Metalness = gBuffer2.w;
     params.Normal = normalize(gBuffer3.xyz * 2.0 - 1.0);
-    params.DeferredFlags = uint(gBuffer3.w * DEFERRED_FLAGS_MAX);
+    params.DeferredFlags = DecodeDeferredFlags(gBuffer3.w);
 
     if (loadCdr && (params.DeferredFlags & DEFERRED_FLAGS_CDR))
         params.Cdr = gBuffer0.rgb;
@@ -48,6 +53,11 @@ ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
         params.Emission = gBuffer0.rgb;
 
     return params;
+}
+
+float EncodeDeferredFlags(uint flags)
+{
+    return (float(flags) + 0.5) / float(DEFERRED_FLAGS_MAX);
 }
 
 void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
@@ -80,7 +90,7 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
     gBuffer2.w = params.Metalness;
 
     gBuffer3.xyz = params.Normal * 0.5 + 0.5;
-    gBuffer3.w = (float(params.DeferredFlags) + 0.5) / float(DEFERRED_FLAGS_MAX);
+    gBuffer3.w = EncodeDeferredFlags(params.DeferredFlags);
 }
 
 void StoreParams(float3 emission, float3 normal, uint flags, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
@@ -96,7 +106,7 @@ void StoreParams(float3 emission, float3 normal, uint flags, out float4 gBuffer0
     gBuffer2.w = 1.0;
 
     gBuffer3.xyz = normal * 0.5 + 0.5;
-    gBuffer3.w = (float(flags) + 0.5) / float(DEFERRED_FLAGS_MAX);
+    gBuffer3.w = EncodeDeferredFlags(flags);
 }
 
 float3 ComputeLocalLights(in ShaderParams params, float3 position)

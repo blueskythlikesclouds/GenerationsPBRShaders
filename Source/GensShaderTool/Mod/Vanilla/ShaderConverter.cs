@@ -65,6 +65,38 @@ public class ShaderConverter : IDisposable
         preCode = preCode.Replace("4> g_VerticalShadowMap", "> g_VerticalShadowMap");
         preCode = preCode.Replace("4> g_ShadowMap", "> g_ShadowMap");
 
+        // Patch shadows.
+        codeOriginal = codeOriginal.Replace("g_VerticalShadowMapSampler.SampleCmp(", "GetShadow(g_VerticalShadowMapSampler,");
+        codeOriginal = codeOriginal.Replace("g_ShadowMapSampler.SampleCmp(", "GetShadow(g_ShadowMapSampler,");
+
+        // Take a different path in grass instance shaders. Execute a completely different shader instead of toggling for PBR.
+        if (name.Contains("GrassInstance_"))
+        {
+            int componentIndex = translated.IndexOf(" : COLOR,");
+            string component = translated.Substring(componentIndex - 2, 2);
+
+            translated =
+                preCode +
+                "Texture2D<float4> s1 : register(t1);" +
+                "SamplerState s1_s : register(s1);" +
+                mainCodeArgs +
+                "if (g_UsePBR) {" +
+                "  float4 diffuse = s0.Sample(s0_s, v0.xy);" +
+                "  if (g_Flags & SHARED_FLAGS_ENABLE_ALPHA_TEST) {" +
+                "    clip(diffuse.a - 0.5);" +
+                "  }" +
+                "  float4 specular = s1.Sample(s1_s, v0.xy);" +
+                "  oC0 = 0.0;" +
+                "  oC1 = float4(SrgbToLinear(diffuse.rgb), 1.0);" +
+                "  oC2 = float4(specular.x / 4.0, max(0.01, 1.0 - specular.y), specular.z, specular.x > 0.9);" +
+                $" oC3 = float4({component}.xyz, EncodeDeferredFlags(DEFERRED_FLAGS_LIGHT_FIELD | DEFERRED_FLAGS_LIGHT | DEFERRED_FLAGS_IBL | DEFERRED_FLAGS_LIGHT_SCATTERING));" +
+                "} else {" +
+                codeOriginal +
+                "}";
+
+            goto end;
+        }
+
         void ConvertToLinear(string texName)
         {
             string search = $"{texName}.Sample";
@@ -122,10 +154,6 @@ public class ShaderConverter : IDisposable
         if (name.Contains("SysError"))
             ScaleByLuminance("C[0].xyyx");
 
-        // Patch shadows.
-        codeOriginal = codeOriginal.Replace("g_VerticalShadowMapSampler.SampleCmp(", "GetShadow(g_VerticalShadowMapSampler,");
-        codeOriginal = codeOriginal.Replace("g_ShadowMapSampler.SampleCmp(", "GetShadow(g_ShadowMapSampler,");
-
         code = code.Replace("g_VerticalShadowMap", "1.0; //"); // No vertical shadows on the PBR side
         code = code.Replace("g_ShadowMapSampler.SampleCmp(", "GetShadow(g_ShadowMapSampler,");
 
@@ -182,7 +210,8 @@ public class ShaderConverter : IDisposable
         }
 
         translated = stringBuilder.ToString();
-
+        
+        end:
         bytes = Encoding.UTF8.GetBytes(translated);
 
         fixed (byte* ptr = bytes)
