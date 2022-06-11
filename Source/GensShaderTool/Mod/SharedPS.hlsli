@@ -62,11 +62,13 @@ float EncodeDeferredFlags(uint flags)
 
 void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuffer1, out float4 gBuffer2, out float4 gBuffer3)
 {
-    params.DeferredFlags = DEFERRED_FLAGS_LIGHT | DEFERRED_FLAGS_IBL | DEFERRED_FLAGS_LIGHT_SCATTERING;
+    params.DeferredFlags |= DEFERRED_FLAGS_LIGHT | DEFERRED_FLAGS_IBL | DEFERRED_FLAGS_LIGHT_SCATTERING;
+
 #ifdef NoGI
     params.DeferredFlags |= DEFERRED_FLAGS_LIGHT_FIELD;
 #else
-    params.DeferredFlags |= DEFERRED_FLAGS_GI;
+    if (!(params.DeferredFlags & DEFERRED_FLAGS_LIGHT_FIELD))
+        params.DeferredFlags |= DEFERRED_FLAGS_GI;
 #endif
 
 #if defined HasSamplerCdr
@@ -75,7 +77,11 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
 #elif defined NoGI
     gBuffer0.rgb = params.Emission;
 #else
-    gBuffer0.rgb = ComputeIndirectLighting(params, g_EnvBRDFTexture, g_LinearClampSampler);
+    if (params.DeferredFlags & DEFERRED_FLAGS_GI)
+        gBuffer0.rgb = ComputeIndirectLighting(params, g_EnvBRDFTexture, g_LinearClampSampler);
+    else
+        gBuffer0.rgb = 0.0;
+
     gBuffer0.rgb += params.Emission;
 #endif
 

@@ -101,6 +101,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     Shader<Water05>("Material/Water05"),
 
     Shader<TriplanarBlend>("Material/TriplanarBlend"),
+
+    Shader<TransThin>("Material/TransThin"),
     
     Shader<IBL>("Deferred/IBL"),
     Shader<Light>("Deferred/Light"),

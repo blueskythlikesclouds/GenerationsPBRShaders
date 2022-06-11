@@ -90,9 +90,10 @@ struct PixelDeclaration
 #define DEFERRED_FLAGS_LIGHT_FIELD           (1 << 1)
 #define DEFERRED_FLAGS_CDR                   (1 << 2)
 #define DEFERRED_FLAGS_LIGHT                 (1 << 3)
-#define DEFERRED_FLAGS_IBL                   (1 << 4)
-#define DEFERRED_FLAGS_LIGHT_SCATTERING      (1 << 5)
-#define DEFERRED_FLAGS_MAX                  ((1 << 6) - 1)
+#define DEFERRED_FLAGS_TRANSLUCENCY          (1 << 4)
+#define DEFERRED_FLAGS_IBL                   (1 << 5)
+#define DEFERRED_FLAGS_LIGHT_SCATTERING      (1 << 6)
+#define DEFERRED_FLAGS_MAX                  ((1 << 7) - 1)
 
 struct ShaderParams
 {
@@ -569,10 +570,10 @@ float SampleShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 t
     return lerp(lerp(values.w, values.z, fraction.x), lerp(values.x, values.y, fraction.x), fraction.y);
 }
 
-float ComputeShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 texSize, float esmFactor, float4 shadowPos)
+float ComputeShadow(Texture2D<float> texShadow, SamplerState sampShadow, float2 texSize, float esmFactor, float4 shadowPos, float fallback = 1.0)
 {
     if (any(abs(shadowPos.xyz) >= shadowPos.w))
-        return 1.0;
+        return fallback;
 
     shadowPos /= shadowPos.w;
     shadowPos.xy = (shadowPos.xy * float2(0.5, -0.5) + 0.5) * texSize.x;
