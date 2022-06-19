@@ -29,7 +29,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
     params.Albedo = SrgbToLinear(diffuse.rgb) * input.Color.rgb;
     params.Alpha = diffuse.a * input.Color.a;
 
-    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(2)), false, params);
+    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(2)), METALNESS_CHANNEL_NONE, params);
 
     params.NormalMap = texNormal.Sample(sampNormal, UV(3)).xy;
 }

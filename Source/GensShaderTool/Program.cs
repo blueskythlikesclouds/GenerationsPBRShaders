@@ -67,10 +67,12 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<Blend>("Material/Blend"),
     Shader<MBlend>("Material/Blend"),
+    Shader<Blend3>("Material/Blend"),
 
     Shader<Common>("Material/Common"),
     Shader<MCommon>("Material/Common"),
-
+    Shader<Common3>("Material/Common"),
+    
     Shader<Emission>("Material/Common"),
     Shader<MEmission>("Material/Common"),
 

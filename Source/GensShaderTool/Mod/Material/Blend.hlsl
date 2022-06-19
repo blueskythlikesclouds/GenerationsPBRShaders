@@ -50,7 +50,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
     specular = lerp(specular, texSpecularBlend.Sample(sampSpecularBlend, UV(5)), blend);
 #endif
 
-    ConvertSpecularToParams(specular, HasExplicitMetalness, params);
+    ConvertSpecularToParams(specular, MetalnessChannel, params);
 #else
     ConvertPBRFactorToParams(lerp(PBRFactor, PBRFactor2, blend), params);
 #endif

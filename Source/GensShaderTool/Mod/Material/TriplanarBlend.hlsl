@@ -68,7 +68,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
     specular = lerp(specular, SampleTex(input, texSpecularBlend, sampSpecularBlend, 4), input.Color.w);
 #endif
 
-    ConvertSpecularToParams(specular, false, params);
+    ConvertSpecularToParams(specular, METALNESS_CHANNEL_NONE, params);
 
     float3 normalMap = DecodeNormalMap(SampleTex(input, texNormal, sampNormal, 2).xy);
 

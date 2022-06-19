@@ -27,7 +27,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
     float4 diffuse = texDiffuse.Sample(sampDiffuse, UV(0));
     params.Albedo = SrgbToLinear(diffuse.rgb);
 
-    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), false, params);
+    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), METALNESS_CHANNEL_NONE, params);
 }
 
 void ModifyParams(inout ShaderParams params, in PixelDeclaration input)

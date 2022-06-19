@@ -211,12 +211,25 @@ float4 LinearToSrgb(float4 value)
     return float4(LinearToSrgb(value.rgb), value.a);
 }
 
-void ConvertSpecularToParams(float4 specular, bool explicitMetalness, inout ShaderParams params)
+#define METALNESS_CHANNEL_NONE    0 
+#define METALNESS_CHANNEL_BLUE    1
+#define METALNESS_CHANNEL_ALPHA   2
+
+void ConvertSpecularToParams(float4 specular, uint metalnessChannel, inout ShaderParams params)
 {
     params.Reflectance = specular.r / 4.0;
     params.Roughness = max(0.01, 1.0 - specular.g);
-    params.AmbientOcclusion = specular.b;
-    params.Metalness = !explicitMetalness ? specular.r > 0.9 : specular.a;
+
+    if (metalnessChannel == METALNESS_CHANNEL_BLUE)
+    {
+        params.Metalness = specular.b;
+        params.AmbientOcclusion = specular.a;
+    }
+    else
+    {
+        params.AmbientOcclusion = specular.b;
+        params.Metalness = metalnessChannel == METALNESS_CHANNEL_NONE ? specular.r > 0.9 : specular.a;
+    }
 }
 
 void ConvertPBRFactorToParams(float4 pbrFactor, inout ShaderParams params)

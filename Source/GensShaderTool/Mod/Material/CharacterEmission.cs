@@ -20,7 +20,7 @@ public class MCharacterEmission : CharacterEmission
     public override string Name => "MChrEmission";
 
     public override IReadOnlyList<ShaderParameter> Vectors { get; } = new[] { Common.Luminance, FalloffFactor };
-    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.EnableExplicitMetalness };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.MetalnessChannelAlpha };
 
     public override bool ValidateSamplers(CharacterSamplers samplers)
     {

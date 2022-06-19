@@ -52,6 +52,7 @@ public:
 
     static size_t iblProbesMipLevels;
     static size_t defaultIblMipLevels;
+    static bool defaultIblExposurePacked;
     static ComPtr<ID3D11Texture2D> iblProbesTex;
     static ComPtr<ID3D11ShaderResourceView> iblProbesSRV;
 

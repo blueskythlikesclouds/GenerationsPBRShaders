@@ -40,6 +40,8 @@ cbuffer cbRenderData : register(b3)
 
     uint mrgIBLProbeCount;
     uint mrgLocalLightCount;
+
+    bool mrgDefaultIBLExposurePacked;
 }
 
 cbuffer cbSceneEffect : register(b2)

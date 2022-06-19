@@ -38,7 +38,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
 #endif
 
 #ifdef HasSamplerSpecular
-    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(2)), HasExplicitMetalness, params);
+    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(2)), MetalnessChannel, params);
 #else
     ConvertPBRFactorToParams(PBRFactor, params);
 #endif

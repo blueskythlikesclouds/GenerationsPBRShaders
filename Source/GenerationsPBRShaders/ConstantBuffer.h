@@ -27,6 +27,7 @@ struct SceneEffectCB
 
     BOOL useWhiteAlbedo;
     BOOL useFlatNormal;
+
     BOOL usePBR;
 
     float defaultIBLIntensity;
@@ -47,6 +48,8 @@ struct RenderDataCB
 
     size_t iblProbeCount;
     size_t localLightCount;
+
+    BOOL defaultIblExposurePacked;
 };
 
 struct GITextureCB

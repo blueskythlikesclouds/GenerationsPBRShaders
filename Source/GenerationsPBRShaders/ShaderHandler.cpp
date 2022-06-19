@@ -204,6 +204,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     renderDataCB.iblProbeLodParam = (float)(RenderDataManager::iblProbesMipLevels - 1);
     renderDataCB.defaultIblLodParam = (float)(RenderDataManager::defaultIblMipLevels - 1);
+    renderDataCB.defaultIblExposurePacked = RenderDataManager::defaultIblExposurePacked;
 
     GenerationsD3D11::LockDevice(d3dDevice);
     GenerationsD3D11::GetDeviceContext(d3dDevice)->PSSetShaderResources(27, 1, RenderDataManager::iblProbesSRV.GetAddressOf());

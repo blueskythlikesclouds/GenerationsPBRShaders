@@ -9,6 +9,7 @@ boost::shared_ptr<hh::ygg::CYggPicture> RenderDataManager::defaultIBLPicture;
 boost::shared_ptr<hh::ygg::CYggPicture> RenderDataManager::rgbTablePicture;
 size_t RenderDataManager::iblProbesMipLevels;
 size_t RenderDataManager::defaultIblMipLevels;
+bool RenderDataManager::defaultIblExposurePacked;
 ComPtr<ID3D11Texture2D> RenderDataManager::iblProbesTex;
 ComPtr<ID3D11ShaderResourceView> RenderDataManager::iblProbesSRV;
 
@@ -47,9 +48,11 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     scheduler->GetPicture(RenderDataManager::defaultIBLPicture, (StageId::get() + "_defaultibl").c_str());
 
     if (RenderDataManager::defaultIBLPicture && 
-        RenderDataManager::defaultIBLPicture->m_spPictureData &&
-        RenderDataManager::defaultIBLPicture->m_spPictureData->IsMadeAll())
+        RenderDataManager::defaultIBLPicture->m_spPictureData)
     {
+        while (!RenderDataManager::defaultIBLPicture->m_spPictureData->IsMadeAll())
+            ;
+
         ID3D11Resource* defaultIblResource = GenerationsD3D11::GetResource(
             RenderDataManager::defaultIBLPicture->m_spPictureData->m_pD3DTexture);
 
@@ -61,6 +64,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             defaultIblTex->GetDesc(&defaultIblDesc);
 
             RenderDataManager::defaultIblMipLevels = defaultIblDesc.MipLevels;
+            RenderDataManager::defaultIblExposurePacked = defaultIblDesc.Format == DXGI_FORMAT_BC3_UNORM;
         }
     }
 
@@ -70,6 +74,13 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     boost::shared_ptr<hh::db::CRawData> shlfData;
     database->GetRawData(shlfData, (StageId::get() + ".shlf").c_str(), 0);
+
+    const bool lightFieldInMeters = shlfData == nullptr;
+
+    if (!shlfData)
+        database->GetRawData(shlfData, (StageId::get() + ".lf").c_str(), 0);
+
+    const float lightFieldScale = lightFieldInMeters ? 10.0f : 1.0f;
 
     boost::shared_ptr<hh::db::CRawData> probeData;
     database->GetRawData(probeData, (StageId::get() + ".probe").c_str(), 0);
@@ -88,12 +99,18 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             const SHLightField& shlf = shlfSet->shlfs[i];
 
             Eigen::Affine3f affine =
-                Eigen::Translation3f(shlf.position[0], shlf.position[1], shlf.position[2]) *
+                Eigen::Translation3f(
+                    shlf.position[0] * lightFieldScale, 
+                    shlf.position[1] * lightFieldScale, 
+                    shlf.position[2] * lightFieldScale) *
                 Eigen::AngleAxisf(shlf.rotation[0], Eigen::Vector3f::UnitX()) *
                 Eigen::AngleAxisf(shlf.rotation[1], Eigen::Vector3f::UnitY()) *
                 Eigen::AngleAxisf(shlf.rotation[2], Eigen::Vector3f::UnitZ()) *
-                Eigen::Scaling(shlf.scale[0], shlf.scale[1], shlf.scale[2]);
-
+                Eigen::Scaling(
+                    shlf.scale[0] * lightFieldScale,
+                    shlf.scale[1] * lightFieldScale, 
+                    shlf.scale[2] * lightFieldScale);
+            
             SHLightFieldData data;
 
             data.probeCounts[0] = shlf.probeCounts[0];
@@ -102,9 +119,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             data.obb = OBB(affine.matrix(), 0.5f);
             data.inverseMatrix = affine.inverse().matrix().transpose();
-            data.position = Eigen::AlignedVector3f(shlf.position[0], shlf.position[1], shlf.position[2]) / 10.0f;
+            data.position = affine.translation() / 10.0f;
 
-            const AABB aabb = getAABBFromOBB(affine.matrix(), 0.5f, 1.0f / 10.0f);
+            const AABB aabb = getAABBFromOBB(affine.matrix(), 0.5f, 0.1f);
             data.radius = getAABBRadius(aabb);
 
             scheduler->GetPicture(data.picture, shlf.name);

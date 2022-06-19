@@ -28,7 +28,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
     params.Alpha = diffuse.a * input.Color.a;
 
 #ifdef HasSamplerSpecular
-    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), HasExplicitMetalness, params);
+    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), MetalnessChannel, params);
 #else
     ConvertPBRFactorToParams(PBRFactor, params);
 #endif

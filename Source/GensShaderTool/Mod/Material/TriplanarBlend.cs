@@ -22,7 +22,7 @@ public class TriplanarBlend : DefaultPS<DefaultPSFeatures, TriplanarBlendSampler
         new ShaderParameter("Scale2", 151)
     };
 
-    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.DisableExplicitMetalness };
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.MetalnessChannelNone };
 
     public override IReadOnlyList<Sampler<TriplanarBlendSamplers>> Samplers { get; } = new Sampler<TriplanarBlendSamplers>[]
     {

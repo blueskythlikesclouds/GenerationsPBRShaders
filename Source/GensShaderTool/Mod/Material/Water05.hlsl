@@ -21,7 +21,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
 {
     params.Alpha = input.Color.w;
 
-    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), false, params);
+    ConvertSpecularToParams(texSpecular.Sample(sampSpecular, UV(1)), METALNESS_CHANNEL_NONE, params);
 
     params.NormalMap = lerp(texNormal.Sample(sampNormal, UV(2)).xy, 
         texNormal1.Sample(sampNormal1, UV(3)).xy, 1.0 - RefractionCubemap.x);
