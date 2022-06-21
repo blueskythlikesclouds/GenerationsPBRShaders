@@ -72,18 +72,16 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     hh::db::CDatabase* database = (*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spDatabase.get();
 
-    boost::shared_ptr<hh::db::CRawData> shlfData;
-    database->GetRawData(shlfData, (StageId::get() + ".shlf").c_str(), 0);
+    auto shlfData = database->GetRawData((StageId::get() + ".shlf").c_str());
 
     const bool lightFieldInMeters = shlfData == nullptr;
 
     if (!shlfData)
-        database->GetRawData(shlfData, (StageId::get() + ".lf").c_str(), 0);
+        shlfData = database->GetRawData((StageId::get() + ".lf").c_str());
 
     const float lightFieldScale = lightFieldInMeters ? 10.0f : 1.0f;
 
-    boost::shared_ptr<hh::db::CRawData> probeData;
-    database->GetRawData(probeData, (StageId::get() + ".probe").c_str(), 0);
+    const auto probeData = database->GetRawData((StageId::get() + ".probe").c_str());
 
     globalUsePBR = RenderDataManager::defaultIBLPicture != nullptr || RenderDataManager::rgbTablePicture != nullptr ||
         shlfData != nullptr || probeData != nullptr;
@@ -169,8 +167,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             const AABB aabb = getAABBFromOBB(matrix, 1.0f, 1.0f);
             data.radius = getAABBRadius(aabb);
 
-            boost::shared_ptr<hh::mr::CPictureData> probePicture;
-            mirageWrapper.GetPictureData(probePicture, iblProbe.name, 0);
+            const auto probePicture = mirageWrapper.GetPictureData(iblProbe.name);
 
             RenderDataManager::iblProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
 
@@ -231,8 +228,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     hh::mot::CMotionDatabaseWrapper motionWrapper(database);
 
-    boost::shared_ptr<hh::db::CRawData> rawData;
-    database->GetRawData(rawData, "Autodraw.txt", 0);
+    const auto rawData = database->GetRawData("Autodraw.txt");
 
     if (rawData && rawData->IsMadeAll())
     {
@@ -264,8 +260,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             *extension = '\0';
 
-            boost::shared_ptr<hh::mot::CLightMotionData> lightMotionData;
-            motionWrapper.GetLightMotionData(lightMotionData, line, 0);
+            const auto lightMotionData = motionWrapper.GetLightMotionData(line);
 
             if (!lightMotionData)
                 continue;
@@ -278,8 +273,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         }
     }
 
-    boost::shared_ptr<hh::mr::CLightListData> lightListData;
-    mirageWrapper.GetLightListData(lightListData, "light-list", 0);
+    const auto lightListData = mirageWrapper.GetLightListData("light-list");
 
     if (lightListData && lightListData->IsMadeAll())
     {
@@ -322,11 +316,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     // Try env_brdf as a last resort.
     if (!globalUsePBR)
-    {
-        boost::shared_ptr<hh::mr::CPictureData> envBrdfPicture;
-        mirageWrapper.GetPictureData(envBrdfPicture, "env_brdf", 0);
-        globalUsePBR |= envBrdfPicture != nullptr;
-    }
+        globalUsePBR |= mirageWrapper.GetPictureData("env_brdf") != nullptr;
 }
 
 void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)

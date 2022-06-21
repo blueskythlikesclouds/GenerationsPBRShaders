@@ -102,7 +102,7 @@ void __stdcall movePictureDataSetupGIStore(char* name, MapType* map,
         char atlasName[256];
         occlusionNode->second.atlasName.copyTo(atlasName);
 
-        databaseWrapper->GetPictureData(occlusionTex, atlasName, 0);
+        occlusionTex = databaseWrapper->GetPictureData(atlasName);
 
         if (occlusionTex != nullptr)
             occlusionRect = occlusionNode->second.rect;
