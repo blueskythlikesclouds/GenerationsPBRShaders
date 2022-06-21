@@ -317,6 +317,22 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
     // Try env_brdf as a last resort.
     if (!globalUsePBR)
         globalUsePBR |= mirageWrapper.GetPictureData("env_brdf") != nullptr;
+
+    // Add support for our beloved mustache man.
+    if (globalUsePBR)
+    {
+        const auto opaqueMat = mirageWrapper.GetMaterialData("DynamicOpaque");
+        if (opaqueMat)
+        {
+            opaqueMat->m_spShaderListData = mirageWrapper.GetShaderListData("VertexColorFadeToInvAlpha2_d");
+        }
+
+        const auto punchThroughMat = mirageWrapper.GetMaterialData("DynamicPunchThrough");
+        if (punchThroughMat)
+        {
+            punchThroughMat->m_spShaderListData = mirageWrapper.GetShaderListData("Common2_d");
+        }
+    }
 }
 
 void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)

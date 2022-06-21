@@ -105,7 +105,9 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     Shader<TriplanarBlend>("Material/TriplanarBlend"),
 
     Shader<TransThin>("Material/TransThin"),
-    
+
+    Shader<VertexColorFadeToInvAlpha>("Material/VertexColorFadeToInvAlpha"),
+
     Shader<IBL>("Deferred/IBL"),
     Shader<Light>("Deferred/Light"),
 
