@@ -12,7 +12,7 @@ SamplerState sampDiffuse : register(s0);
 
 void LoadParams(inout ShaderParams params, in PixelDeclaration input)
 {
-    params.Albedo = SrgbToLinear(input.Color.rgb);
+    params.Albedo = input.Color.rgb;
     params.Alpha = texDiffuse.Sample(sampDiffuse, UV(0)).a;
 
     ConvertPBRFactorToParams(PBRFactor, params);
