@@ -146,7 +146,7 @@ void ConstantBuffer<T, StartSlot, PS, Dynamic>::upload(DX_PATCH::IDirect3DDevice
         ID3D11Device* device = GenerationsD3D11::GetDevice(dxpDevice);
 
         D3D11_BUFFER_DESC bufferDesc{};
-        bufferDesc.ByteWidth = (sizeof(T) + 16) & ~0xF;
+        bufferDesc.ByteWidth = (sizeof(T) + 15) & ~0xF;
         bufferDesc.Usage = Dynamic ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
         bufferDesc.CPUAccessFlags = Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
