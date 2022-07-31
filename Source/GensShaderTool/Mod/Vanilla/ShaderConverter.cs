@@ -86,8 +86,8 @@ public class ShaderConverter : IDisposable
                 "    clip(diffuse.a - 0.5);" +
                 "  }" +
                 "  float4 specular = s1.Sample(s1_s, v0.xy);" +
-                "  oC0 = 0.0;" +
-                "  oC1 = float4(SrgbToLinear(diffuse.rgb), 1.0);" +
+                "  oC0 = float4(0.0, 0.0, 0.0, 1.0);" +
+                "  oC1 = float4(SrgbToLinear(diffuse.rgb), 0.0);" +
                 "  oC2 = float4(specular.x / 4.0, max(0.01, 1.0 - specular.y), specular.z, specular.x > 0.9);" +
                 $" oC3 = float4({component}.xyz, EncodeDeferredFlags(DEFERRED_FLAGS_LIGHT_FIELD | DEFERRED_FLAGS_LIGHT | DEFERRED_FLAGS_IBL | DEFERRED_FLAGS_LIGHT_SCATTERING));" +
                 "} else {" +

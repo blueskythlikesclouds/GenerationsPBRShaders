@@ -39,7 +39,6 @@ ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
     ShaderParams params = CreateShaderParams();
 
     params.Albedo = gBuffer1.rgb;
-    params.Shadow = gBuffer1.w;
     params.Reflectance = gBuffer2.x;
     params.Roughness = gBuffer2.y;
     params.AmbientOcclusion = gBuffer2.z;
@@ -51,6 +50,8 @@ ShaderParams LoadParams(float2 texCoord, bool loadCdr = false)
         params.Cdr = gBuffer0.rgb;
     else
         params.Emission = gBuffer0.rgb;
+
+    params.Shadow = gBuffer0.w;
 
     return params;
 }
@@ -85,10 +86,10 @@ void StoreParams(inout ShaderParams params, out float4 gBuffer0, out float4 gBuf
     gBuffer0.rgb += params.Emission;
 #endif
 
-    gBuffer0.w = 0.0; // Unused.
+    gBuffer0.w = params.Shadow; 
 
     gBuffer1.rgb = params.Albedo;
-    gBuffer1.w = params.Shadow;
+    gBuffer1.w = 0.0; // Unused.
 
     gBuffer2.x = params.Reflectance;
     gBuffer2.y = params.Roughness;
