@@ -45,7 +45,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
     Sonic::CFxScheduler* scheduler = ((Sonic::CRenderDirectorFxPipeline*)(*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spRenderDirector.get())->m_pScheduler;
 
-    scheduler->GetPicture(RenderDataManager::defaultIBLPicture, (StageId::get() + "_defaultibl").c_str());
+    RenderDataManager::defaultIBLPicture = scheduler->GetPicture((StageId::get() + "_defaultibl").c_str());
 
     if (RenderDataManager::defaultIBLPicture && 
         RenderDataManager::defaultIBLPicture->m_spPictureData)
@@ -68,7 +68,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         }
     }
 
-    scheduler->GetPicture(RenderDataManager::rgbTablePicture, (StageId::get() + "_rgb_table0").c_str());
+    RenderDataManager::rgbTablePicture = scheduler->GetPicture((StageId::get() + "_rgb_table0").c_str());
 
     hh::db::CDatabase* database = (*Sonic::CGameDocument::ms_pInstance)->m_pMember->m_spDatabase.get();
 
@@ -122,7 +122,7 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             const AABB aabb = getAABBFromOBB(affine.matrix(), 0.5f, 0.1f);
             data.radius = getAABBRadius(aabb);
 
-            scheduler->GetPicture(data.picture, shlf.name);
+            data.picture = scheduler->GetPicture(shlf.name);
 
             RenderDataManager::shlfs.push_back(std::make_unique<SHLightFieldData>(std::move(data)));
 

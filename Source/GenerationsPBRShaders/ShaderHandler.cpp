@@ -42,36 +42,36 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 {
     originalCFxRenderGameSceneInitialize(This);
 
-    This->m_pScheduler->GetShader(fxDeferredPassLightShader, "FxFilterPT", "FxDeferredPassLight");
-    This->m_pScheduler->GetShader(fxRLRShader, "FxFilterPT", "FxRLR");
+    fxDeferredPassLightShader = This->m_pScheduler->GetShader("FxFilterPT", "FxDeferredPassLight");
+    fxRLRShader = This->m_pScheduler->GetShader("FxFilterPT", "FxRLR");
 
-    This->m_pScheduler->GetShader(fxDeferredPassIBLShader, "FxFilterPT", "FxDeferredPassIBL");
+    fxDeferredPassIBLShader = This->m_pScheduler->GetShader("FxFilterPT", "FxDeferredPassIBL");
 
-    This->m_pScheduler->GetShader(fxConvolutionFilterShader, "FxFilterT", "FxConvolutionFilter");
+    fxConvolutionFilterShader = This->m_pScheduler->GetShader("FxFilterT", "FxConvolutionFilter");
 
-    This->m_pScheduler->GetShader(fxCopyColorShader, "FxFilterT", "FxCopyColor");
-    This->m_pScheduler->GetShader(fxCopyColorDepthShader, "FxFilterT", "FxCopyColorDepth");
+    fxCopyColorShader = This->m_pScheduler->GetShader("FxFilterT", "FxCopyColor");
+    fxCopyColorDepthShader = This->m_pScheduler->GetShader("FxFilterT", "FxCopyColorDepth");
 
-    This->m_pScheduler->GetShader(fxVolumetricLightingShader, "FxFilterPT", "FxVolumetricLighting");
-    This->m_pScheduler->GetShader(fxVolumetricLightingIgnoreSkyShader, "FxFilterPT", "FxVolumetricLighting_IgnoreSky");
+    fxVolumetricLightingShader = This->m_pScheduler->GetShader("FxFilterPT", "FxVolumetricLighting");
+    fxVolumetricLightingIgnoreSkyShader = This->m_pScheduler->GetShader("FxFilterPT", "FxVolumetricLighting_IgnoreSky");
 
-    This->m_pScheduler->GetShader(fxBoxBlurShader, "FxFilterT", "FxBoxBlur");
+    fxBoxBlurShader = This->m_pScheduler->GetShader("FxFilterT", "FxBoxBlur");
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(luAvgTex, 1u, 1u, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R16F, D3DPOOL_DEFAULT, NULL);
+    luAvgTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1u, 1u, 1, D3DUSAGE_RENDERTARGET, D3DFMT_R16F, D3DPOOL_DEFAULT, NULL);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer0Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer1Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A2B10G10R10, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer2Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8B8G8R8, D3DPOOL_DEFAULT, NULL);
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(gBuffer3Tex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8B8G8R8, D3DPOOL_DEFAULT, NULL);
+    gBuffer0Tex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    gBuffer1Tex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A2B10G10R10, D3DPOOL_DEFAULT, NULL);
+    gBuffer2Tex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8B8G8R8, D3DPOOL_DEFAULT, NULL);
+    gBuffer3Tex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8B8G8R8, D3DPOOL_DEFAULT, NULL);
 
     const uint32_t RLR_WIDTH = This->m_spColorTex->m_CreationParams.Width >> Configuration::rlrResolution;
     const uint32_t RLR_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> Configuration::rlrResolution;
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(rlrTex, RLR_WIDTH, RLR_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    rlrTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(RLR_WIDTH, RLR_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(ssaoTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
+    ssaoTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(volumetricLightTex, 0.5f, 0.5f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    volumetricLightTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(0.5f, 0.5f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
     luAvgTex->m_AutoReset = false;
     envBrdfPicture.reset();
@@ -81,11 +81,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
 {
     // Get shadowmaps.
-    boost::shared_ptr<hh::ygg::CYggTexture> shadowMapNoTerrain;
-    This->GetTexture(shadowMapNoTerrain, "shadowmap_noterrain");
-
-    boost::shared_ptr<hh::ygg::CYggTexture> shadowMap;
-    This->GetTexture(shadowMap, "shadowmap");
+    const auto shadowMapNoTerrain = This->GetTexture("shadowmap_noterrain");
+    const auto shadowMap = This->GetTexture("shadowmap");
 
     // Cache variables because it gets verbose if I don't.
     DX_PATCH::IDirect3DDevice9* d3dDevice = This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice;
@@ -122,10 +119,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         return originalCFxRenderGameSceneExecute(This);
 
     if (!blueNoisePicture)
-        This->m_pScheduler->GetPicture(blueNoisePicture, "blue_noise");
+        blueNoisePicture = This->m_pScheduler->GetPicture("blue_noise");
 
     if (!envBrdfPicture)
-        This->m_pScheduler->GetPicture(envBrdfPicture, "env_brdf");
+        envBrdfPicture = This->m_pScheduler->GetPicture("env_brdf");
 
     d3dDevice->SetTexture(16, blueNoisePicture ? blueNoisePicture->m_spPictureData->m_pD3DTexture : nullptr); // g_BlueNoiseTexture
     d3dDevice->SetTexture(17, luAvgTex ? luAvgTex->m_pD3DTexture : nullptr); // g_LuminanceTexture
@@ -212,15 +209,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderDataCB.upload(d3dDevice);
 
     // Prepare and set render targets. Clear their contents.
-    boost::shared_ptr<hh::ygg::CYggSurface> gBuffer0Surface;
-    boost::shared_ptr<hh::ygg::CYggSurface> gBuffer1Surface;
-    boost::shared_ptr<hh::ygg::CYggSurface> gBuffer2Surface;
-    boost::shared_ptr<hh::ygg::CYggSurface> gBuffer3Surface;
-
-    gBuffer0Tex->GetSurface(gBuffer0Surface, 0, 0);
-    gBuffer1Tex->GetSurface(gBuffer1Surface, 0, 0);
-    gBuffer2Tex->GetSurface(gBuffer2Surface, 0, 0);
-    gBuffer3Tex->GetSurface(gBuffer3Surface, 0, 0);
+    const auto gBuffer0Surface = gBuffer0Tex->GetSurface();
+    const auto gBuffer1Surface = gBuffer1Tex->GetSurface();
+    const auto gBuffer2Surface = gBuffer2Tex->GetSurface();
+    const auto gBuffer3Surface = gBuffer3Tex->GetSurface();
 
     device->SetRenderTarget(0, This->m_spColorSurface);
     device->SetRenderTarget(1, gBuffer1Surface);
@@ -367,9 +359,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         // Force SSAO to allocate
         if (!ssaoTex->m_pD3DTexture)
         {
-            boost::shared_ptr<hh::ygg::CYggSurface> ssaoBlurredSurface;
-            ssaoTex->GetSurface(ssaoBlurredSurface, 0, 0);
-            device->SetRenderTarget(0, ssaoBlurredSurface);
+            device->SetRenderTarget(0, ssaoTex->GetSurface());
             device->Flush();
         }
 
@@ -421,11 +411,8 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     if (SceneEffect::rlr.enable && Configuration::rlrEnable)
     {
-        boost::shared_ptr<hh::ygg::CYggSurface> rlrSurface;
-        rlrTex->GetSurface(rlrSurface, 0, 0);
-
         device->SetShader(fxRLRShader);
-        device->SetRenderTarget(0, rlrSurface);
+        device->SetRenderTarget(0, rlrTex->GetSurface());
         device->SetTexture(0, gBuffer0Tex);
 
         // Set parameters
@@ -487,15 +474,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderingDevice->LockRenderState(D3DRS_ZFUNC);
 
     // Capture the current view to use in transparent objects and water
-    boost::shared_ptr<hh::ygg::CYggSurface> capturedColorSurface;
-    This->m_spCapturedColorTex->GetSurface(capturedColorSurface, 0, 0);
-
-    boost::shared_ptr<hh::ygg::CYggSurface> capturedDepthSurface;
-    This->m_spCapturedDepthTex->GetSurface(capturedDepthSurface, 0, 0);
-
     device->SetShader(fxCopyColorDepthShader);
-    device->SetRenderTarget(0, capturedColorSurface);
-    device->SetDepthStencil(capturedDepthSurface);
+    device->SetRenderTarget(0, This->m_spCapturedColorTex->GetSurface());
+    device->SetDepthStencil(This->m_spCapturedDepthTex->GetSurface());
 
     device->SetTexture(0, This->m_spColorTex);
     device->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
@@ -612,12 +593,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         renderingDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, FALSE);
         renderingDevice->LockRenderState(D3DRS_ALPHABLENDENABLE);
 
-        boost::shared_ptr<hh::ygg::CYggSurface> volumetricLightSurface;
-        volumetricLightTex->GetSurface(volumetricLightSurface, 0, 0);
-
         device->SetShader(SceneEffect::volumetricLighting.ignoreSky ? fxVolumetricLightingIgnoreSkyShader : fxVolumetricLightingShader);
         device->UnsetDepthStencil();
-        device->SetRenderTarget(0, volumetricLightSurface);
+        device->SetRenderTarget(0, volumetricLightTex->GetSurface());
 
         filterCB.volumetricLightingSampleCount = SceneEffect::volumetricLighting.sampleCount;
         filterCB.volumetricLightingRcpSampleCount = 1.0f / (float)SceneEffect::volumetricLighting.sampleCount;
@@ -732,10 +710,7 @@ HOOK(void, __fastcall, CFxToneMappingExecute, Sonic::fpCFxToneMappingExecute, So
     if (!globalUsePBR)
         return;
 
-    boost::shared_ptr<hh::ygg::CYggSurface> surface;
-    luAvgTex->GetSurface(surface, 0, 0);
-
-    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, surface);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, luAvgTex->GetSurface());
     This->m_pScheduler->m_pMisc->m_pDevice->UnsetDepthStencil();
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(fxCopyColorShader.m_spVertexShader, fxCopyColorShader.m_spPixelShader);
     This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, This->m_spLuAvgTex);

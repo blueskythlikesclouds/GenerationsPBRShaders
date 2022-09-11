@@ -9,8 +9,8 @@ boost::shared_ptr<hh::ygg::CYggTexture> lutTex;
 
 HOOK(void, __fastcall, CFxRenderParticleInitialize, 0x10C7170, Sonic::CFxJob* This)
 {
-    This->m_pScheduler->GetShader(fxLutShader, "FxFilterT", "FxLUT");
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(lutTex, 1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, NULL);
+    fxLutShader = This->m_pScheduler->GetShader("FxFilterT", "FxLUT");
+    lutTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, NULL);
 }
 
 HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
@@ -21,15 +21,9 @@ HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
     if (!fxLutShader.m_spVertexShader || !fxLutShader.m_spPixelShader)
         return;
 
-    boost::shared_ptr<hh::ygg::CYggTexture> colorTex;
-    This->GetTexture(colorTex, "colortex");
-
-    boost::shared_ptr<hh::ygg::CYggSurface> surface;
-    lutTex->GetSurface(surface, 0, 0);
-
-    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, surface);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, lutTex->GetSurface());
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(fxLutShader.m_spVertexShader, fxLutShader.m_spPixelShader);
-    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, This->GetTexture("colortex"));
     This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(1, RenderDataManager::rgbTablePicture);
 
     filterCB.lutEnable = RenderDataManager::rgbTablePicture && RenderDataManager::rgbTablePicture->m_spPictureData->IsMadeAll() &&

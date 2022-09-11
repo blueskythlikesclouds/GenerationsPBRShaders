@@ -20,24 +20,24 @@ HOOK(void, __fastcall, CFxBloomGlareInitialize, Sonic::fpCFxBloomGlareInitialize
 {
     originalCFxBloomGlareInitialize(This);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(colorsBrightPassSrcTex, 
-        COLORS_BLOOM_WIDTH, COLORS_BLOOM_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, nullptr);
+    colorsBrightPassSrcTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(COLORS_BLOOM_WIDTH, COLORS_BLOOM_HEIGHT, 
+        1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, nullptr);
 
     for (size_t i = 0; i < COLORS_BLOOM_BUFFER_COUNT; i++)
     {
-        This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(colorsBloomTex[i],
-            COLORS_BLOOM_WIDTH >> i, COLORS_BLOOM_HEIGHT >> i, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, nullptr);
+        colorsBloomTex[i] = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(COLORS_BLOOM_WIDTH >> i, COLORS_BLOOM_HEIGHT >> i,
+            1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, nullptr);
 
-        This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(colorsBloomTmpTex[i],
-            COLORS_BLOOM_WIDTH >> i, COLORS_BLOOM_HEIGHT >> i, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, nullptr);
+        colorsBloomTmpTex[i] = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(COLORS_BLOOM_WIDTH >> i, COLORS_BLOOM_HEIGHT >> i,
+            1, D3DUSAGE_RENDERTARGET, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT, nullptr);
     }
 
-    This->m_pScheduler->GetShader(pbrBloomShader, "RenderBuffer", "PBR_Bloom_BrightPassHDR");
-    This->m_pScheduler->GetShader(colorsBloomShader, "RenderBuffer", "Colors_Bloom_BrightPassHDR");
-    This->m_pScheduler->GetShader(downSampleNShader, "FxFilterT", "FxDownSampleN");
-    This->m_pScheduler->GetShader(downSample4Shader, "RenderBuffer", "DownSample4");
-    This->m_pScheduler->GetShader(blendColorShader, "FxFilterT", "FxBlendColor");
-    This->m_pScheduler->GetShader(bicubicFilterShader, "FxFilterT", "FxBicubicFilter");
+    pbrBloomShader = This->m_pScheduler->GetShader("RenderBuffer", "PBR_Bloom_BrightPassHDR");
+    colorsBloomShader = This->m_pScheduler->GetShader("RenderBuffer", "Colors_Bloom_BrightPassHDR");
+    downSampleNShader = This->m_pScheduler->GetShader("FxFilterT", "FxDownSampleN");
+    downSample4Shader = This->m_pScheduler->GetShader("RenderBuffer", "DownSample4");
+    blendColorShader = This->m_pScheduler->GetShader("FxFilterT", "FxBlendColor");
+    bicubicFilterShader = This->m_pScheduler->GetShader("FxFilterT", "FxBicubicFilter");
 }
 
 bool __cdecl isUsePBRBloomShader()
@@ -90,11 +90,7 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     //
     // Down Sample N
     //
-    boost::shared_ptr<hh::ygg::CYggTexture> hdrTex;
-    This->GetTexture(hdrTex, "hdr");
-
-    boost::shared_ptr<hh::ygg::CYggSurface> dstSurface;
-    colorsBrightPassSrcTex->GetSurface(dstSurface, 0, 0);
+    const auto hdrTex = This->GetTexture("hdr");
 
     const float rcpWidth = 1.0f / (float)hdrTex->m_CreationParams.Width;
     const float rcpHeight = 1.0f / (float)hdrTex->m_CreationParams.Height;
@@ -117,29 +113,24 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(0, D3DTADDRESS_CLAMP);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(downSampleNShader);
-    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, colorsBrightPassSrcTex->GetSurface());
     This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
 
     //
     // Bright Pass
     //
-    boost::shared_ptr<hh::ygg::CYggTexture> luAvgTex;
-    This->GetTexture(luAvgTex, "luavg");
-
-    colorsBloomTex[0]->GetSurface(dstSurface, 0, 0);
-
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(150, (const float*)0x1A572D0, 1);
     This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->SetPixelShaderConstantF(151, (const float*)0x1A57360, 1);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorsBrightPassSrcTex);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(0, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
 
-    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(1, luAvgTex);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(1, This->GetTexture("luavg"));
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerFilter(1, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
     This->m_pScheduler->m_pMisc->m_pDevice->SetSamplerAddressMode(1, D3DTADDRESS_CLAMP);
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(colorsBloomShader);
-    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, colorsBloomTex[0]->GetSurface());
     This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
 
     //
@@ -149,10 +140,8 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
 
     for (size_t i = 1; i < COLORS_BLOOM_BUFFER_COUNT; i++)
     {
-        colorsBloomTex[i]->GetSurface(dstSurface, 0, 0);
-
         This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, colorsBloomTex[i - 1]);
-        This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
+        This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, colorsBloomTex[i]->GetSurface());
         This->m_pScheduler->m_pMisc->m_pDevice->DrawQuad2D(nullptr, 0, 0);
     }
 
@@ -174,10 +163,8 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     {
         for (size_t j = 0; j < 2; j++)
         {
-            (j == 0 ? colorsBloomTmpTex[i] : colorsBloomTex[i])->GetSurface(dstSurface, 0, 0);
-
             This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, j == 0 ? colorsBloomTex[i] : colorsBloomTmpTex[i]);
-            This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
+            This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, (j == 0 ? colorsBloomTmpTex[i] : colorsBloomTex[i])->GetSurface());
 
             for (int k = 0; k < 1 + (1 << (i + 1)); k++)
             {
@@ -218,13 +205,10 @@ HOOK(void, __fastcall, CFxBloomGlareExecute, Sonic::fpCFxBloomGlareExecute, Soni
     This->m_pScheduler->m_pMisc->m_pRenderingInfrastructure->m_RenderingDevice.LockRenderState(D3DRS_SRCBLEND);
     This->m_pScheduler->m_pMisc->m_pRenderingInfrastructure->m_RenderingDevice.LockRenderState(D3DRS_DESTBLEND);
 
-    boost::shared_ptr<hh::ygg::CYggTexture> defaultTex;
-    This->GetDefaultTexture(defaultTex);
-
-    defaultTex->GetSurface(dstSurface, 0, 0);
+    const auto defaultTex = This->GetDefaultTexture();
 
     This->m_pScheduler->m_pMisc->m_pDevice->SetShader(bicubicFilterShader);
-    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, dstSurface);
+    This->m_pScheduler->m_pMisc->m_pDevice->SetRenderTarget(0, defaultTex->GetSurface());
 
     for (size_t i = 0; i < COLORS_BLOOM_BUFFER_COUNT; i++)
     {

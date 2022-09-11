@@ -15,18 +15,18 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     boost::shared_ptr<Sonic::CParameterGroup> parameterGroup;
     This->CreateParameterGroup(parameterGroup, "PBR", "PBR");
 
-    Sonic::CParameterCategory* debugParamCategory = parameterGroup->CreateParameterCategory("Debug", "Debug");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.useWhiteAlbedo, "UseWhiteAlbedo");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.useFlatNormal, "UseFlatNormal");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.reflectanceOverride, "ReflectanceOverride");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.smoothnessOverride, "SmoothnessOverride");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.ambientOcclusionOverride, "AmbientOcclusionOverride");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.metalnessOverride, "MetalnessOverride");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.x(), "GIColorOverrideR");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.y(), "GIColorOverrideG");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giColorOverride.z(), "GIColorOverrideB");
-    debugParamCategory->CreateParamFloat(&SceneEffect::debug.giShadowMapOverride, "GIShadowMapOverride");
-    debugParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::debug.viewMode, "ViewMode", "ViewMode",
+    Sonic::CEditParam* debugParam = parameterGroup->CreateParameterCategory("Debug", "Debug");
+    debugParam->CreateParamBool(&SceneEffect::debug.useWhiteAlbedo, "UseWhiteAlbedo");
+    debugParam->CreateParamBool(&SceneEffect::debug.useFlatNormal, "UseFlatNormal");
+    debugParam->CreateParamFloat(&SceneEffect::debug.reflectanceOverride, "ReflectanceOverride");
+    debugParam->CreateParamFloat(&SceneEffect::debug.smoothnessOverride, "SmoothnessOverride");
+    debugParam->CreateParamFloat(&SceneEffect::debug.ambientOcclusionOverride, "AmbientOcclusionOverride");
+    debugParam->CreateParamFloat(&SceneEffect::debug.metalnessOverride, "MetalnessOverride");
+    debugParam->CreateParamFloat(&SceneEffect::debug.giColorOverride.x(), "GIColorOverrideR");
+    debugParam->CreateParamFloat(&SceneEffect::debug.giColorOverride.y(), "GIColorOverrideG");
+    debugParam->CreateParamFloat(&SceneEffect::debug.giColorOverride.z(), "GIColorOverrideB");
+    debugParam->CreateParamFloat(&SceneEffect::debug.giShadowMapOverride, "GIShadowMapOverride");
+    debugParam->CreateParamTypeList((uint32_t*)&SceneEffect::debug.viewMode, "ViewMode", "ViewMode",
         {
             { "None", DEBUG_VIEW_MODE_NONE },
             { "GIOnly", DEBUG_VIEW_MODE_GI_ONLY },
@@ -40,69 +40,69 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
             { "ShadowMap", DEBUG_VIEW_MODE_SHADOW_MAP },
             { "ShadowMapNoTerrain", DEBUG_VIEW_MODE_SHADOW_MAP_NO_TERRAIN },
         });
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDirectLight, "DisableDirectLight");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableLocalLight, "DisableLocalLight");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableSHLightField, "DisableSHLightField");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableDefaultIBL, "DisableDefaultIBL");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableIBLProbe, "DisableIBLProbe");
-    debugParamCategory->CreateParamBool(&SceneEffect::debug.disableLUT, "DisableLUT");
+    debugParam->CreateParamBool(&SceneEffect::debug.disableDirectLight, "DisableDirectLight");
+    debugParam->CreateParamBool(&SceneEffect::debug.disableLocalLight, "DisableLocalLight");
+    debugParam->CreateParamBool(&SceneEffect::debug.disableSHLightField, "DisableSHLightField");
+    debugParam->CreateParamBool(&SceneEffect::debug.disableDefaultIBL, "DisableDefaultIBL");
+    debugParam->CreateParamBool(&SceneEffect::debug.disableIBLProbe, "DisableIBLProbe");
+    debugParam->CreateParamBool(&SceneEffect::debug.disableLUT, "DisableLUT");
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* sggiParamCategory = parameterGroup->CreateParameterCategory("SGGI", "SGGI");
-    sggiParamCategory->CreateParamFloat(&SceneEffect::sggi.startSmoothness, "StartSmoothness");
-    sggiParamCategory->CreateParamFloat(&SceneEffect::sggi.endSmoothness, "EndSmoothness");
+    Sonic::CEditParam* sggiParam = parameterGroup->CreateParameterCategory("SGGI", "SGGI");
+    sggiParam->CreateParamFloat(&SceneEffect::sggi.startSmoothness, "StartSmoothness");
+    sggiParam->CreateParamFloat(&SceneEffect::sggi.endSmoothness, "EndSmoothness");
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* cullingParamCategory = parameterGroup->CreateParameterCategory("Culling", "Culling");
-    cullingParamCategory->CreateParamFloat(&SceneEffect::culling.shLightFieldCullingRange, "SHLightFieldCullingRange");
-    cullingParamCategory->CreateParamFloat(&SceneEffect::culling.iblProbeCullingRange, "IBLProbeCullingRange");
-    cullingParamCategory->CreateParamFloat(&SceneEffect::culling.localLightCullingRange, "LocalLightCullingRange");
+    Sonic::CEditParam* cullingParam = parameterGroup->CreateParameterCategory("Culling", "Culling");
+    cullingParam->CreateParamFloat(&SceneEffect::culling.shLightFieldCullingRange, "SHLightFieldCullingRange");
+    cullingParam->CreateParamFloat(&SceneEffect::culling.iblProbeCullingRange, "IBLProbeCullingRange");
+    cullingParam->CreateParamFloat(&SceneEffect::culling.localLightCullingRange, "LocalLightCullingRange");
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* esmParamCategory = parameterGroup->CreateParameterCategory("ESM", "ESM");
-    esmParamCategory->CreateParamFloat(&SceneEffect::esm.factor, "Factor");
+    Sonic::CEditParam* esmParam = parameterGroup->CreateParameterCategory("ESM", "ESM");
+    esmParam->CreateParamFloat(&SceneEffect::esm.factor, "Factor");
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* rlrParamCategory = parameterGroup->CreateParameterCategory("RLR", "RLR");
-    rlrParamCategory->CreateParamBool(&SceneEffect::rlr.enable, "Enable");
-    rlrParamCategory->CreateParamUnsignedLong(&SceneEffect::rlr.stepCount, "StepCount");
-    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.maxRoughness, "MaxRoughness");
-    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.rayLength, "RayLength");
-    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.fade, "Fade");
-    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.accuracyThreshold, "AccuracyThreshold");
-    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.saturation, "Saturation");
-    rlrParamCategory->CreateParamFloat(&SceneEffect::rlr.brightness, "Brightness");
-    rlrParamCategory->CreateParamInt(&SceneEffect::rlr.maxLod, "MaxLod");
+    Sonic::CEditParam* rlrParam = parameterGroup->CreateParameterCategory("RLR", "RLR");
+    rlrParam->CreateParamBool(&SceneEffect::rlr.enable, "Enable");
+    rlrParam->CreateParamUnsignedLong(&SceneEffect::rlr.stepCount, "StepCount");
+    rlrParam->CreateParamFloat(&SceneEffect::rlr.maxRoughness, "MaxRoughness");
+    rlrParam->CreateParamFloat(&SceneEffect::rlr.rayLength, "RayLength");
+    rlrParam->CreateParamFloat(&SceneEffect::rlr.fade, "Fade");
+    rlrParam->CreateParamFloat(&SceneEffect::rlr.accuracyThreshold, "AccuracyThreshold");
+    rlrParam->CreateParamFloat(&SceneEffect::rlr.saturation, "Saturation");
+    rlrParam->CreateParamFloat(&SceneEffect::rlr.brightness, "Brightness");
+    rlrParam->CreateParamInt(&SceneEffect::rlr.maxLod, "MaxLod");
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* ssaoParamCategory = parameterGroup->CreateParameterCategory("SSAO", "SSAO");
-    ssaoParamCategory->CreateParamBool(&SceneEffect::ssao.enable, "Enable");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.Radius, "Radius");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.Bias, "Bias");
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.PowerExponent, "PowerExponent");
-    ssaoParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::ssao.StepCount, "StepCount", "StepCount",
+    Sonic::CEditParam* ssaoParam = parameterGroup->CreateParameterCategory("SSAO", "SSAO");
+    ssaoParam->CreateParamBool(&SceneEffect::ssao.enable, "Enable");
+    ssaoParam->CreateParamFloat(&SceneEffect::ssao.Radius, "Radius");
+    ssaoParam->CreateParamFloat(&SceneEffect::ssao.Bias, "Bias");
+    ssaoParam->CreateParamFloat(&SceneEffect::ssao.PowerExponent, "PowerExponent");
+    ssaoParam->CreateParamTypeList((uint32_t*)&SceneEffect::ssao.StepCount, "StepCount", "StepCount",
         {
             {"4 Steps", GFSDK_SSAO_STEP_COUNT_4},
             {"8 Steps", GFSDK_SSAO_STEP_COUNT_8}
         });
 
-    ssaoParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::ssao.Blur.Radius, "BlurRadius", "BlurRadius",
+    ssaoParam->CreateParamTypeList((uint32_t*)&SceneEffect::ssao.Blur.Radius, "BlurRadius", "BlurRadius",
         {
             {"2 Pixels", GFSDK_SSAO_BLUR_RADIUS_2},
             {"4 Pixels", GFSDK_SSAO_BLUR_RADIUS_4}
         });
 
-    ssaoParamCategory->CreateParamFloat(&SceneEffect::ssao.Blur.Sharpness, "BlurSharpness");
+    ssaoParam->CreateParamFloat(&SceneEffect::ssao.Blur.Sharpness, "BlurSharpness");
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* bloomParamCategory = parameterGroup->CreateParameterCategory("Bloom", "Bloom");
-    bloomParamCategory->CreateParamTypeList((uint32_t*)&SceneEffect::bloom.type, "Type", "Type",
+    Sonic::CEditParam* bloomParam = parameterGroup->CreateParameterCategory("Bloom", "Bloom");
+    bloomParam->CreateParamTypeList((uint32_t*)&SceneEffect::bloom.type, "Type", "Type",
         {
             { "Default", BLOOM_TYPE_DEFAULT },
             { "Sonic Colors", BLOOM_TYPE_COLORS },
@@ -112,7 +112,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* volumetricLightingCategory = parameterGroup->CreateParameterCategory("VolumetricLighting", "VolumetricLighting");
+    Sonic::CEditParam* volumetricLightingCategory = parameterGroup->CreateParameterCategory("VolumetricLighting", "VolumetricLighting");
     volumetricLightingCategory->CreateParamBool(&SceneEffect::volumetricLighting.enable, "Enable");
     volumetricLightingCategory->CreateParamBool(&SceneEffect::volumetricLighting.ignoreSky, "IgnoreSky");
     volumetricLightingCategory->CreateParamUnsignedLong(&SceneEffect::volumetricLighting.sampleCount, "SampleCount");
@@ -122,7 +122,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
 
     parameterGroup->Flush();
 
-    Sonic::CParameterCategory* iblCategory = parameterGroup->CreateParameterCategory("IBL", "IBL");
+    Sonic::CEditParam* iblCategory = parameterGroup->CreateParameterCategory("IBL", "IBL");
     iblCategory->CreateParamFloat(&SceneEffect::ibl.defaultIBLIntensity, "DefaultIBLIntensity");
     iblCategory->CreateParamUnsignedLong(&SceneEffect::ibl.maxIBLProbeCount, "MaxIBLProbeCount");
 

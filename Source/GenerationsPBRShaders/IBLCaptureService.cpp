@@ -111,10 +111,7 @@ namespace IBLCapture
             return;
         }
 
-        boost::shared_ptr<hh::ygg::CYggSurface> srcSurface;
-        This->m_spColorTex->GetSurface(srcSurface, 0, 0);
-
-        This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->GetRenderTargetData(srcSurface->m_pD3DSurface, scratchImageSurface.get());
+        This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->GetRenderTargetData(This->m_spColorTex->GetSurface()->m_pD3DSurface, scratchImageSurface.get());
 
         D3DLOCKED_RECT lockedRect;
         scratchImageSurface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY);
