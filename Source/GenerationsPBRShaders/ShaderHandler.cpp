@@ -375,7 +375,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             GenerationsD3D11::GetDeviceContext(d3dDevice),
             GenerationsD3D11::GetShaderResourceView(gBuffer3Tex->m_pD3DTexture),
             GenerationsD3D11::GetShaderResourceView(This->m_spDepthTex->m_pD3DTexture),
-            GenerationsD3D11::GetRenderTargetView(ssaoTex->m_pD3DTexture));
+            GenerationsD3D11::GetRenderTargetView(ssaoTex->GetSurface()->m_pD3DSurface));
     }
 
     //***************************************************//
