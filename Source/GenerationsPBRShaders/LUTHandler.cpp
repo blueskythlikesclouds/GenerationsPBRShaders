@@ -26,7 +26,7 @@ HOOK(void, __fastcall, CFxRenderParticleExecute, 0x10C80A0, Sonic::CFxJob* This)
     This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(0, This->GetTexture("colortex"));
     This->m_pScheduler->m_pMisc->m_pDevice->SetTexture(1, RenderDataManager::rgbTablePicture);
 
-    filterCB.lutEnable = RenderDataManager::rgbTablePicture && RenderDataManager::rgbTablePicture->m_spPictureData->IsMadeAll() &&
+    filterCB.lut.enable = RenderDataManager::rgbTablePicture && RenderDataManager::rgbTablePicture->m_spPictureData->IsMadeAll() &&
         SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_NONE && !SceneEffect::debug.disableLUT;
 
     filterCB.upload(This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice);

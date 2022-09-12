@@ -67,76 +67,69 @@ struct FilterCB
         // SSAO
         struct
         {
-            int ssaoSampleCount;
-            float ssaoRcpSampleCount;
-            float ssaoRadius;
-            float ssaoDistanceFade;
-            float ssaoStrength;
-        };
+            int sampleCount;
+            float rcpSampleCount;
+            float radius;
+            float distanceFade;
+            float strength;
+        } ssao;
 
         // BoxBlur
         struct
         {
-            float boxBlurSourceSize[2];
-            float boxBlurDepthThreshold;
-        };
+            float sourceSize[2];
+            float depthThreshold;
+        } boxBlur;
 
         // Light
         struct
         {
-            BOOL lightEnableSSAO;
-        };
+            BOOL enableSSAO;
+        } light;
 
         // RLR
         struct
         {
-            float rlrFramebufferSize[4];
-            int rlrStepCount;
-            float rlrMaxRoughness;
-            float rlrRayLength;
-            float rlrFade;
-            float rlrAccuracyThreshold;
-            float rlrSaturation;
-            float rlrBrightness;
-        };
-
-        // ConvolutionFilter
-        struct
-        {
-            float convolutionParam[4];
-            float convolutionDirection[2];
-        };
+            float framebufferSize[4];
+            int stepCount;
+            float maxRoughness;
+            float rayLength;
+            float fade;
+            float accuracyThreshold;
+            float saturation;
+            float brightness;
+        } rlr;
 
         // IBL
         struct
         {
-            BOOL iblEnableSSAO;
-            BOOL iblEnableRLR;
-            float iblRLRLodParam;
-        };
+            BOOL enableSSAO;
+            BOOL enableRLR;
+            float rlrLodParam;
+        } ibl;
 
         // VolumetricLighting
         struct
         {
-            int volumetricLightingSampleCount;
-            float volumetricLightingRcpSampleCount;
-            float volumetricLightingG;
-            float volumetricLightingInScatteringScale;
-        };
+            int sampleCount;
+            float rcpSampleCount;
+            float g;
+            float inScatteringScale;
+        } volumetricLighting;
 
         // LUT
         struct
         {
-            BOOL lutEnable;
-        };
+            BOOL enable;
+        } lut;
 
         // GaussianBlur
         struct
         {
-            float gaussianBlurOffset[2];
-            float gaussianBlurScale;
-            float gaussianBlurLevel;
-        };
+            float offset[2];
+            float scale;
+            float level;
+        } gaussianBlur;
     };
 };
 
@@ -161,7 +154,7 @@ void ConstantBuffer<T, StartSlot, PS, Dynamic>::upload(DX_PATCH::IDirect3DDevice
         bufferDesc.CPUAccessFlags = Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
 
         D3D11_SUBRESOURCE_DATA initialData{};
-        initialData.pSysMem = this;
+        initialData.pSysMem = static_cast<T*>(this);
 
         device->CreateBuffer(&bufferDesc, &initialData, buffer.GetAddressOf());
 
@@ -180,7 +173,7 @@ void ConstantBuffer<T, StartSlot, PS, Dynamic>::upload(DX_PATCH::IDirect3DDevice
         {
             D3D11_MAPPED_SUBRESOURCE mappedSubResource;
             deviceContext->Map(buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedSubResource);
-            memcpy(mappedSubResource.pData, this, sizeof(T));
+            memcpy(mappedSubResource.pData, static_cast<T*>(this), sizeof(T));
             deviceContext->Unmap(buffer.Get(), 0);
         }
         else

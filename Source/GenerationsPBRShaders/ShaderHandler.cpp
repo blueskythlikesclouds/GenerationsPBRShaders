@@ -396,7 +396,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     if (SceneEffect::ssao.enable)
         d3dDevice->SetTexture(19, ssaoTex->m_pD3DTexture);
 
-    filterCB.lightEnableSSAO = SceneEffect::ssao.enable;
+    filterCB.light.enableSSAO = SceneEffect::ssao.enable;
     filterCB.upload(d3dDevice);
 
     if (SceneEffect::debug.disableDirectLight || SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_GI_ONLY)
@@ -419,17 +419,17 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetTexture(0, gBuffer0Tex);
 
         // Set parameters
-        filterCB.rlrFramebufferSize[0] = (float)This->m_spColorTex->m_CreationParams.Width;
-        filterCB.rlrFramebufferSize[1] = (float)This->m_spColorTex->m_CreationParams.Height;
-        filterCB.rlrFramebufferSize[2] = 1.0f / (float)This->m_spColorTex->m_CreationParams.Width;
-        filterCB.rlrFramebufferSize[3] = 1.0f / (float)This->m_spColorTex->m_CreationParams.Height;
-        filterCB.rlrStepCount = SceneEffect::rlr.stepCount;
-        filterCB.rlrMaxRoughness = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ? -1.0f : SceneEffect::rlr.maxRoughness;
-        filterCB.rlrRayLength = SceneEffect::rlr.rayLength;
-        filterCB.rlrFade = 1.0f / SceneEffect::rlr.fade;
-        filterCB.rlrAccuracyThreshold = SceneEffect::rlr.accuracyThreshold;
-        filterCB.rlrSaturation = std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::rlr.saturation));
-        filterCB.rlrBrightness = SceneEffect::rlr.brightness;
+        filterCB.rlr.framebufferSize[0] = (float)This->m_spColorTex->m_CreationParams.Width;
+        filterCB.rlr.framebufferSize[1] = (float)This->m_spColorTex->m_CreationParams.Height;
+        filterCB.rlr.framebufferSize[2] = 1.0f / (float)This->m_spColorTex->m_CreationParams.Width;
+        filterCB.rlr.framebufferSize[3] = 1.0f / (float)This->m_spColorTex->m_CreationParams.Height;
+        filterCB.rlr.stepCount = SceneEffect::rlr.stepCount;
+        filterCB.rlr.maxRoughness = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ? -1.0f : SceneEffect::rlr.maxRoughness;
+        filterCB.rlr.rayLength = SceneEffect::rlr.rayLength;
+        filterCB.rlr.fade = 1.0f / SceneEffect::rlr.fade;
+        filterCB.rlr.accuracyThreshold = SceneEffect::rlr.accuracyThreshold;
+        filterCB.rlr.saturation = std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::rlr.saturation));
+        filterCB.rlr.brightness = SceneEffect::rlr.brightness;
         filterCB.upload(d3dDevice);
 
         device->DrawQuad2D(nullptr, 0, 0);
@@ -445,10 +445,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             device->SetRenderTarget(0, rlrTempTex->GetSurface(i));
             device->SetTexture(4, rlrTex);
 
-            filterCB.gaussianBlurOffset[0] = 1.3333333333333333f * width;
-            filterCB.gaussianBlurOffset[1] = 0.0f;
-            filterCB.gaussianBlurScale = exp2f((float)i);
-            filterCB.gaussianBlurLevel = (float)(i - 1);
+            filterCB.gaussianBlur.offset[0] = 1.3333333333333333f * width;
+            filterCB.gaussianBlur.offset[1] = 0.0f;
+            filterCB.gaussianBlur.scale = exp2f((float)i);
+            filterCB.gaussianBlur.level = (float)(i - 1);
             filterCB.upload(d3dDevice);
 
             device->DrawQuad2D(nullptr, 0, 0);
@@ -456,9 +456,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
             device->SetRenderTarget(0, rlrTex->GetSurface(i));
             device->SetTexture(4, rlrTempTex);
 
-            filterCB.gaussianBlurOffset[0] = 0.0f;
-            filterCB.gaussianBlurOffset[1] = 1.3333333333333333f * height;
-            filterCB.gaussianBlurLevel = (float)i;
+            filterCB.gaussianBlur.offset[0] = 0.0f;
+            filterCB.gaussianBlur.offset[1] = 1.3333333333333333f * height;
+            filterCB.gaussianBlur.level = (float)i;
             filterCB.upload(d3dDevice);
 
             device->DrawQuad2D(nullptr, 0, 0);
@@ -475,15 +475,15 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     device->SetTexture(0, gBuffer0Tex);
 
-    if (filterCB.iblEnableRLR)
+    if (filterCB.ibl.enableRLR)
         d3dDevice->SetTexture(21, rlrTex->m_pD3DTexture);
 
-    filterCB.iblEnableSSAO = SceneEffect::ssao.enable;
-    filterCB.iblEnableRLR = SceneEffect::rlr.enable && Configuration::rlrEnable;
-    filterCB.iblRLRLodParam = (float)(rlrTex->m_CreationParams.Levels - 1);
+    filterCB.ibl.enableSSAO = SceneEffect::ssao.enable;
+    filterCB.ibl.enableRLR = SceneEffect::rlr.enable && Configuration::rlrEnable;
+    filterCB.ibl.rlrLodParam = (float)(rlrTex->m_CreationParams.Levels - 1);
 
-    if (SceneEffect::rlr.maxLod >= 0 && filterCB.iblRLRLodParam > SceneEffect::rlr.maxLod)
-        filterCB.iblRLRLodParam = (float) SceneEffect::rlr.maxLod;
+    if (SceneEffect::rlr.maxLod >= 0 && filterCB.ibl.rlrLodParam > SceneEffect::rlr.maxLod)
+        filterCB.ibl.rlrLodParam = (float) SceneEffect::rlr.maxLod;
 
     filterCB.upload(d3dDevice);
 
@@ -635,10 +635,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->UnsetDepthStencil();
         device->SetRenderTarget(0, volumetricLightTex->GetSurface());
 
-        filterCB.volumetricLightingSampleCount = SceneEffect::volumetricLighting.sampleCount;
-        filterCB.volumetricLightingRcpSampleCount = 1.0f / (float)SceneEffect::volumetricLighting.sampleCount;
-        filterCB.volumetricLightingG = SceneEffect::volumetricLighting.g;
-        filterCB.volumetricLightingInScatteringScale = SceneEffect::volumetricLighting.inScatteringScale;
+        filterCB.volumetricLighting.sampleCount = SceneEffect::volumetricLighting.sampleCount;
+        filterCB.volumetricLighting.rcpSampleCount = 1.0f / (float)SceneEffect::volumetricLighting.sampleCount;
+        filterCB.volumetricLighting.g = SceneEffect::volumetricLighting.g;
+        filterCB.volumetricLighting.inScatteringScale = SceneEffect::volumetricLighting.inScatteringScale;
         filterCB.upload(d3dDevice);
 
         device->DrawQuad2D(nullptr, 0, 0);
@@ -665,9 +665,9 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         device->SetSamplerFilter(12, D3DTEXF_POINT, D3DTEXF_POINT, D3DTEXF_NONE);
         device->SetSamplerAddressMode(12, D3DTADDRESS_CLAMP);
 
-        filterCB.boxBlurSourceSize[0] = 1.0f / (float)volumetricLightTex->m_CreationParams.Width;
-        filterCB.boxBlurSourceSize[1] = 1.0f / (float)volumetricLightTex->m_CreationParams.Height;
-        filterCB.boxBlurDepthThreshold = SceneEffect::volumetricLighting.depthThreshold;
+        filterCB.boxBlur.sourceSize[0] = 1.0f / (float)volumetricLightTex->m_CreationParams.Width;
+        filterCB.boxBlur.sourceSize[1] = 1.0f / (float)volumetricLightTex->m_CreationParams.Height;
+        filterCB.boxBlur.depthThreshold = SceneEffect::volumetricLighting.depthThreshold;
         filterCB.upload(d3dDevice);
 
         device->DrawQuad2D(nullptr, 0, 0);
