@@ -127,6 +127,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     Shader<DownSampleN>("Filter/DownSampleN"),
 
     Shader<BicubicFilter>("Filter/BicubicFilter"),
+
+    Shader<GaussianBlur>("Filter/GaussianBlur")
 });
 
 archiveDatabase.Sort();

@@ -8,6 +8,7 @@ cbuffer cbFilter : register(b5)
 {
     bool g_EnableSSAO;
     bool g_EnableRLR;
+    float g_RLRLodParam;
 }
 
 float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in float4 texCoord : TEXCOORD1) : SV_TARGET
@@ -28,7 +29,7 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
         float4 ibl = 0;
 
         if (g_EnableRLR)
-            ibl = g_RLRTexture.SampleLevel(g_LinearClampSampler, texCoord.xy, 0);
+            ibl = g_RLRTexture.SampleLevel(g_LinearClampSampler, texCoord.xy, params.Roughness * g_RLRLodParam);
 
         if (ibl.a < 0.99)
             ibl.rgb += ComputeIndirectIBLProbes(params, position) * (1 - ibl.a);

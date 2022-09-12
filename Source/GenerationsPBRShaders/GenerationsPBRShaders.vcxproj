@@ -128,6 +128,7 @@
     <ClCompile Include="ShadowHandler.cpp" />
     <ClCompile Include="StageId.cpp" />
     <ClCompile Include="LUTHandler.cpp" />
+    <ClCompile Include="Utilities.cpp" />
     <ClCompile Include="VertexBufferHandler.cpp" />
     <ClCompile Include="YggdrasillPatcher.cpp" />
   </ItemGroup>
@@ -154,6 +155,7 @@
     <ClInclude Include="ShadowHandler.h" />
     <ClInclude Include="StageId.h" />
     <ClInclude Include="LUTHandler.h" />
+    <ClInclude Include="Utilities.h" />
     <ClInclude Include="VertexBufferHandler.h" />
     <ClInclude Include="YggdrasillPatcher.h" />
   </ItemGroup>

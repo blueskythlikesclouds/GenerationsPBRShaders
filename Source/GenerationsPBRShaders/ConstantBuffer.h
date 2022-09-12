@@ -112,6 +112,7 @@ struct FilterCB
         {
             BOOL iblEnableSSAO;
             BOOL iblEnableRLR;
+            float iblRLRLodParam;
         };
 
         // VolumetricLighting
@@ -127,6 +128,14 @@ struct FilterCB
         struct
         {
             BOOL lutEnable;
+        };
+
+        // GaussianBlur
+        struct
+        {
+            float gaussianBlurOffset[2];
+            float gaussianBlurScale;
+            float gaussianBlurLevel;
         };
     };
 };

@@ -3,6 +3,7 @@
 #include "ConstantBuffer.h"
 #include "HBAOPlusHandler.h"
 #include "RenderDataManager.h"
+#include "Utilities.h"
 
 //
 // TODO: Split literally everything here to multiple files.
@@ -66,8 +67,10 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 
     const uint32_t RLR_WIDTH = This->m_spColorTex->m_CreationParams.Width >> Configuration::rlrResolution;
     const uint32_t RLR_HEIGHT = This->m_spColorTex->m_CreationParams.Height >> Configuration::rlrResolution;
+    const uint32_t RLR_LEVELS = Utilities::computeMipLevels(RLR_WIDTH, RLR_HEIGHT);
 
-    rlrTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(RLR_WIDTH, RLR_HEIGHT, 1, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    rlrTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(RLR_WIDTH, RLR_HEIGHT, RLR_LEVELS, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
+    rlrTempTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(RLR_WIDTH, RLR_HEIGHT, RLR_LEVELS, D3DUSAGE_RENDERTARGET, D3DFMT_A16B16G16R16F, D3DPOOL_DEFAULT, NULL);
 
     ssaoTex = This->m_pScheduler->m_pMisc->m_pDevice->CreateTexture(1.0f, 1.0f, 1, D3DUSAGE_RENDERTARGET, D3DFMT_L16, D3DPOOL_DEFAULT, NULL);
 
@@ -430,6 +433,36 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         filterCB.upload(d3dDevice);
 
         device->DrawQuad2D(nullptr, 0, 0);
+
+        // Apply gaussian blur
+        device->SetShader(fxConvolutionFilterShader);
+
+        for (size_t i = 1; i < rlrTex->m_CreationParams.Levels; i++)
+        {
+            const float width = 1.0f / (float) std::max(1u, rlrTex->m_CreationParams.Width >> i);
+            const float height = 1.0f / (float) std::max(1u, rlrTex->m_CreationParams.Height >> i);
+
+            device->SetRenderTarget(0, rlrTempTex->GetSurface(i));
+            device->SetTexture(4, rlrTex);
+
+            filterCB.gaussianBlurOffset[0] = 1.3333333333333333f * width;
+            filterCB.gaussianBlurOffset[1] = 0.0f;
+            filterCB.gaussianBlurScale = exp2f((float)i);
+            filterCB.gaussianBlurLevel = (float)(i - 1);
+            filterCB.upload(d3dDevice);
+
+            device->DrawQuad2D(nullptr, 0, 0);
+
+            device->SetRenderTarget(0, rlrTex->GetSurface(i));
+            device->SetTexture(4, rlrTempTex);
+
+            filterCB.gaussianBlurOffset[0] = 0.0f;
+            filterCB.gaussianBlurOffset[1] = 1.3333333333333333f * height;
+            filterCB.gaussianBlurLevel = (float)i;
+            filterCB.upload(d3dDevice);
+
+            device->DrawQuad2D(nullptr, 0, 0);
+        }
     }
 
     //****************************************************//
@@ -447,6 +480,11 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
 
     filterCB.iblEnableSSAO = SceneEffect::ssao.enable;
     filterCB.iblEnableRLR = SceneEffect::rlr.enable && Configuration::rlrEnable;
+    filterCB.iblRLRLodParam = (float)(rlrTex->m_CreationParams.Levels - 1);
+
+    if (SceneEffect::rlr.maxLod >= 0 && filterCB.iblRLRLodParam > SceneEffect::rlr.maxLod)
+        filterCB.iblRLRLodParam = (float) SceneEffect::rlr.maxLod;
+
     filterCB.upload(d3dDevice);
 
     device->DrawQuad2D(nullptr, 0, 0);
