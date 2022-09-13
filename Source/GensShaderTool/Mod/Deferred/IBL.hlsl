@@ -52,5 +52,5 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
         color = color * lightScattering.x + g_LightScatteringColor.rgb * lightScattering.y;
     }
 
-    return float4(color, 1.0);
+    return float4(color, ((params.DeferredFlags != 0) || any(color > 0.0)) ? 1.0 : 0.0);
 }

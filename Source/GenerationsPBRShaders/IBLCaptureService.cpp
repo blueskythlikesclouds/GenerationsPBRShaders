@@ -76,24 +76,7 @@ namespace IBLCapture
         This->aspectRatio = 1.0f;
     }
 
-    struct SurfaceDeleter {
-        void operator()(DX_PATCH::IDirect3DSurface9* pSurface) { pSurface->Release(); }
-    };
-
-    std::unique_ptr<DX_PATCH::IDirect3DSurface9, SurfaceDeleter> scratchImageSurface;
-
-    HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameSceneInitialize, Sonic::CFxRenderGameScene* This)
-    {
-        originalCFxRenderGameSceneInitialize(This);
-
-        DX_PATCH::IDirect3DSurface9* surface;
-
-        This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->CreateOffscreenPlainSurface(
-            This->m_spColorTex->m_CreationParams.Width, This->m_spColorTex->m_CreationParams.Height,
-            (D3DFORMAT)This->m_spColorTex->m_CreationParams.Format, D3DPOOL_SYSTEMMEM, &surface, nullptr);
-
-        scratchImageSurface = std::unique_ptr<DX_PATCH::IDirect3DSurface9, SurfaceDeleter>(surface);
-    }
+    ComPtr<ID3D11Texture2D> stagingTex;
 
     HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
     {
@@ -111,16 +94,35 @@ namespace IBLCapture
             return;
         }
 
-        This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice->GetRenderTargetData(This->m_spColorTex->GetSurface()->m_pD3DSurface, scratchImageSurface.get());
+        const auto dxpDevice = This->m_pScheduler->m_pMisc->m_pDevice->m_pD3DDevice;
+        const auto colorTex = GenerationsD3D11::GetResource(This->m_spColorTex->m_pD3DTexture);
 
-        D3DLOCKED_RECT lockedRect;
-        scratchImageSurface->LockRect(&lockedRect, nullptr, D3DLOCK_READONLY);
+        if (!stagingTex)
+        {
+            D3D11_TEXTURE2D_DESC desc;
+            reinterpret_cast<ID3D11Texture2D*>(colorTex)->GetDesc(&desc);
+
+            desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+            desc.Usage = D3D11_USAGE_STAGING;
+            desc.BindFlags = 0;
+            desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+
+            GenerationsD3D11::GetDevice(dxpDevice)->CreateTexture2D(&desc, nullptr, stagingTex.ReleaseAndGetAddressOf());
+        }
+
+        const GenerationsD3D11::LockGuard lock(dxpDevice);
+        const auto deviceContext = GenerationsD3D11::GetDeviceContext(dxpDevice);
+
+        D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+
+        deviceContext->CopyResource(stagingTex.Get(), colorTex);
+        deviceContext->Map(stagingTex.Get(), 0, D3D11_MAP_READ, 0, &mappedSubresource);
 
         DirectX::Image image{};
         image.width = This->m_spColorTex->m_CreationParams.Width;
         image.height = This->m_spColorTex->m_CreationParams.Height;
         image.format = DXGI_FORMAT_R16G16B16A16_FLOAT;
-        image.pixels = (uint8_t*)lockedRect.pBits;
+        image.pixels = (uint8_t*)mappedSubresource.pData;
         DirectX::ComputePitch(image.format, image.width, image.height, image.rowPitch, image.slicePitch);
 
         const DirectX::TexMetadata& metadata = IBLCaptureService::result->GetMetadata();
@@ -132,8 +134,7 @@ namespace IBLCapture
         uint8_t* dstPixels = IBLCaptureService::result->GetImage(0, IBLCaptureService::faceIndex, 0)->pixels;
 
         memcpy(dstPixels, srcPixels, tmpScratchImage.GetPixelsSize());
-
-        scratchImageSurface->UnlockRect();
+        deviceContext->Unmap(stagingTex.Get(), 0);
 
         IBLCaptureService::faceIndex++;
 
@@ -145,7 +146,6 @@ namespace IBLCapture
     void applyPatches()
     {
         INSTALL_HOOK(CCameraUpdate);
-        INSTALL_HOOK(CFxRenderGameSceneInitialize);
         INSTALL_HOOK(CFxRenderGameSceneExecute);
     }
 }

@@ -107,4 +107,9 @@ extern "C" void __declspec(dllexport) PostInit(ModInfo* info)
     WRITE_MEMORY(0x1AD99D4, char*, "shader_pbr.ar");
     WRITE_MEMORY(0x1AD99E8, char*, "shader_vanilla.arl");
     WRITE_MEMORY(0x1AD99EC, char*, "shader_pbr.arl");
+
+#ifdef ENABLE_IBL_CAPTURE_SERVICE
+    CreateDirectory(TEXT("work"), nullptr);
+    CreateDirectory(TEXT("work\\ibl"), nullptr);
+#endif
 }
