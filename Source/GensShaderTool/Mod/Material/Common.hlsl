@@ -40,7 +40,7 @@ void LoadParams(inout ShaderParams params, in PixelDeclaration input)
 #endif
 
 #ifdef HasSamplerTransparency
-    float transparency = texTransparency.Sample(sampTransparency, UV(3));
+    float transparency = texTransparency.Sample(sampTransparency, UV(4));
 
 #ifdef HasSamplerEmission
     params.Emission *= transparency;
