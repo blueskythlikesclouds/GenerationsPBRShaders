@@ -58,6 +58,10 @@ if (!File.Exists(Path.Combine(args[1], "shader_vanilla.ar.00")))
 
 var archiveDatabase = new ArchiveDatabase();
 
+string filePath = Path.Combine(args[1], "shader_pbr.ar.00");
+if (File.Exists(filePath))
+    archiveDatabase.Load(filePath);
+
 ShaderCompiler.Compile(archiveDatabase, new[]
 {
     Shader<DefaultVS>("DefaultVS"),
@@ -132,4 +136,4 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 });
 
 archiveDatabase.Sort();
-archiveDatabase.Save(Path.Combine(args[1], "shader_pbr.ar.00"));
+archiveDatabase.Save(filePath);

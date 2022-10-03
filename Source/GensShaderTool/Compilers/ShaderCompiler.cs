@@ -25,14 +25,24 @@ public class ShaderCompiler
         public D3DShaderMacro[] Macros;
     }
 
-    public static void Compile(ArchiveDatabase destArchiveDatabase, IReadOnlyList<(string SourceFilePath, IShader Shader)> shaders)
+    public static void Compile(ArchiveDatabase archiveDatabase, IReadOnlyList<(string SourceFilePath, IShader Shader)> shaders)
     {
+        var existingCache = new ShaderCompilerCache();
+        var populatingCache = new ShaderCompilerCache();
+
+        existingCache.Load(archiveDatabase.Contents.FirstOrDefault(x =>
+            x.Name.Equals(ShaderCompilerCache.FileName, StringComparison.OrdinalIgnoreCase))?.Data);
+
         using var includeFactory = new D3DIncludeFactory();
         var permutations = new List<ShaderCompilerPermutation>();
 
         Parallel.ForEach(shaders, tuple =>
         {
             var (filePath, shader) = tuple;
+
+            if (existingCache.Contains(populatingCache.Add(includeFactory.Cache, filePath)) & // on purpose!
+                existingCache.Contains(populatingCache.Add(shader)))
+                return;
 
             string fullPath = Path.GetFullPath(filePath);
             string directoryPath = Path.GetDirectoryName(fullPath);
@@ -65,11 +75,11 @@ public class ShaderCompiler
                     }));
                 }
 
-                destArchiveDatabase.Add(new DatabaseData
+                archiveDatabase.Add(new DatabaseData
                 {
                     Name = shader.Name + shader.ParameterExtension,
                     Data = parameterData.Save()
-                });
+                }, ConflictPolicy.Replace);
             }
 
             // This means we are processing a post effect shader
@@ -85,12 +95,12 @@ public class ShaderCompiler
                 if (parameterData != null)
                     shaderData.ParameterNames.Add(shader.Name);
 
-                destArchiveDatabase.Add(
+                archiveDatabase.Add(
                     new DatabaseData
                     {
                         Data = shaderData.Save(),
                         Name = shader.Name + shader.Extension
-                    });
+                    }, ConflictPolicy.Replace);
 
                 var compilerPermutation = new ShaderCompilerPermutation
                 {
@@ -247,12 +257,12 @@ public class ShaderCompiler
 
                                 stringBuilder.Append(shader.Extension);
 
-                                destArchiveDatabase.Add(
+                                archiveDatabase.Add(
                                     new DatabaseData
                                     {
                                         Data = shaderData.Save(),
                                         Name = stringBuilder.ToString()
-                                    });
+                                    }, ConflictPolicy.Replace);
 
                                 // Keep track of the current macro count as
                                 // we are going to revert it to its original state
@@ -289,11 +299,11 @@ public class ShaderCompiler
 
                         if (shaderListData != null)
                         {
-                            destArchiveDatabase.Add(new DatabaseData
+                            archiveDatabase.Add(new DatabaseData
                             {
                                 Data = shaderListData.Save(),
                                 Name = ShaderUtilities.GenerateShaderListName(stringBuilder, shader, samplers, features)
-                            });
+                            }, ConflictPolicy.Replace);
                         }
                     }
                 }
@@ -333,11 +343,13 @@ public class ShaderCompiler
             else if (result < 0)
                 throw new Exception("Shader compilation failed");
 
-            destArchiveDatabase.Add(new DatabaseData
+            archiveDatabase.Add(new DatabaseData
             {
                 Data = blob.ToArray(),
                 Name = permutation.Name + permutation.Shader.CodeExtension
-            });
+            }, ConflictPolicy.Replace);
         });
+
+        archiveDatabase.Add(new DatabaseData { Name = ShaderCompilerCache.FileName, Data = populatingCache.Save() }, ConflictPolicy.Replace);
     }
 }

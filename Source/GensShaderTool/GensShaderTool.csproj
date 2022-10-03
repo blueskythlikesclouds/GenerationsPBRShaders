@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="K4os.Hash.xxHash" Version="1.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\Dependencies\Amicitia.IO\src\Amicitia.IO\Amicitia.IO.csproj" />
     <ProjectReference Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ShaderTranslator.csproj" />
   </ItemGroup>

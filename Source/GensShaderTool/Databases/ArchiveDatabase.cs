@@ -61,11 +61,21 @@ public class ArchiveDatabase
             return;
         }
 
-        filePath = filePath[..^2];
+        filePath = filePath[..^3];
 
-        for (int i = 0;; i++)
+        int splitCount = -1;
+        
+        string arlFilePath = filePath + "l";
+        if (File.Exists(arlFilePath))
         {
-            string currentFilePath = $"{filePath}{i:D2}";
+            using var reader = new BinaryValueReader(arlFilePath, Endianness.Little, Encoding.UTF8);
+            if (reader.Read<int>() == 0x324C5241) // ARL2
+                splitCount = reader.ReadInt32();
+        }
+
+        for (int i = 0; splitCount == -1 || i < splitCount; i++)
+        {
+            string currentFilePath = $"{filePath}.{i:D2}";
             if (!File.Exists(currentFilePath))
                 break;
 

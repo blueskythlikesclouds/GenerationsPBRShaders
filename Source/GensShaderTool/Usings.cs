@@ -15,6 +15,7 @@ global using Amicitia.IO.Binary;
 global using Amicitia.IO.Binary.Extensions;
 global using Amicitia.IO.Streams;
 
+global using GensShaderTool.Extensions;
 global using GensShaderTool.Compilers;
 global using GensShaderTool.Compilers.Interop;
 global using GensShaderTool.Compilers.Interop.Extensions;
