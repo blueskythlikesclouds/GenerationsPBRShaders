@@ -427,9 +427,6 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
         filterCB.rlr.maxRoughness = SceneEffect::debug.viewMode == DEBUG_VIEW_MODE_IBL_ONLY ? -1.0f : SceneEffect::rlr.maxRoughness;
         filterCB.rlr.rayLength = SceneEffect::rlr.rayLength;
         filterCB.rlr.fade = 1.0f / SceneEffect::rlr.fade;
-        filterCB.rlr.accuracyThreshold = SceneEffect::rlr.accuracyThreshold;
-        filterCB.rlr.saturation = std::min<float>(1.0f, std::max<float>(0.0f, SceneEffect::rlr.saturation));
-        filterCB.rlr.brightness = SceneEffect::rlr.brightness;
         filterCB.upload(d3dDevice);
 
         device->DrawQuad2D(nullptr, 0, 0);

@@ -4,7 +4,7 @@ DebugParam SceneEffect::debug = { false, false, -1, -1, -1, -1, -Eigen::Vector3f
 CullingParam SceneEffect::culling = { 500, 2500, 100 };
 SGGIParam SceneEffect::sggi = { 0.7f, 0.35f };
 ESMParam SceneEffect::esm = { 4096 };
-RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, 0.001f, 1.0f, 1.0f, -1 };
+RLRParam SceneEffect::rlr = { false, 32, 0.8f, 10000.0f, 0.1f, -1 };
 SSAOParam SceneEffect::ssao;
 BloomParam SceneEffect::bloom = { BLOOM_TYPE_DEFAULT };
 VolumetricLightingParam SceneEffect::volumetricLighting = { false, false, 16, -0.98f, 1.0f, 0.002f };
@@ -73,9 +73,6 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
     rlrParam->CreateParamFloat(&SceneEffect::rlr.maxRoughness, "MaxRoughness");
     rlrParam->CreateParamFloat(&SceneEffect::rlr.rayLength, "RayLength");
     rlrParam->CreateParamFloat(&SceneEffect::rlr.fade, "Fade");
-    rlrParam->CreateParamFloat(&SceneEffect::rlr.accuracyThreshold, "AccuracyThreshold");
-    rlrParam->CreateParamFloat(&SceneEffect::rlr.saturation, "Saturation");
-    rlrParam->CreateParamFloat(&SceneEffect::rlr.brightness, "Brightness");
     rlrParam->CreateParamInt(&SceneEffect::rlr.maxLod, "MaxLod");
 
     parameterGroup->Flush();

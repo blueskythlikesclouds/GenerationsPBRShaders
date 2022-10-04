@@ -95,9 +95,6 @@ struct FilterCB
             float maxRoughness;
             float rayLength;
             float fade;
-            float accuracyThreshold;
-            float saturation;
-            float brightness;
         } rlr;
 
         // IBL
