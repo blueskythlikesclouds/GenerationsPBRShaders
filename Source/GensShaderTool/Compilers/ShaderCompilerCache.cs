@@ -7,7 +7,7 @@ public class ShaderCompilerCache
     private static readonly byte[] sIncludeToken = { 0x23, 0x69, 0x6E, 0x63, 0x6C, 0x75, 0x64, 0x65 }; // #include
     private const byte cQuotationToken = (byte)'"';
 
-    public const string FileName = ".shadercompilercache";
+    public const string FileName = "shader_compiler_cache.bin";
 
     private readonly ConcurrentDictionary<string, IdHashPair> mIdHashPairs = new(StringComparer.OrdinalIgnoreCase);
 
