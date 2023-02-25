@@ -60,7 +60,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;..\..\Dependencies\DirectXTex\DirectXTex;..\..\Dependencies;..\..\Dependencies\HBAOPlus\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;..\..\Dependencies\DirectXTex\DirectXTex;..\..\Dependencies;..\..\Dependencies\HBAOPlus\include;..\..\Dependencies\lz4\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>Pch.h</ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalOptions>/Ob3 %(AdditionalOptions)</AdditionalOptions>
@@ -83,7 +83,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>Pch.h</PrecompiledHeaderFile>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;..\..\Dependencies\DirectXTex\DirectXTex;..\..\Dependencies;..\..\Dependencies\HBAOPlus\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\Dependencies\DllMods\Dependencies;..\..\Dependencies\DllMods\Dependencies\Detours\include;..\..\Dependencies\DllMods\Dependencies\Loaders;..\..\Dependencies\DllMods\Include\BlueBlur;..\..\Dependencies\HedgeLib\HedgeLib\include;..\..\Dependencies\DirectXTex\DirectXTex;..\..\Dependencies;..\..\Dependencies\HBAOPlus\include;..\..\Dependencies\lz4\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>Pch.h</ForcedIncludeFiles>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -102,6 +102,41 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\Dependencies\HedgeLib\HedgeLib\src\io\hl_bina.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\Dependencies\HedgeLib\HedgeLib\src\io\hl_hh_mirage.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <ClCompile Include="..\..\Dependencies\HedgeLib\HedgeLib\src\io\hl_stream.cpp">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">_ITERATOR_DEBUG_LEVEL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\Dependencies\lz4\lib\lz4.c">
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </ForcedIncludeFiles>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </ForcedIncludeFiles>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="BloomHandler.cpp" />
     <ClCompile Include="Configuration.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
@@ -162,9 +197,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Dependencies\DirectXTex\DirectXTex\DirectXTex_Desktop_2019.vcxproj">
       <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Dependencies\HedgeLib\HedgeLib\HedgeLib.vcxproj">
-      <Project>{6e42f2de-83ec-3eff-b98f-cce253c42ba1}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

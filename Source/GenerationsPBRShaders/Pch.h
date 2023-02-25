@@ -62,4 +62,7 @@ namespace Eigen
 // GenerationsD3D11
 #include <DllMods/Source/GenerationsD3D11/Mod/Include/GenerationsD3D11.h>
 
+// LZ4
+#include <lz4.h>
+
 extern bool globalUsePBR;

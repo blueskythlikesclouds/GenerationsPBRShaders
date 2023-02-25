@@ -14,3 +14,6 @@
 [submodule "Dependencies/HBAOPlus"]
 	path = Dependencies/HBAOPlus
 	url = https://github.com/NVIDIAGameWorks/HBAOPlus.git
+[submodule "Dependencies/lz4"]
+	path = Dependencies/lz4
+	url = https://github.com/lz4/lz4.git

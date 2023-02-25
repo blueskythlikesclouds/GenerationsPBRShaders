@@ -2,9 +2,24 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ArchiveDatabase.cs" Link="Dependencies\ArchiveDatabase.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\Argument.cs" Link="Dependencies\Argument.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ComparisonType.cs" Link="Dependencies\ComparisonType.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\Compiler.cs" Link="Dependencies\Compiler.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\Constant.cs" Link="Dependencies\Constant.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ConstantParser.cs" Link="Dependencies\ConstantParser.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ConstantType.cs" Link="Dependencies\ConstantType.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\Instruction.cs" Link="Dependencies\Instruction.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\Swizzle.cs" Link="Dependencies\Swizzle.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\SwizzleSet.cs" Link="Dependencies\SwizzleSet.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\Translator.cs" Link="Dependencies\Translator.cs" />
+    <Compile Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\TranslatorInternal.cs" Link="Dependencies\TranslatorInternal.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="K4os.Hash.xxHash" Version="1.0.7" />
@@ -12,7 +27,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Dependencies\Amicitia.IO\src\Amicitia.IO\Amicitia.IO.csproj" />
-    <ProjectReference Include="..\..\Dependencies\DllMods\Source\GenerationsD3D11\Tool\ShaderTranslator\ShaderTranslator.csproj" />
   </ItemGroup>
 
 </Project>

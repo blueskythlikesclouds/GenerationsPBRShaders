@@ -127,7 +127,7 @@ HOOK(void*, __fastcall, CreateSharedVertexBuffer, 0x72E900, uint32_t This)
 
             swapStates[offset] = true;
 
-            const D3DDECLTYPE declType = declTypeMap[_byteswap_ulong(element->format)];
+            const D3DDECLTYPE declType = declTypeMap[_byteswap_ulong((hl::u32)element->format)];
 
             for (size_t i = 0; i < vertexCount; i++)
             {
@@ -195,7 +195,7 @@ HOOK(bool, __cdecl, CreateVertexElements, 0x7448F0, void* a1, D3DVERTEXELEMENT9*
 
         d3dElement->Stream = _byteswap_ushort(hlElement->stream);
         d3dElement->Offset = _byteswap_ushort(hlElement->offset);
-        d3dElement->Type = declTypeMap[_byteswap_ulong(hlElement->format)];
+        d3dElement->Type = declTypeMap[_byteswap_ulong((hl::u32)hlElement->format)];
         d3dElement->Method = (BYTE)hlElement->method;
         d3dElement->Usage = (BYTE)hlElement->type;
         d3dElement->UsageIndex = hlElement->index;

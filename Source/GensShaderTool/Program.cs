@@ -26,6 +26,12 @@ if (!File.Exists(Path.Combine(args[1], "shader_vanilla.ar.00")))
 
     shaderRegular.Contents.RemoveAll(x => shaderRegularAdd.Contents.Contains(x));
 
+    var postEffectShaderNames = shaderRegular.Contents
+        .Select(x => Path.GetFileNameWithoutExtension(x.Name)).ToHashSet();
+
+    shaderRegular.Contents.AddRange(shaderRegularAdd.Contents.Where(x => postEffectShaderNames.Any(y => x.Name.StartsWith(y))));
+    shaderRegularAdd.Contents.RemoveAll(x => shaderRegular.Contents.Contains(x));
+
     var shaderConverter = new ShaderConverter(args[0]);
 
     Parallel.ForEach(shaderRegular.Contents.Where(x => x.Name.EndsWith(".wpu") || x.Name.EndsWith(".wvu")), x =>

@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using ShaderTranslator;
+﻿using ShaderTranslator;
 
 namespace GensShaderTool.Mod.Vanilla;
 
@@ -21,7 +20,7 @@ public class ShaderConverter : IDisposable
         if (name.Contains("MeasureLuminance"))
             translated = translated.Replace("saturate", string.Empty);
 
-        return Translator.Compile(translated, isPixelShader, false);
+        return Translator.Compile(translated, isPixelShader);
     }
 
     public unsafe byte[] ConvertMaterialShader(string name, byte[] bytes)
@@ -30,7 +29,7 @@ public class ShaderConverter : IDisposable
 
         // Vertex shaders don't need any patching.
         if (!isPixelShader)
-            return Translator.Compile(translated, false, false);
+            return Translator.Compile(translated, false);
 
         // Split the code.
         int index = translated.IndexOf("void main(", StringComparison.Ordinal);

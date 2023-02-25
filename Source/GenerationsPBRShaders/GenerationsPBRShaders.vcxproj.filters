@@ -67,6 +67,18 @@
     <ClCompile Include="Utilities.cpp">
       <Filter>Base</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Dependencies\HedgeLib\HedgeLib\src\io\hl_bina.cpp">
+      <Filter>Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Dependencies\HedgeLib\HedgeLib\src\io\hl_hh_mirage.cpp">
+      <Filter>Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Dependencies\HedgeLib\HedgeLib\src\io\hl_stream.cpp">
+      <Filter>Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Dependencies\lz4\lib\lz4.c">
+      <Filter>Dependencies</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StageId.h">
@@ -173,6 +185,9 @@
     </Filter>
     <Filter Include="Shader\GI">
       <UniqueIdentifier>{89a630be-0b20-4d2a-b147-8a79b5b72d3a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Dependencies">
+      <UniqueIdentifier>{415d20a2-5f68-45d2-a3ce-1414d599e1c6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
