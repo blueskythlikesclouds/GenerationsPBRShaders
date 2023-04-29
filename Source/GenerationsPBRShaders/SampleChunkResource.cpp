@@ -28,16 +28,16 @@ void setMagicAsVersion(void* data, const hl::u32 version)
 // before calling ResolvePointer, so they
 // need special handling.
 
-HOOK(void, __cdecl, CModelDataMake, 0x7337A0, hh::db::CDatabaseData* pDatabaseData, uint8_t* pData, size_t length, hh::mr::CRenderingInfrastructure* pRenderingInfrastructure)
+HOOK(void, __cdecl, CModelDataMake, 0x7337A0, const hh::base::CSharedString& rName, uint8_t* pData, size_t length, hh::db::CDatabaseData* pDatabaseData, hh::mr::CRenderingInfrastructure* pRenderingInfrastructure)
 {
     setMagicAsVersion(pData, 5);
-    return originalCModelDataMake(pDatabaseData, pData, length, pRenderingInfrastructure);
+    return originalCModelDataMake(rName, pData, length, pDatabaseData, pRenderingInfrastructure);
 }
 
-HOOK(void, __cdecl, CTerrainModelDataMake, 0x734960, hh::db::CDatabaseData* pDatabaseData, uint8_t* pData, size_t length, hh::mr::CRenderingInfrastructure* pRenderingInfrastructure)
+HOOK(void, __cdecl, CTerrainModelDataMake, 0x734960, const hh::base::CSharedString& rName, uint8_t* pData, size_t length, hh::db::CDatabaseData* pDatabaseData, hh::mr::CRenderingInfrastructure* pRenderingInfrastructure)
 {
     setMagicAsVersion(pData, 5);
-    return originalCTerrainModelDataMake(pDatabaseData, pData, length, pRenderingInfrastructure);
+    return originalCTerrainModelDataMake(rName, pData, length, pDatabaseData, pRenderingInfrastructure);
 }
 
 void SampleChunkResource::applyPatches()

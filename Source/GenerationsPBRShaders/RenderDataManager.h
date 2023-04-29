@@ -67,5 +67,8 @@ public:
 
     static NodeBVH nodeBVH;
 
+    static boost::shared_ptr<hh::ygg::CYggPicture> heightMapPicture;
+    static ComPtr<ID3D11ShaderResourceView> heightMapSRV;
+
     static void applyPatches();
 };

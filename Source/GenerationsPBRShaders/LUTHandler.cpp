@@ -68,4 +68,7 @@ void LUTHandler::applyPatches()
 
     // Prevent gamma ramp from being set.
     WRITE_MEMORY(0xD68183, uint8_t, 0x83, 0xC4, 0x08, 0x90, 0x90);
+
+    // Override the unused tonemap shader with GT tonemap.
+    WRITE_MEMORY(0x16A1388, char*, "ToneMap_GranTurismo");
 }

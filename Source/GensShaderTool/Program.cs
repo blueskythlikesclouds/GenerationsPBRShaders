@@ -72,6 +72,9 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 {
     Shader<DefaultVS>("DefaultVS"),
 
+    Shader<HeightMapVS>("HeightMapVS"),
+    Shader<HeightMapPS>("HeightMapPS"),
+
     Shader<SkyHDR>("Sky"),
     Shader<SkySDR>("Sky"),
 
@@ -85,6 +88,7 @@ ShaderCompiler.Compile(archiveDatabase, new[]
     
     Shader<Emission>("Material/Common"),
     Shader<MEmission>("Material/Common"),
+    Shader<Emission2>("Material/Common"),
 
     Shader<Glass>("Material/Glass"),
 
@@ -138,7 +142,9 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<BicubicFilter>("Filter/BicubicFilter"),
 
-    Shader<GaussianBlur>("Filter/GaussianBlur")
+    Shader<GaussianBlur>("Filter/GaussianBlur"),
+
+    Shader<GranTurismoToneMap>("Filter/GranTurismoToneMap")
 });
 
 archiveDatabase.Sort();

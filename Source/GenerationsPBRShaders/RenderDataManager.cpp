@@ -24,6 +24,9 @@ std::vector<const LocalLightData*> RenderDataManager::localLightsInFrustum;
 
 NodeBVH RenderDataManager::nodeBVH;
 
+boost::shared_ptr<hh::ygg::CYggPicture> RenderDataManager::heightMapPicture;
+ComPtr<ID3D11ShaderResourceView> RenderDataManager::heightMapSRV;
+
 HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* This)
 {
     originalCTerrainDirectorInitializeRenderData(This);
@@ -333,6 +336,9 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
             punchThroughMat->m_spShaderListData = mirageWrapper.GetShaderListData("Common2_d");
         }
     }
+
+    RenderDataManager::heightMapPicture = scheduler->GetPicture((StageId::get() + "_heightmap").c_str());
+    RenderDataManager::heightMapSRV.Reset();
 }
 
 void renderDataManagerNodeBVHTraverseCallback(void* userData, const Node& node)
