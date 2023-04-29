@@ -50,6 +50,7 @@ struct SGGIParam
 struct ESMParam
 {
     float factor;
+    bool renderTerrain;
 };
 
 struct RLRParam

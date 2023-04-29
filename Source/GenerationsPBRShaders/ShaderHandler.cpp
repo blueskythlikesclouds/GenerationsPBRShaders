@@ -84,7 +84,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
 {
     // Get shadowmaps.
-    const auto shadowMapNoTerrain = This->GetTexture("shadowmap_noterrain");
+    const auto shadowMapNoTerrain = This->GetTexture(SceneEffect::esm.renderTerrain ? "shadowmap" : "shadowmap_noterrain");
     const auto shadowMap = This->GetTexture("shadowmap");
 
     // Cache variables because it gets verbose if I don't.

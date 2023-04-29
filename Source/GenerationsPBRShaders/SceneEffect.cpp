@@ -64,6 +64,7 @@ HOOK(void, __cdecl, InitializeSceneEffectParameterFile, 0xD192C0, Sonic::CParame
 
     Sonic::CEditParam* esmParam = parameterGroup->CreateParameterCategory("ESM", "ESM");
     esmParam->CreateParamFloat(&SceneEffect::esm.factor, "Factor");
+    esmParam->CreateParamBool(&SceneEffect::esm.renderTerrain, "RenderTerrain");
 
     parameterGroup->Flush();
 
