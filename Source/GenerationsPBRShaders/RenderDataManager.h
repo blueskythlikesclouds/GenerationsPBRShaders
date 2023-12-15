@@ -55,6 +55,7 @@ public:
     static bool defaultIblExposurePacked;
     static ComPtr<ID3D11Texture2D> iblProbesTex;
     static ComPtr<ID3D11ShaderResourceView> iblProbesSRV;
+    static boost::shared_ptr<hh::ygg::CYggPicture> iblProbesPicture;
 
     static std::vector<std::unique_ptr<SHLightFieldData>> shlfs;
     static std::vector<std::unique_ptr<IBLProbeData>> iblProbes;

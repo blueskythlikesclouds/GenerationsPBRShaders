@@ -12,6 +12,7 @@ size_t RenderDataManager::defaultIblMipLevels;
 bool RenderDataManager::defaultIblExposurePacked;
 ComPtr<ID3D11Texture2D> RenderDataManager::iblProbesTex;
 ComPtr<ID3D11ShaderResourceView> RenderDataManager::iblProbesSRV;
+boost::shared_ptr<hh::ygg::CYggPicture> RenderDataManager::iblProbesPicture;
 
 std::vector<std::unique_ptr<SHLightFieldData>> RenderDataManager::shlfs;
 std::vector<std::unique_ptr<IBLProbeData>> RenderDataManager::iblProbes;
@@ -136,6 +137,27 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
         RenderDataManager::shlfsInFrustum.reserve(RenderDataManager::shlfs.size());
     }
 
+    RenderDataManager::iblProbesPicture = scheduler->GetPicture((StageId::get() + "_probe").c_str());
+    RenderDataManager::iblProbesTex.Reset();
+    RenderDataManager::iblProbesSRV.Reset();
+
+    if (RenderDataManager::iblProbesPicture &&
+        RenderDataManager::iblProbesPicture->m_spPictureData)
+    {
+        while (!RenderDataManager::iblProbesPicture->m_spPictureData->IsMadeAll())
+            ;
+
+        ComPtr<ID3D11Texture2D> tex;
+
+        if (SUCCEEDED(GenerationsD3D11::GetResource(RenderDataManager::iblProbesPicture->m_spPictureData->m_pD3DTexture)->QueryInterface(tex.GetAddressOf())))
+        {
+            D3D11_TEXTURE2D_DESC texDesc;
+            tex->GetDesc(&texDesc);
+
+            RenderDataManager::iblProbesMipLevels = texDesc.MipLevels;
+        }
+    }
+
     hh::mr::CMirageDatabaseWrapper mirageWrapper(database);
 
     if (probeData && probeData->IsMadeAll())
@@ -174,52 +196,53 @@ HOOK(void, __fastcall, CTerrainDirectorInitializeRenderData, 0x719310, void* Thi
 
             RenderDataManager::iblProbes.push_back(std::make_unique<IBLProbeData>(std::move(data)));
 
-            if (!probePicture || !probePicture->IsMadeAll())
-                continue;
-
-            ID3D11Resource* probeResource = GenerationsD3D11::GetResource(probePicture->m_pD3DTexture);
-            ComPtr<ID3D11Texture2D> probeTexture;
-
-            if (FAILED(probeResource->QueryInterface(probeTexture.GetAddressOf())))
-                continue;
-
-            // Load the texture into a TextureCubeArray
-            if (!RenderDataManager::iblProbesTex)
+            if (!RenderDataManager::iblProbesPicture && probePicture && probePicture->IsMadeAll())
             {
-                D3D11_TEXTURE2D_DESC probeDesc;
-                probeTexture->GetDesc(&probeDesc);
+                ID3D11Resource* probeResource = GenerationsD3D11::GetResource(probePicture->m_pD3DTexture);
+                ComPtr<ID3D11Texture2D> probeTexture;
 
-                probeDesc.Usage = D3D11_USAGE_DEFAULT;
-                probeDesc.ArraySize = 6 * iblProbeSet->probeCount;
-                RenderDataManager::iblProbesMipLevels = probeDesc.MipLevels;
-
-                device->CreateTexture2D(&probeDesc, nullptr, RenderDataManager::iblProbesTex.ReleaseAndGetAddressOf());
-
-                D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-                srvDesc.Format = probeDesc.Format;
-                srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
-                srvDesc.TextureCubeArray.MipLevels = probeDesc.MipLevels;
-                srvDesc.TextureCubeArray.NumCubes = iblProbeSet->probeCount;
-
-                device->CreateShaderResourceView(RenderDataManager::iblProbesTex.Get(), &srvDesc, RenderDataManager::iblProbesSRV.ReleaseAndGetAddressOf());
-            }
-
-            for (size_t j = 0; j < RenderDataManager::iblProbesMipLevels; j++)
-            {
-                for (size_t k = 0; k < 6; k++)
+                if (SUCCEEDED(probeResource->QueryInterface(probeTexture.GetAddressOf())))
                 {
-                    const auto lock = GenerationsD3D11::LockGuard(dxpDevice);
+                    // Load the texture into a TextureCubeArray
+                    if (!RenderDataManager::iblProbesTex)
+                    {
+                        D3D11_TEXTURE2D_DESC probeDesc;
+                        probeTexture->GetDesc(&probeDesc);
 
-                    deviceContext->CopySubresourceRegion(
-                        RenderDataManager::iblProbesTex.Get(),
-                        D3D11CalcSubresource(j, (6 * i) + k, RenderDataManager::iblProbesMipLevels),
-                        0,
-                        0,
-                        0,
-                        probeResource,
-                        D3D11CalcSubresource(j, k, RenderDataManager::iblProbesMipLevels),
-                        nullptr
-                    );
+                        probeDesc.Usage = D3D11_USAGE_DEFAULT;
+                        probeDesc.ArraySize = 6 * iblProbeSet->probeCount;
+                        RenderDataManager::iblProbesMipLevels = probeDesc.MipLevels;
+
+                        device->CreateTexture2D(&probeDesc, nullptr,
+                            RenderDataManager::iblProbesTex.ReleaseAndGetAddressOf());
+
+                        D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+                        srvDesc.Format = probeDesc.Format;
+                        srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBEARRAY;
+                        srvDesc.TextureCubeArray.MipLevels = probeDesc.MipLevels;
+                        srvDesc.TextureCubeArray.NumCubes = iblProbeSet->probeCount;
+
+                        device->CreateShaderResourceView(RenderDataManager::iblProbesTex.Get(), &srvDesc, RenderDataManager::iblProbesSRV.ReleaseAndGetAddressOf());
+                    }
+
+                    for (size_t j = 0; j < RenderDataManager::iblProbesMipLevels; j++)
+                    {
+                        for (size_t k = 0; k < 6; k++)
+                        {
+                            const auto lock = GenerationsD3D11::LockGuard(dxpDevice);
+
+                            deviceContext->CopySubresourceRegion(
+                                RenderDataManager::iblProbesTex.Get(),
+                                D3D11CalcSubresource(j, (6 * i) + k, RenderDataManager::iblProbesMipLevels),
+                                0,
+                                0,
+                                0,
+                                probeResource,
+                                D3D11CalcSubresource(j, k, RenderDataManager::iblProbesMipLevels),
+                                nullptr
+                            );
+                        }
+                    }
                 }
             }
 

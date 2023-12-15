@@ -183,9 +183,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderDataCB.defaultIblLodParam = (float)(RenderDataManager::defaultIblMipLevels - 1);
     renderDataCB.defaultIblExposurePacked = RenderDataManager::defaultIblExposurePacked;
 
-    GenerationsD3D11::LockDevice(d3dDevice);
-    GenerationsD3D11::GetDeviceContext(d3dDevice)->PSSetShaderResources(27, 1, RenderDataManager::iblProbesSRV.GetAddressOf());
-    GenerationsD3D11::UnlockDevice(d3dDevice);
+    if (RenderDataManager::iblProbesPicture)
+    {
+        d3dDevice->SetTexture(27, RenderDataManager::iblProbesPicture->m_spPictureData->m_pD3DTexture);
+    }
+    else
+    {
+        GenerationsD3D11::LockDevice(d3dDevice);
+        GenerationsD3D11::GetDeviceContext(d3dDevice)->PSSetShaderResources(27, 1, RenderDataManager::iblProbesSRV.GetAddressOf());
+        GenerationsD3D11::UnlockDevice(d3dDevice);
+    }
 
     // Set local lights in the frustum.
     renderDataCB.localLightCount = std::min<size_t>(32, RenderDataManager::localLightsInFrustum.size());
