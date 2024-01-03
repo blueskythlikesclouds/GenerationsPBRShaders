@@ -12,7 +12,15 @@ PBR Shaders is a mod that adds a deferred renderer to Sonic Generations. The mod
 ## Previews
 
 <div align="center">
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/VWFa-dVX5qw" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/dzzEWrEzKx4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-    <iframe width="560" height="315" src="https://www.youtube.com/embed/6h27aLW3gqU" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      <a href="https://www.youtube.com/watch?v=VWFa-dVX5qw">
+         <img src="https://images.gamebanana.com/img/ss/mods/60aaceda586cc.jpg" style="width:640px;"></br>PBR Shaders - Release
+      </a>
+      </br></br>
+      <a href="https://www.youtube.com/watch?v=dzzEWrEzKx4">
+         <img src="https://img.youtube.com/vi/dzzEWrEzKx4/sddefault.jpg" style="width:640px;"></br>PBR Shaders - Preview 2
+      </a>
+      </br></br>
+      <a href="https://www.youtube.com/watch?v=6h27aLW3gqU">
+         <img src="https://img.youtube.com/vi/6h27aLW3gqU/sddefault.jpg" style="width:640px;"></br>PBR Shaders - Preview 1
+      </a>
 </div>
