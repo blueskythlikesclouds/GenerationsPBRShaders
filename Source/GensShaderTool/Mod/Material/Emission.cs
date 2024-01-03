@@ -28,3 +28,10 @@ public class MEmission : Emission
         return samplers.HasFlag(CommonSamplers.Specular) && base.ValidateSamplers(samplers); 
     }
 }
+
+public class Emission2 : Emission
+{
+    public override string Name => "Emission2";
+
+    public override IReadOnlyList<D3DShaderMacro> Macros { get; } = new[] { Common.MetalnessChannelBlue };
+}

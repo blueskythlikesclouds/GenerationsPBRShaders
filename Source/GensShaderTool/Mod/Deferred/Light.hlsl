@@ -56,7 +56,11 @@ float4 main(in float4 unused : SV_POSITION, in float4 svPos : TEXCOORD0, in floa
 
     [branch] if (params.DeferredFlags & DEFERRED_FLAGS_LIGHT_FIELD)
     {
-        ComputeSHLightField(params, position);
+        if (g_GIColorOverride.r >= 0.0 && g_GIColorOverride.g >= 0.0 && g_GIColorOverride.b >= 0.0)
+            params.IndirectDiffuse = g_GIColorOverride.rgb;
+        else
+            ComputeSHLightField(params, position);
+
         color += ComputeIndirectLighting(params, g_EnvBRDFTexture, g_PointClampSampler);
     }
 

@@ -84,7 +84,7 @@ HOOK(void, __fastcall, CFxRenderGameSceneInitialize, Sonic::fpCFxRenderGameScene
 HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExecute, Sonic::CFxRenderGameScene* This)
 {
     // Get shadowmaps.
-    const auto shadowMapNoTerrain = This->GetTexture("shadowmap_noterrain");
+    const auto shadowMapNoTerrain = This->GetTexture(SceneEffect::esm.renderTerrain ? "shadowmap" : "shadowmap_noterrain");
     const auto shadowMap = This->GetTexture("shadowmap");
 
     // Cache variables because it gets verbose if I don't.
@@ -183,9 +183,16 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     renderDataCB.defaultIblLodParam = (float)(RenderDataManager::defaultIblMipLevels - 1);
     renderDataCB.defaultIblExposurePacked = RenderDataManager::defaultIblExposurePacked;
 
-    GenerationsD3D11::LockDevice(d3dDevice);
-    GenerationsD3D11::GetDeviceContext(d3dDevice)->PSSetShaderResources(27, 1, RenderDataManager::iblProbesSRV.GetAddressOf());
-    GenerationsD3D11::UnlockDevice(d3dDevice);
+    if (RenderDataManager::iblProbesPicture)
+    {
+        d3dDevice->SetTexture(27, RenderDataManager::iblProbesPicture->m_spPictureData->m_pD3DTexture);
+    }
+    else
+    {
+        GenerationsD3D11::LockDevice(d3dDevice);
+        GenerationsD3D11::GetDeviceContext(d3dDevice)->PSSetShaderResources(27, 1, RenderDataManager::iblProbesSRV.GetAddressOf());
+        GenerationsD3D11::UnlockDevice(d3dDevice);
+    }
 
     // Set local lights in the frustum.
     renderDataCB.localLightCount = std::min<size_t>(32, RenderDataManager::localLightsInFrustum.size());
@@ -210,6 +217,32 @@ HOOK(void, __fastcall, CFxRenderGameSceneExecute, Sonic::fpCFxRenderGameSceneExe
     }
 
     renderDataCB.upload(d3dDevice);
+
+    // Prepare heightmap.
+    if (RenderDataManager::heightMapPicture &&
+        RenderDataManager::heightMapPicture->m_spPictureData &&
+        RenderDataManager::heightMapPicture->m_spPictureData->IsMadeAll())
+    {
+        static ComPtr<ID3D11SamplerState> samplerState;
+        if (samplerState == nullptr)
+        {
+            CD3D11_SAMPLER_DESC samplerDesc;
+            GenerationsD3D11::GetDevice(d3dDevice)->CreateSamplerState(&samplerDesc, samplerState.GetAddressOf());
+        }
+
+        if (!RenderDataManager::heightMapSRV)
+        {
+            GenerationsD3D11::GetDevice(d3dDevice)->CreateShaderResourceView(
+                GenerationsD3D11::GetResource(RenderDataManager::heightMapPicture->m_spPictureData->m_pD3DTexture),
+                nullptr,
+                RenderDataManager::heightMapSRV.ReleaseAndGetAddressOf());
+        }
+
+        GenerationsD3D11::LockDevice(d3dDevice);
+        GenerationsD3D11::GetDeviceContext(d3dDevice)->VSSetShaderResources(0, 1, RenderDataManager::heightMapSRV.GetAddressOf());
+        GenerationsD3D11::GetDeviceContext(d3dDevice)->VSSetSamplers(0, 1, samplerState.GetAddressOf());
+        GenerationsD3D11::UnlockDevice(d3dDevice);
+    }
 
     // Prepare and set render targets. Clear their contents.
     const auto gBuffer0Surface = gBuffer0Tex->GetSurface();

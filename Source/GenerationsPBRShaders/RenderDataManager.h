@@ -55,6 +55,7 @@ public:
     static bool defaultIblExposurePacked;
     static ComPtr<ID3D11Texture2D> iblProbesTex;
     static ComPtr<ID3D11ShaderResourceView> iblProbesSRV;
+    static boost::shared_ptr<hh::ygg::CYggPicture> iblProbesPicture;
 
     static std::vector<std::unique_ptr<SHLightFieldData>> shlfs;
     static std::vector<std::unique_ptr<IBLProbeData>> iblProbes;
@@ -66,6 +67,9 @@ public:
     static std::vector<const LocalLightData*> localLightsInFrustum;
 
     static NodeBVH nodeBVH;
+
+    static boost::shared_ptr<hh::ygg::CYggPicture> heightMapPicture;
+    static ComPtr<ID3D11ShaderResourceView> heightMapSRV;
 
     static void applyPatches();
 };
