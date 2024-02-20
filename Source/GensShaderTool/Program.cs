@@ -122,6 +122,8 @@ ShaderCompiler.Compile(archiveDatabase, new[]
 
     Shader<VertexColorFadeToInvAlpha>("Material/VertexColorFadeToInvAlpha"),
 
+    Shader<Fur>("Material/Fur"),
+
     Shader<IBL>("Deferred/IBL"),
     Shader<Light>("Deferred/Light"),
 
