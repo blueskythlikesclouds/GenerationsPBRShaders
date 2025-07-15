@@ -22,6 +22,12 @@ public class ShaderListData : IBinarySerializable
             foreach (var pixelShaderPermutation in PixelShaderPermutations)
                 writer.WriteObjectOffset(pixelShaderPermutation, 4);
         }, 4);
+
+        writer.Write(0);
+        writer.WriteOffset(() => { });
+
+        writer.Write(0);
+        writer.WriteOffset(() => { });
     }
 
     public ShaderListData()

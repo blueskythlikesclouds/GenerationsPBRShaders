@@ -2,7 +2,7 @@
   "profiles": {
     "GensShaderTool": {
       "commandName": "Project",
-      "commandLineArgs": "\"C:\\Repositories\\GenerationsPBRShaders\\Source\\GensShaderTool\\Mod\" \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sonic Generations\\mods\\GenerationsPBRShaders\\disk\\bb3\" \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sonic Generations\\disk\\bb3\""
+      "commandLineArgs": "\"C:\\Repositories\\GenerationsPBRShaders\\Source\\GensShaderTool\\Mod\" \"C:\\Program Files (x86)\\Steam\\steamapps\\common\\Sonic Lost World\\Mods\\Sonic 2006 Model\\disk\\sonic2013_patch_0\\+shader\""
     }
   }
 }
